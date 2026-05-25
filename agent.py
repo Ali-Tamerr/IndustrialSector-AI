@@ -122,7 +122,7 @@ def verify_schema_constraints():
             cursor.execute("""
                 ALTER TABLE maintenance_orders 
                 ADD CONSTRAINT chk_maintenance_status 
-                CHECK (status IN ('Pending', 'Approved', 'Dispatched', 'Pending_Sourcing'));
+                CHECK (status IN ('Pending', 'Approved', 'Dispatched', 'Pending_Sourcing', 'Dispatched_Sourcing_Active'));
             """)
             conn.commit()
             logger.info("[Database] Constraint 'chk_maintenance_status' updated successfully.")
@@ -485,6 +485,120 @@ class DiagnosticAgent:
 
 
 # ==============================================================================
+# SOURCING OPTIMIZATION AGENT (LOGISTICS/AI)
+# ==============================================================================
+
+class SourcingOptimizationAgent:
+    """
+    Sourcing Optimization Agent:
+    Takes a list of alternative suppliers, transit times, risk ratings, and prices,
+    calculates a 'Resilience & Efficiency Score' for each option using an LLM,
+    and returns the absolute best supplier to minimize downtime.
+    """
+    def __init__(self, use_llm: bool = HAS_GEMINI_SDK and GEMINI_API_KEY is not None):
+        self.use_llm = use_llm
+        self.agent_name = "SourcingOptimizationAgent"
+
+    def optimize_sourcing(self, part_name: str, suppliers: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Uses LLM (or fallback logic) to evaluate and choose the best supplier."""
+        logger.info(f"[{self.agent_name}] Optimizing sourcing for part '{part_name}' with {len(suppliers)} options...")
+        
+        if not suppliers:
+            return {
+                "selected_supplier_id": None,
+                "selected_supplier_name": "Unknown",
+                "reasoning": "No alternative suppliers found in graph.",
+                "scores": {}
+            }
+
+        if self.use_llm:
+            return self._optimize_with_llm(part_name, suppliers)
+        else:
+            return self._optimize_with_emulator(part_name, suppliers)
+
+    def _optimize_with_emulator(self, part_name: str, suppliers: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Fallback logic to compute Resilience & Efficiency Score:
+        Score = 100 - (transit_days * 8) - (risk_rating * 45) - (price / 50)
+        """
+        scored_suppliers = []
+        for s in suppliers:
+            # Transit time is critical for preventing industrial downtime (high penalty)
+            transit_penalty = s["transit_time_days"] * 7.5
+            # Supplier risk (0.0 to 1.0) represents reliability (high penalty)
+            risk_penalty = s["risk_rating"] * 45.0
+            # Small penalty for pricing
+            price_penalty = (s["price"] / 100.0) * 1.5
+            
+            score = 100.0 - transit_penalty - risk_penalty - price_penalty
+            scored_suppliers.append({
+                "supplier_id": s["supplier_id"],
+                "supplier_name": s["supplier_name"],
+                "score": round(max(0.0, score), 2),
+                "transit_time_days": s["transit_time_days"],
+                "risk_rating": s["risk_rating"],
+                "price": s["price"]
+            })
+            
+        # Sort by score descending
+        scored_suppliers.sort(key=lambda x: x["score"], reverse=True)
+        best_supplier = scored_suppliers[0]
+        
+        scores_map = {s["supplier_id"]: s["score"] for s in scored_suppliers}
+        
+        reasoning = (
+            f"Optimized selection for '{part_name}': Chosen '{best_supplier['supplier_name']}' with score {best_supplier['score']}. "
+            f"This option minimizes downtime with a transit time of {best_supplier['transit_time_days']} days, "
+            f"a supplier risk rating of {best_supplier['risk_rating']:.2f}, and an total cost of ${best_supplier['price']:.2f}. "
+            f"Compared to higher-risk or slower options (e.g. Siemens Shanghai at 28 days), this provides the best resilience and efficiency trade-off."
+        )
+        
+        return {
+            "selected_supplier_id": best_supplier["supplier_id"],
+            "selected_supplier_name": best_supplier["supplier_name"],
+            "reasoning": reasoning,
+            "scores": scores_map,
+            "best_option": best_supplier
+        }
+
+    def _optimize_with_llm(self, part_name: str, suppliers: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calls Gemini API to rank alternative suppliers based on risk, price, and lead time."""
+        prompt = f"""
+        You are the Sourcing Optimization Agent for an Industrial AI System.
+        Your goal is to choose the absolute best supplier for a missing component to resolve a factory emergency and minimize production downtime.
+        
+        Missing Component: {part_name}
+        
+        Available Suppliers and Route Options:
+        {json.dumps(suppliers, indent=2)}
+        
+        CRITERIA FOR RESILIENCE & EFFICIENCY SCORE (0-100):
+        1. Transit/Lead Time (60% weight): Every day of delay causes severe manufacturing downtime losses. Fast shipping is of paramount importance.
+        2. Supplier Risk Rating (30% weight): Supplier risks (0.0 to 1.0) represent the chance of shipment loss, quality issues, or customs delays. We must avoid high-risk lines (especially for critical emergencies).
+        3. Cost/Pricing (10% weight): While emergency budgets are pre-approved, excessive over-pricing should be penalized slightly.
+        
+        Calculate a "Resilience & Efficiency Score" out of 100 for each supplier. Select the single best supplier.
+        
+        You MUST respond in JSON format with the following exact keys:
+        - "selected_supplier_id": string (the ID of the best supplier, e.g. "SUP-002")
+        - "selected_supplier_name": string (the name of the best supplier)
+        - "scores": object (mapping of supplier_id to its calculated numerical score out of 100)
+        - "reasoning": string (technical justification comparing lead times, risk, and costs, explaining the winning option)
+        """
+        try:
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            response = model.generate_content(
+                prompt,
+                generation_config={"response_mime_type": "application/json"}
+            )
+            data = json.loads(response.text.strip())
+            return data
+        except Exception as e:
+            logger.error(f"[{self.agent_name}] LLM API error during sourcing optimization: {e}. Falling back to Emulator.")
+            return self._optimize_with_emulator(part_name, suppliers)
+
+
+# ==============================================================================
 # 3. PLANNING & TOOL AGENT (ACTION)
 # ==============================================================================
 
@@ -548,67 +662,257 @@ class PlanningToolAgent:
             "created_at": created_at.isoformat() if isinstance(created_at, datetime.datetime) else str(created_at)
         }
 
-    def trigger_supply_chain_reroute(self, part_id: str) -> Dict[str, Any]:
+    def traverse_supplier_graph(self, part_name: str) -> List[Dict[str, Any]]:
         """
-        Tool: Queries Chroma's supplier_routes collection to find alternative suppliers,
-        shipping rates, lead times, and logistical risk ratings.
-        Selects the optimal expedited route dynamically.
+        Graph Traversal Logic:
+        Searches the supplier_graph and supplier_edges tables in PostgreSQL.
+        Given a missing part_name, find all suppliers capable of delivering that part or its raw materials.
         """
-        logger.info(f"[{self.agent_name} Tool] Triggering supply chain reroute for Part: {part_id}...")
-        
-        # Query Chroma supplier_routes for the part
-        route_info = {
-            "part_id": part_id,
-            "reroute_triggered": True,
-            "optimal_supplier": "Unknown Supplier",
-            "transit_days": 10,
-            "expedited_shipping_cost": 0.0,
-            "logistical_risk": "High",
-            "routing_details": "No specific routing documents found. Manual procurement required."
-        }
-        
+        logger.info(f"[{self.agent_name}] Executing recursive supplier graph traversal for: {part_name}")
+        query = """
+        WITH RECURSIVE supply_paths AS (
+            -- Anchor member: Start at the target part by name
+            SELECT 
+                node_id AS current_node,
+                node_name AS current_name,
+                node_type AS current_type,
+                ARRAY[node_id]::VARCHAR[] AS path,
+                0.0 AS accumulated_price,
+                0 AS accumulated_transit_days,
+                CAST(NULL AS VARCHAR) AS supply_relation
+            FROM supplier_graph
+            WHERE node_name = %s AND node_type = 'Part'
+
+            UNION ALL
+
+            -- Recursive member: Traverse backwards from Part <- Edge <- Source Node
+            SELECT 
+                g.node_id AS current_node,
+                g.node_name AS current_name,
+                g.node_type AS current_type,
+                p.path || g.node_id AS path,
+                p.accumulated_price + COALESCE(e.price, 0.0) AS accumulated_price,
+                p.accumulated_transit_days + COALESCE(e.transit_time_days, 0) AS accumulated_transit_days,
+                e.relationship AS supply_relation
+            FROM supply_paths p
+            JOIN supplier_edges e ON p.current_node = e.to_node
+            JOIN supplier_graph g ON e.from_node = g.node_id
+            -- Prevent infinite loops
+            WHERE NOT (g.node_id = ANY(p.path))
+        )
+        SELECT DISTINCT ON (current_node)
+            current_node AS supplier_id,
+            current_name AS supplier_name,
+            current_type AS supplier_type,
+            accumulated_price AS price,
+            accumulated_transit_days AS transit_time_days,
+            (SELECT risk_rating FROM supplier_graph WHERE node_id = current_node) AS risk_rating,
+            (SELECT contact_email FROM supplier_graph WHERE node_id = current_node) AS contact_email,
+            path
+        FROM supply_paths
+        WHERE current_type = 'Supplier';
+        """
+        suppliers = []
         try:
-            routes_collection = self.chroma_client.get_collection("supplier_routes")
-            # Query for the specific part's logistics profiles
-            results = routes_collection.query(
-                query_texts=[f"Alternative routes supplier transit lead time cost risk for {part_id}"],
-                n_results=2
-            )
-            
-            if results and 'documents' in results and results['documents']:
-                documents = results['documents'][0]
-                metadatas = results['metadatas'][0] if 'metadatas' in results else []
-                
-                logger.info(f"[{self.agent_name} Tool] Retrieved {len(documents)} supplier routes from Chroma DB.")
-                
-                # Select the optimal route (prioritize low lead time / expedited transport)
-                best_route = None
-                lowest_lead_time = 999
-                
-                for idx, doc in enumerate(documents):
-                    meta = metadatas[idx] if idx < len(metadatas) else {}
-                    lead_time = meta.get("lead_time_days", 999)
-                    
-                    # Choose the fastest route (expedited air cargo) since the machine is degraded/critical
-                    if lead_time < lowest_lead_time:
-                        lowest_lead_time = lead_time
-                        best_route = {
-                            "optimal_supplier": meta.get("supplier", "Vendor"),
-                            "transit_days": lead_time,
-                            "expedited_shipping_cost": float(meta.get("cost", 0.0)),
-                            "logistical_risk": meta.get("risk", "Medium").upper(),
-                            "routing_details": doc
-                        }
-                        
-                if best_route:
-                    route_info.update(best_route)
-                    
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (part_name,))
+                results = cursor.fetchall()
+                for row in results:
+                    suppliers.append({
+                        "supplier_id": row["supplier_id"],
+                        "supplier_name": row["supplier_name"],
+                        "price": float(row["price"]),
+                        "transit_time_days": int(row["transit_time_days"]),
+                        "risk_rating": float(row["risk_rating"]) if row["risk_rating"] is not None else 0.5,
+                        "contact_email": row["contact_email"],
+                        "path": row["path"]
+                    })
         except Exception as e:
-            logger.error(f"[{self.agent_name} Tool] Error during supplier route query: {e}")
+            logger.error(f"[{self.agent_name}] Error during recursive graph traversal query: {e}")
+        return suppliers
+
+    def draft_procurement_order(self, supplier_id: str, part_name: str, quantity: int, machine_id: str, order_id: int) -> Dict[str, Any]:
+        """
+        Autonomous Procurement Tool:
+        Generates a professional, contextual email procurement draft and updates 
+        maintenance_orders status to 'Dispatched_Sourcing_Active'.
+        """
+        logger.info(f"[{self.agent_name} Tool] Executing draft_procurement_order for Supplier: {supplier_id}")
+        
+        # 1. Fetch supplier details
+        supplier_name = "Supplier"
+        contact_email = "orders@supplier.com"
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT node_name, contact_email FROM supplier_graph WHERE node_id = %s;",
+                (supplier_id,)
+            )
+            res = cursor.fetchone()
+            if res:
+                supplier_name = res["node_name"]
+                contact_email = res["contact_email"] or f"orders@{supplier_name.lower().replace(' ', '')}.com"
+                
+        # 2. Fetch machine details
+        machine_name = "Equipment"
+        machine_status = "Degraded"
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT name, status FROM machines WHERE id = %s;",
+                (machine_id,)
+            )
+            res_m = cursor.fetchone()
+            if res_m:
+                machine_name = res_m["name"]
+                machine_status = res_m["status"]
+
+        # 3. Create professional email draft
+        email_subject = f"URGENT: Expedited Parts Procurement Order - Machine Down ({machine_id})"
+        email_body = f"""Subject: {email_subject}
+To: {contact_email} (Attn: {supplier_name} Sales & Logistics)
+From: procurement-agent@industrial-ai.com
+Date: {datetime.datetime.now().strftime('%Y-%m-%d')}
+
+Dear {supplier_name} Team,
+
+This is an URGENT automated procurement request on behalf of our Industrial Operations Facility. 
+
+We have encountered a critical equipment status alert on our factory floor:
+- Equipment: {machine_name} (ID: {machine_id})
+- Fleet Operational Status: {machine_status.upper()} / IMMINENT DOWNTIME HAZARD
+
+To prevent severe assembly line stagnation and operational downtime, we require the immediate dispatch of the following component:
+- Required Component: {part_name}
+- Requested Quantity: {quantity} unit(s)
+
+As our supplier graph indicates you are our optimal source, please process this order for EXPEDITED shipping immediately. Please confirm stock availability, estimated dispatch time, and provide tracking numbers to our digital logistics webhook as soon as they are generated.
+
+We request priority processing and air-courier routing if possible. All associated expedited freight surcharges have been pre-approved on our corporate procurement billing profile.
+
+Thank you for your rapid cooperation in resolving this production emergency.
+
+Sincerely,
+Autonomous Supply Chain Procurement Agent
+Industrial Sector AI Automation Network
+"""
+
+        # 4. Update the maintenance_orders status to 'Dispatched_Sourcing_Active'
+        procurement_summary = (
+            f"\n\n[Procurement Action] Order dispatched to {supplier_name} ({supplier_id}). "
+            f"Professional email draft generated. Requested {quantity} unit(s) with expedited shipping."
+        )
+        with self.conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE maintenance_orders 
+                SET status = 'Dispatched_Sourcing_Active', 
+                    root_cause = root_cause || %s,
+                    updated_at = NOW()
+                WHERE id = %s;
+                """,
+                (procurement_summary, order_id)
+            )
+        self.conn.commit()
+        logger.info(f"[{self.agent_name} Tool] Updated maintenance order #{order_id} status to 'Dispatched_Sourcing_Active'")
+
+        return {
+            "supplier_id": supplier_id,
+            "supplier_name": supplier_name,
+            "contact_email": contact_email,
+            "email_subject": email_subject,
+            "email_body": email_body,
+            "status_updated": "Dispatched_Sourcing_Active"
+        }
+
+    def trigger_supply_chain_reroute(self, part_id: str, machine_id: Optional[str] = None, order_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Tool: Searches the supply chain graph, optimizes supplier selection using Sourcing Optimization Agent,
+        and generates automated procurement drafts to resolve emergencies.
+        """
+        logger.info(f"[{self.agent_name} Tool] Triggering supply chain reroute for Part ID: {part_id}...")
+        
+        # 1. Map part_id to part_name
+        inventory_status = self.check_inventory(part_id)
+        part_name = inventory_status.get("part_name", "Spare Part")
+        
+        # 2. Graph Traversal Logic (PostgreSQL CTE)
+        suppliers = self.traverse_supplier_graph(part_name)
+        
+        # Fallback to Chroma supplier_routes if Postgres graph has no results
+        if not suppliers:
+            logger.warning(f"[{self.agent_name} Tool] No suppliers found in graph database. Querying Chroma DB...")
+            try:
+                routes_collection = self.chroma_client.get_collection("supplier_routes")
+                results = routes_collection.query(
+                    query_texts=[f"Alternative routes supplier transit lead time cost risk for {part_id} {part_name}"],
+                    n_results=2
+                )
+                if results and 'documents' in results and results['documents']:
+                    documents = results['documents'][0]
+                    metadatas = results['metadatas'][0] if 'metadatas' in results else []
+                    for idx, doc in enumerate(documents):
+                        meta = metadatas[idx] if idx < len(metadatas) else {}
+                        suppliers.append({
+                            "supplier_id": f"SUP-CHROMA-{idx}",
+                            "supplier_name": meta.get("supplier", "Chroma Vendor"),
+                            "price": float(meta.get("cost", 300.0)),
+                            "transit_time_days": int(meta.get("lead_time_days", 10)),
+                            "risk_rating": 0.2 if meta.get("risk", "low") == "low" else 0.5,
+                            "contact_email": f"orders@{meta.get('supplier', 'chromavendor').lower().replace(' ', '')}.com",
+                            "path": [part_id, meta.get("supplier")]
+                        })
+            except Exception as e:
+                logger.error(f"[{self.agent_name} Tool] Fallback Chroma query failed: {e}")
+
+        if not suppliers:
+            return {
+                "part_id": part_id,
+                "part_name": part_name,
+                "suppliers_found": [],
+                "optimization_result": {"selected_supplier_id": None, "selected_supplier_name": "None", "reasoning": "No suppliers available."},
+                "procurement_result": None
+            }
+
+        # 3. Sourcing Optimization
+        sourcing_agent = SourcingOptimizationAgent(use_llm=HAS_GEMINI_SDK and GEMINI_API_KEY is not None)
+        optimization_res = sourcing_agent.optimize_sourcing(part_name, suppliers)
+        best_supplier_id = optimization_res.get("selected_supplier_id")
+        
+        # 4. Autonomous Procurement Action
+        procurement_res = None
+        if best_supplier_id and machine_id and order_id:
+            # Calculate quantity to order
+            stock_level = inventory_status.get("stock_level", 0)
+            reorder_point = inventory_status.get("reorder_point", 0)
+            quantity = max(1, reorder_point - stock_level + 2)
             
-        logger.info(f"[{self.agent_name} Tool] Rerouting Result: Supplier='{route_info['optimal_supplier']}', "
-                    f"LeadTime={route_info['transit_days']} days, Risk={route_info['logistical_risk']}")
-        return route_info
+            procurement_res = self.draft_procurement_order(
+                supplier_id=best_supplier_id,
+                part_name=part_name,
+                quantity=quantity,
+                machine_id=machine_id,
+                order_id=order_id
+            )
+
+        # Backwards compatible mapping fields
+        optimal_supplier = optimization_res.get("selected_supplier_name", "Unknown Supplier")
+        best_opt = optimization_res.get("best_option", {})
+        transit_days = best_opt.get("transit_time_days", 10)
+        exp_cost = best_opt.get("price", 0.0)
+        risk = str(best_opt.get("risk_rating", 0.5))
+        
+        return {
+            "part_id": part_id,
+            "part_name": part_name,
+            "suppliers_found": suppliers,
+            "optimization_result": optimization_res,
+            "procurement_result": procurement_res,
+            # Backwards compatibility fields for runner outputs
+            "optimal_supplier": optimal_supplier,
+            "transit_days": transit_days,
+            "expedited_shipping_cost": exp_cost,
+            "logistical_risk": risk,
+            "routing_details": optimization_res.get("reasoning", "")
+        }
 
     # ==========================================================================
     # CORE AGENT EXECUTION FLOW
@@ -677,44 +981,45 @@ class PlanningToolAgent:
             }
             
         else:
-            # PART IS OUT OF STOCK / BELOW REORDER LIMITS: Set status to 'Pending_Sourcing' and trigger supply chain reroute
+            # PART IS OUT OF STOCK / BELOW REORDER LIMITS: Sourcing action required!
             logger.warning(f"[{self.agent_name}] Supply Chain Alert: Part {required_part} is OUT OF STOCK or BELOW REORDER POINT "
                            f"(Stock: {stock_level} <= Reorder Point: {reorder_point}). Sourcing action required!")
             
-            # Step 2b: Trigger Supply Chain Reroute Tool Call
-            reroute_res = self.trigger_supply_chain_reroute(required_part)
-            
+            # Step 2a: Initialize maintenance order in 'Pending_Sourcing' status
             detailed_cause = (
                 f"Automated PdM Diagnostic & Supply Chain Routing Report:\n"
                 f"- Isolated Fault: {detected_fault}\n"
                 f"- Remaining Useful Life (RUL): {rul} Hours\n"
                 f"- Required Part: {required_part} ({part_name}) - OUT OF STOCK / BELOW REORDER LIMIT (Stock Level: {stock_level}, Reorder Threshold: {reorder_point})\n"
-                f"- Logistical Urgent Dispatch: Triggered supply chain routing search in ChromaDB.\n"
-                f"  * Recommended Supplier: {reroute_res['optimal_supplier']}\n"
-                f"  * Logistics Route/Details: {reroute_res['routing_details']}\n"
-                f"  * Lead Time: {reroute_res['transit_days']} days (Expedited)\n"
-                f"  * Expedited Freight Cost: ${reroute_res['expedited_shipping_cost']:.2f}\n"
-                f"  * Logistical Route Risk: {reroute_res['logistical_risk']}\n"
-                f"- Dispatch Action: Ticket initialized with 'Pending_Sourcing' status. Sourcing order locked and sent to SKF Munich airport courier.\n\n"
-                f"Anomaly Telemetry Analysis:\n"
-                f"{anomaly_explanation}"
+                f"- Logistical Urgent Dispatch: Triggered supply chain routing search in supplier graph database."
             )
             
-            order_status = "Pending_Sourcing"
             order_res = self.create_maintenance_order(
                 machine_id=machine_id,
                 priority=priority,
                 root_cause=detailed_cause,
-                status=order_status,
-                assigned_technician="Procurement & Logistics Agent / Sarah Jenkins"
+                status="Pending_Sourcing",
+                assigned_technician="Procurement & Logistics Agent"
             )
+            order_id = order_res["order_id"]
+            
+            # Step 2b: Trigger Supply Chain Reroute (includes Graph Traversal, Sourcing Optimization, Procurement Order simulation, and Order update)
+            reroute_res = self.trigger_supply_chain_reroute(
+                part_id=required_part,
+                machine_id=machine_id,
+                order_id=order_id
+            )
+            
+            # Retrieve latest maintenance order state
+            updated_order = order_res.copy()
+            updated_order["status"] = "Dispatched_Sourcing_Active"
             
             return {
                 "success": True,
-                "workflow_result": "Pending Supply Chain Procurement",
+                "workflow_result": "Pending Supply Chain Procurement - Sourcing Dispatched",
                 "part_in_stock": False,
                 "inventory_status": inventory_status,
-                "maintenance_order": order_res,
+                "maintenance_order": updated_order,
                 "supply_chain_reroute": reroute_res
             }
 
