@@ -1,3 +1,13 @@
+---
+title: IndustrialSector AI
+emoji: 🏗️
+colorFrom: blue
+colorTo: slate
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Industrial AI Multi-Agent Orchestrator Architecture
 
 This document details the Multi-Agent Orchestration Layer built to connect real-time Predictive Maintenance (PdM) with semantic Supply Chain Knowledge Graphs.
