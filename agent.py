@@ -19,7 +19,7 @@ logger = logging.getLogger("IndustrialOrchestrator")
 # Load environment variables
 from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path, override=True)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 CHROMA_HOST = os.getenv("CHROMA_HOST", "api.trychroma.com")
@@ -37,9 +37,25 @@ try:
         genai.configure(api_key=GEMINI_API_KEY)
         logger.info("Google Generative AI SDK configured successfully.")
     else:
-        logger.warning("GEMINI_API_KEY not found in environment. Running in Smart LLM Emulator fallback mode.")
+        logger.warning("GEMINI_API_KEY not found in environment.")
 except ImportError:
-    logger.warning("google-generativeai package not found. Running in Smart LLM Emulator fallback mode.")
+    logger.warning("google-generativeai package not found.")
+
+# Attempt importing vertexai for GCP Vertex AI support
+GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
+GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
+HAS_VERTEX_AI = False
+if GCP_PROJECT_ID:
+    try:
+        import vertexai
+        vertexai.init(project=GCP_PROJECT_ID, location=GCP_LOCATION)
+        HAS_VERTEX_AI = True
+        logger.info(f"Vertex AI SDK configured successfully for project: {GCP_PROJECT_ID} in {GCP_LOCATION}")
+    except Exception as e:
+        logger.warning(f"Failed to configure Vertex AI: {e}")
+
+if not HAS_GEMINI_SDK and not HAS_VERTEX_AI:
+    logger.warning("Neither Google AI Studio nor Vertex AI SDK is configured. Running in Smart LLM Emulator fallback mode.")
 
 # Import psycopg2
 try:
@@ -249,7 +265,7 @@ class AnomalyDetectionAgent:
     if a machine has crossed rules or shows statistical anomaly trends.
     Uses structured reasoning combining rules and LLM validation.
     """
-    def __init__(self, use_llm: bool = HAS_GEMINI_SDK and GEMINI_API_KEY is not None):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
         self.use_llm = use_llm
         self.agent_name = "AnomalyDetectionAgent (Evaluator)"
 
@@ -339,7 +355,11 @@ class AnomalyDetectionAgent:
         - "explanation": string (detailed technical reasoning explaining the statistical anomalies, ramps, and alerts)
         """
         try:
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            if HAS_VERTEX_AI:
+                from vertexai.generative_models import GenerativeModel
+                model = GenerativeModel('gemini-1.5-flash')
+            else:
+                model = genai.GenerativeModel('gemini-flash-latest')
             response = model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
@@ -361,7 +381,7 @@ class DiagnosticAgent:
     collection, performs semantic search to retrieve manual chunks, and uses the LLM
     to diagnose the root cause, estimate Remaining Useful Life (RUL), and identify replacement parts.
     """
-    def __init__(self, use_llm: bool = HAS_GEMINI_SDK and GEMINI_API_KEY is not None):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
         self.use_llm = use_llm
         self.agent_name = "DiagnosticAgent (RAG Analyst)"
 
@@ -472,7 +492,11 @@ class DiagnosticAgent:
         - "required_replacement_part": string (must be one of: "PART-001", "PART-002", "PART-003", "PART-004")
         """
         try:
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            if HAS_VERTEX_AI:
+                from vertexai.generative_models import GenerativeModel
+                model = GenerativeModel('gemini-1.5-flash')
+            else:
+                model = genai.GenerativeModel('gemini-flash-latest')
             response = model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
@@ -495,7 +519,7 @@ class SourcingOptimizationAgent:
     calculates a 'Resilience & Efficiency Score' for each option using an LLM,
     and returns the absolute best supplier to minimize downtime.
     """
-    def __init__(self, use_llm: bool = HAS_GEMINI_SDK and GEMINI_API_KEY is not None):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
         self.use_llm = use_llm
         self.agent_name = "SourcingOptimizationAgent"
 
@@ -586,7 +610,11 @@ class SourcingOptimizationAgent:
         - "reasoning": string (technical justification comparing lead times, risk, and costs, explaining the winning option)
         """
         try:
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            if HAS_VERTEX_AI:
+                from vertexai.generative_models import GenerativeModel
+                model = GenerativeModel('gemini-1.5-flash')
+            else:
+                model = genai.GenerativeModel('gemini-flash-latest')
             response = model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
@@ -873,7 +901,7 @@ Industrial Sector AI Automation Network
             }
 
         # 3. Sourcing Optimization
-        sourcing_agent = SourcingOptimizationAgent(use_llm=HAS_GEMINI_SDK and GEMINI_API_KEY is not None)
+        sourcing_agent = SourcingOptimizationAgent(use_llm=(HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI)
         optimization_res = sourcing_agent.optimize_sourcing(part_name, suppliers)
         best_supplier_id = optimization_res.get("selected_supplier_id")
         
@@ -1034,7 +1062,7 @@ class PredictiveMaintenanceOrchestrator:
     It runs schema updates, executes the scan, routes diagnostics via RAG,
     performs tool executions, and returns comprehensive diagnostic results.
     """
-    def __init__(self, use_llm: bool = HAS_GEMINI_SDK and GEMINI_API_KEY is not None):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
         self.use_llm = use_llm
         verify_schema_constraints()
         
