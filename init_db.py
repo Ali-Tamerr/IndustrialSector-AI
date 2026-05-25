@@ -23,7 +23,7 @@ except ImportError:
 
 # Load environment variables from the workspace .env file
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path, override=True)
 
 # Retrieve configuration with robust defaults
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/industrial_pdm")
