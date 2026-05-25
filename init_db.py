@@ -124,6 +124,41 @@ def seed_postgres_data(conn):
         ("PART-003", "Centrifugal Pump Impeller", 8, 2, 350.00, "Warehouse B - Aisle 2"),
         ("PART-004", "3-Phase Electric Motor Winding", 1, 3, 850.00, "Warehouse B - Aisle 5")  # Needs reorder
     ]
+
+    # 3. Seed Supplier Graph Nodes
+    supplier_nodes = [
+        ("SUP-001", "Siemens Shanghai", "Supplier", 0.70, "procurement@siemens.cn"),
+        ("SUP-002", "SKF Munich", "Supplier", 0.15, "logistics@skf.de"),
+        ("SUP-003", "CopperWorks Ohio", "Supplier", 0.10, "orders@copperworksohio.com"),
+        ("SUP-004", "VarnishTech Graz", "Supplier", 0.20, "sales@varnishtech.at"),
+        ("SUP-005", "Parker Hannifin Cleveland", "Supplier", 0.05, "orders@parkerhannifin.com"),
+        ("SUP-006", "Sulzer Gothenburg", "Supplier", 0.12, "procurement@sulzer.se"),
+        ("PART-001", "Heavy-Duty Bearing Assembly", "Part", None, None),
+        ("PART-002", "High-Pressure Hydraulic Seal", "Part", None, None),
+        ("PART-003", "Centrifugal Pump Impeller", "Part", None, None),
+        ("PART-004", "3-Phase Electric Motor Winding", "Part", None, None),
+        ("MAT-001", "High-Conductivity Copper Wire", "Material", None, None),
+        ("MAT-002", "High-Temperature Insulating Varnish", "Material", None, None),
+        ("MAT-003", "NBR Rubber Compound", "Material", None, None),
+        ("MAT-004", "Stainless Steel Casting", "Material", None, None)
+    ]
+
+    # 4. Seed Supplier Graph Edges (from_node, to_node, relationship, transit_time_days, price)
+    supplier_edges = [
+        ("SUP-002", "PART-001", "SUPPLIES", 5, 450.00),
+        ("SUP-005", "PART-002", "SUPPLIES", 2, 35.00),
+        ("SUP-006", "PART-003", "SUPPLIES", 14, 250.00),
+        ("SUP-001", "PART-004", "SUPPLIES", 28, 850.00),
+        ("SUP-002", "PART-004", "SUPPLIES", 5, 1200.00),
+        ("SUP-003", "MAT-001", "SUPPLIES", 3, 300.00),
+        ("MAT-001", "PART-004", "USED_IN", 3, 400.00),
+        ("SUP-004", "MAT-002", "SUPPLIES", 4, 150.00),
+        ("MAT-002", "PART-004", "USED_IN", 2, 600.00),
+        ("SUP-003", "MAT-003", "SUPPLIES", 3, 10.00),
+        ("MAT-003", "PART-002", "USED_IN", 1, 15.00),
+        ("SUP-003", "MAT-004", "SUPPLIES", 5, 80.00),
+        ("MAT-004", "PART-003", "USED_IN", 4, 120.00)
+    ]
     
     with conn.cursor() as cursor:
         # Seed machines
@@ -151,9 +186,34 @@ def seed_postgres_data(conn):
                 """,
                 inv
             )
+
+        # Seed supplier graph nodes
+        for node in supplier_nodes:
+            cursor.execute(
+                """
+                INSERT INTO supplier_graph (node_id, node_name, node_type, risk_rating, contact_email)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (node_id) DO UPDATE
+                SET node_name = EXCLUDED.node_name, node_type = EXCLUDED.node_type,
+                    risk_rating = EXCLUDED.risk_rating, contact_email = EXCLUDED.contact_email;
+                """,
+                node
+            )
+
+        # Clear existing edges
+        cursor.execute("TRUNCATE TABLE supplier_edges RESTART IDENTITY CASCADE;")
+        # Seed supplier graph edges
+        for edge in supplier_edges:
+            cursor.execute(
+                """
+                INSERT INTO supplier_edges (from_node, to_node, relationship, transit_time_days, price)
+                VALUES (%s, %s, %s, %s, %s);
+                """,
+                edge
+            )
             
     conn.commit()
-    print("Structured metadata seeded successfully.")
+    print("Structured metadata and supplier graph seeded successfully.")
 
 
 def generate_baseline_telemetry(conn):
