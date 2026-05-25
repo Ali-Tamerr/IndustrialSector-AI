@@ -45,7 +45,7 @@ except ImportError:
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 HAS_VERTEX_AI = False
-if GCP_PROJECT_ID:
+if GCP_PROJECT_ID and not GEMINI_API_KEY: # Prioritize Gemini API Key over Vertex locally to prevent credentials hang
     try:
         import vertexai
         vertexai.init(project=GCP_PROJECT_ID, location=GCP_LOCATION)
