@@ -1,3 +1,4 @@
 /.env
 /.venv
 /schema.sql
+__pycache__
