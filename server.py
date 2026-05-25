@@ -67,6 +67,23 @@ class DashboardAPIHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(f"Error loading index.html: {str(e)}".encode('utf-8'))
         
+        # 1b. Serve local assets
+        elif path.startswith("/assets/"):
+            try:
+                filename = os.path.basename(path)
+                filepath = os.path.join(os.path.dirname(__file__), "assets", filename)
+                if os.path.exists(filepath):
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/javascript; charset=utf-8')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    with open(filepath, 'rb') as f:
+                        self.wfile.write(f.read())
+                else:
+                    self.send_json_response({"error": f"Asset {filename} not found"}, 404)
+            except Exception as e:
+                self.send_json_response({"error": str(e)}, 500)
+        
         # 2. REST API: Fetch all telemetry and operational states
         elif path == "/api/data":
             try:
@@ -226,6 +243,7 @@ class DashboardAPIHandler(BaseHTTPRequestHandler):
 
 def run_server(port=3000):
     server_address = ('', port)
+    HTTPServer.allow_reuse_address = True # Enable socket reuse to prevent WinError 10048 / TIME_WAIT lockouts
     httpd = HTTPServer(server_address, DashboardAPIHandler)
     print(f"\n=======================================================")
     print(f"  INDUSTRIAL CONTROL TOWER DASHBOARD SERVER ACTIVE     ")

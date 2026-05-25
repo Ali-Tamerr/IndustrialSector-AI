@@ -2,3 +2,5 @@
 /.venv
 /schema.sql
 __pycache__
+
+node_modules

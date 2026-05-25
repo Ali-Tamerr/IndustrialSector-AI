@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Industrial Control Tower</title>
+    <!-- Google Fonts: Inter & JetBrains Mono for High-Tech feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- React & Babel Local Assets (Offline & Secure) -->
+    <script src="/assets/react.production.min.js"></script>
+    <script src="/assets/react-dom.production.min.js"></script>
+    <script src="/assets/babel.min.js"></script>
+    
+    <!-- Tailwind CSS Local Asset -->
+    <script src="/assets/tailwind.js"></script>
+    
+    <!-- Tailwind Config for sleek animations and palettes -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#0a0d13',
+                            card: '#111622',
+                            border: '#1f293d',
+                            green: '#00f2fe',
+                            yellow: '#f59e0b',
+                            red: '#ef4444',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow-pulse': 'glow 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.5))' },
+                            '50%': { opacity: '1', filter: 'drop-shadow(0 0 10px rgba(245, 158, 11, 0.9))' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #06080c;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        /* Monospace custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d121c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+        
+        /* CRT scanlines effect for the Agent logs terminal */
+        .scanlines {
+            position: relative;
+            overflow: hidden;
+        }
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-blue-600 selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // Custom SVG sparkline generator for live metrics
+        function Sparkline({ data, color = "#3b82f6", width = 160, height = 40 }) {
+            if (!data || data.length < 2) return null;
+            
+            const max = Math.max(...data) * 1.05;
+            const min = Math.min(...data) * 0.95;
+            const range = max - min || 1;
+            
+            const points = data.map((val, index) => {
+                const x = (index / (data.length - 1)) * width;
+                const y = height - ((val - min) / range) * height;
+                return `${x},${y}`;
+            }).join(" ");
+
+            return (
+                <svg width={width} height={height} className="overflow-visible">
+                    <polyline
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={points}
+                    />
+                    {/* Pulsing indicator at latest point */}
+                    <circle 
+                        cx={width} 
+                        cy={height - ((data[data.length - 1] - min) / range) * height} 
+                        r="3" 
+                        fill={color}
+                        className="animate-ping"
+                    />
+                    <circle 
+                        cx={width} 
+                        cy={height - ((data[data.length - 1] - min) / range) * height} 
+                        r="2.5" 
+                        fill={color}
+                    />
+                </svg>
+            );
+        }
+
+        // Main Dashboard Application Component
+        function App() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [simulating, setSimulating] = useState(false);
+            const [thoughts, setThoughts] = useState([
+                { id: 1, agent: "System", type: "info", text: "Autonomous Control Tower Initialized. Scanning network..." },
+                { id: 2, agent: "System", type: "info", text: "Database connection established. Reading machinery fleet metrics." }
+            ]);
+            const [selectedEmail, setSelectedEmail] = useState(null);
+            const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
+            const thoughtsEndRef = useRef(null);
+
+            // Fetch live operational states from database
+            const fetchData = async () => {
+                try {
+                    const res = await fetch('/api/data');
+                    if (res.ok) {
+                        const dbData = await res.json();
+                        setData(dbData);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch dashboard data:", err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 8000); // Auto-poll every 8 seconds
+                return () => clearInterval(interval);
+            }, []);
+
+            // Scroll terminal to bottom when new thoughts stream in
+            useEffect(() => {
+                if (thoughtsEndRef.current) {
+                    thoughtsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, [thoughts]);
+
+            // Execute the Synthetic Anomaly Simulation
+            const triggerSimulation = async () => {
+                setSimulating(true);
+                // Append initial simulation thoughts
+                setThoughts(prev => [
+                    ...prev,
+                    { id: Date.now(), agent: "Simulator", type: "warning", text: "CRITICAL: Injecting progressive stator coil overload anomaly on Machine 2..." }
+                ]);
+
+                try {
+                    const res = await fetch('/api/simulate', { method: 'POST' });
+                    if (res.ok) {
+                        const result = await res.json();
+                        
+                        // Stream logs into the terminal with short delays to look highly organic
+                        if (result.thoughts_log && result.thoughts_log.length > 0) {
+                            let delay = 300;
+                            result.thoughts_log.forEach((logLine) => {
+                                if (!logLine.trim()) return;
+                                
+                                setTimeout(() => {
+                                    // Parse Agent names from brackets e.g. "[Anomaly Agent] text"
+                                    let agent = "System";
+                                    let text = logLine;
+                                    let type = "info";
+                                    
+                                    const match = logLine.match(/^\[(.*?)\]\s*(.*)/);
+                                    if (match) {
+                                        agent = match[1];
+                                        text = match[2];
+                                        if (agent.includes("Anomaly") || text.includes("WARNING")) type = "warning";
+                                        else if (agent.includes("Diagnostic") || text.includes("Diagnosed")) type = "diagnostic";
+                                        else if (agent.includes("Planning") || text.includes("Inventory")) type = "planning";
+                                        else if (agent.includes("Sourcing") || agent.includes("Graph") || text.includes("route")) type = "sourcing";
+                                    }
+                                    
+                                    setThoughts(prev => [
+                                        ...prev,
+                                        { id: Date.now() + Math.random(), agent, type, text }
+                                    ]);
+                                }, delay);
+                                delay += 400; // Increment delay for realistic timeline typing
+                            });
+                        }
+                        
+                        // Update with fresh database states
+                        if (result.fresh_data) {
+                            setData(result.fresh_data);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Simulation failed:", err);
+                    setThoughts(prev => [
+                        ...prev,
+                        { id: Date.now(), agent: "System", type: "error", text: `Simulation error: ${err.message}` }
+                    ]);
+                } finally {
+                    setSimulating(false);
+                }
+            };
+
+            // Custom Health indicator logic
+            const getHealthDetails = (status) => {
+                switch(status) {
+                    case 'Operational':
+                        return { label: 'Stable', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', dot: 'bg-emerald-400', sparkColor: '#10b981' };
+                    case 'Degraded':
+                        return { label: 'Degraded', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20', dot: 'bg-amber-400', sparkColor: '#f59e0b' };
+                    case 'Critical':
+                        return { label: 'Anomaly', bg: 'bg-red-500/10 text-red-400 border-red-500/20', dot: 'bg-red-400', sparkColor: '#ef4444' };
+                    default:
+                        return { label: 'Unknown', bg: 'bg-slate-500/10 text-slate-400 border-slate-500/20', dot: 'bg-slate-400', sparkColor: '#64748b' };
+                }
+            };
+
+            // Parse maintenance order root causes to extract draft emails
+            const parseEmailDraft = (rootCause) => {
+                if (!rootCause) return null;
+                const emailMarker = "Subject: URGENT:";
+                const index = rootCause.indexOf(emailMarker);
+                if (index !== -1) {
+                    const rawEmail = rootCause.substring(index);
+                    const lines = rawEmail.split('\n');
+                    const subject = lines[0].replace('Subject: ', '');
+                    const to = lines[1].replace('To: ', '');
+                    const from = lines[2].replace('From: ', '');
+                    const date = lines[3].replace('Date: ', '');
+                    const body = lines.slice(5).join('\n');
+                    
+                    return { to, from, subject, date, body };
+                }
+                return null;
+            };
+
+            // Calculate active bottlenecks for the knowledge graph highlight
+            const isMachine2Critical = useMemo(() => {
+                if (!data) return false;
+                const m2 = data.machines.find(m => m.id === 'MCH-002');
+                return m2 && m2.status === 'Critical';
+            }, [data]);
+
+            if (loading && !data) {
+                return (
+                    <div className="flex h-screen flex-col items-center justify-center bg-cyber-bg text-blue-400 font-mono">
+                        <div className="h-10 w-10 animate-spin rounded-full border-2 border-t-transparent border-blue-500 mb-4"></div>
+                        <div className="animate-pulse">SYNCHRONIZING CONTROL TOWER ARCHITECTURE...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-cyber-bg pb-12">
+                    {/* Header Bar */}
+                    <header className="border-b border-cyber-border bg-[#0d121f] px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
+                        <div className="flex items-center space-x-3">
+                            <div className="h-8 w-8 bg-blue-500/10 rounded border border-blue-500/30 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="font-mono text-lg font-bold tracking-tight text-white flex items-center">
+                                    AUTONOMIC INDUSTRIAL CONTROL TOWER
+                                    <span className="ml-2.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">LIVE V3.5</span>
+                                </h1>
+                                <p className="text-[11px] text-slate-400 font-mono tracking-widest uppercase">PdM Engine & Sourcing Optimizations</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                            <div className="hidden md:flex flex-col text-right font-mono text-[11px]">
+                                <span className="text-slate-500">SYSTEM HEALTH</span>
+                                <span className="text-emerald-400 font-bold tracking-wider">98.2% OPERATIONAL</span>
+                            </div>
+                            
+                            <button
+                                onClick={triggerSimulation}
+                                disabled={simulating}
+                                className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 ${
+                                    simulating 
+                                    ? "bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed"
+                                    : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500 hover:text-white"
+                                } shadow-[0_0_15px_rgba(239,68,68,0.05)]`}
+                            >
+                                {simulating ? "SIMULATION RUNNING..." : "Simulate Bearing Failure on Machine 2"}
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Dashboard Content Grid */}
+                    <main className="p-6 max-w-7xl mx-auto space-y-6">
+                        
+                        {/* Zone 1: Telemetry Live Monitor */}
+                        <section className="space-y-3">
+                            <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-400 flex items-center space-x-1.5">
+                                <span className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-ping"></span>
+                                <span>Zone 1: Fleet Telemetry Live Monitor</span>
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                {data && data.machines.map((machine) => {
+                                    const latest = data.telemetry[machine.id] ? data.telemetry[machine.id][data.telemetry[machine.id].length - 1] : null;
+                                    const health = getHealthDetails(machine.status);
+                                    
+                                    // Extract metric values for the sparkline chart
+                                    const tempHistory = data.telemetry[machine.id] ? data.telemetry[machine.id].map(p => p.temperature) : [];
+                                    const vibHistory = data.telemetry[machine.id] ? data.telemetry[machine.id].map(p => p.vibration) : [];
+                                    
+                                    return (
+                                        <div key={machine.id} className="bg-cyber-card border border-cyber-border rounded-xl p-5 hover:border-slate-700 transition-all duration-300 relative overflow-hidden group">
+                                            {/* Top corner status */}
+                                            <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden pointer-events-none">
+                                                <div className={`absolute top-2.5 right-[-26px] transform rotate-45 text-center text-[9px] font-mono font-bold uppercase py-0.5 w-[90px] ${
+                                                    machine.status === 'Operational' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                    machine.status === 'Degraded' ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+                                                }`}>
+                                                    {health.label}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h3 className="font-mono text-white font-bold leading-tight">{machine.name}</h3>
+                                                    <span className="text-[10px] text-slate-500 font-mono tracking-wider">{machine.id} · {machine.location}</span>
+                                                </div>
+                                                <span className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded-full border ${health.bg} flex items-center space-x-1 mr-6`}>
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${health.dot} ${machine.status !== 'Operational' ? 'animate-ping' : ''}`}></span>
+                                                    <span>{machine.status.toUpperCase()}</span>
+                                                </span>
+                                            </div>
+
+                                            {latest ? (
+                                                <div className="space-y-4 font-mono">
+                                                    {/* Primary Metrics Layout */}
+                                                    <div className="grid grid-cols-2 gap-3.5 border-b border-cyber-border/50 pb-4">
+                                                        <div>
+                                                            <div className="text-[10px] text-slate-500 uppercase">Winding Temp</div>
+                                                            <div className="text-xl font-bold text-slate-200 mt-0.5">
+                                                                {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] text-slate-500 uppercase">Radial Vibration</div>
+                                                            <div className="text-xl font-bold text-slate-200 mt-0.5">
+                                                                {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <span className="text-[9px] text-slate-500 uppercase block">Discharge Pressure</span>
+                                                            <span className="text-sm font-semibold text-slate-300">{latest.pressure.toFixed(2)} Bar</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[9px] text-slate-500 uppercase block">Coil Current</span>
+                                                            <span className="text-sm font-semibold text-slate-300">{latest.current.toFixed(1)} A</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Sparkline trends */}
+                                                    <div className="mt-4 pt-4 border-t border-cyber-border/40 flex justify-between items-center">
+                                                        <div className="text-[9px] text-slate-500">
+                                                            <div>24H DUAL-TREND GRAPH</div>
+                                                            <div className="text-slate-400 font-bold mt-0.5">TEMP + VIB</div>
+                                                        </div>
+                                                        <div className="h-10 opacity-70 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
+                                                            <Sparkline data={tempHistory} color={health.sparkColor} width={75} height={32} />
+                                                            <Sparkline data={vibHistory} color="#3b82f6" width={75} height={32} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="py-8 text-center text-xs text-slate-500 font-mono">No active telemetry stream.</div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+
+                        {/* Middle Panels: Execution Log + Graph Visualization */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            
+                            {/* Zone 2: Thoughts Stream Terminal */}
+                            <section className="lg:col-span-5 space-y-3 flex flex-col">
+                                <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-400">
+                                    Zone 2: Multi-Agent Live Execution Log (The "Thoughts" Stream)
+                                </h2>
+                                <div className="bg-[#0b0e14] border border-cyber-border rounded-xl flex-1 flex flex-col overflow-hidden scanlines shadow-[inset_0_4px_24px_rgba(0,0,0,0.8)] min-h-[460px] max-h-[460px]">
+                                    {/* Terminal Header */}
+                                    <div className="border-b border-cyber-border/80 px-4 py-2.5 bg-[#0f131c] flex items-center justify-between font-mono text-[10px] text-slate-500">
+                                        <div className="flex items-center space-x-1.5">
+                                            <span className="h-2 w-2 rounded-full bg-red-500/30"></span>
+                                            <span className="h-2 w-2 rounded-full bg-yellow-500/30"></span>
+                                            <span className="h-2 w-2 rounded-full bg-green-500/30"></span>
+                                            <span className="ml-2 text-slate-400 font-semibold uppercase tracking-widest text-[9px]">CONSOLE_FEED_ORCHESTRATOR</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 text-slate-400">
+                                            <span className="animate-pulse text-blue-400">● LIVE</span>
+                                            <span>SHL: powershell</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Terminal Body */}
+                                    <div className="p-4 flex-1 overflow-y-auto font-mono text-[11px] space-y-3 scroll-smooth leading-relaxed">
+                                        {thoughts.map((log) => {
+                                            let tagColor = "text-slate-400 bg-slate-500/10 border-slate-500/20";
+                                            if (log.agent.includes("Anomaly")) tagColor = "text-amber-400 bg-amber-400/10 border-amber-400/20";
+                                            else if (log.agent.includes("Diagnostic")) tagColor = "text-blue-400 bg-blue-400/10 border-blue-400/20";
+                                            else if (log.agent.includes("Planning") || log.agent.includes("Tool")) tagColor = "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
+                                            else if (log.agent.includes("Sourcing") || log.agent.includes("Graph")) tagColor = "text-orange-400 bg-orange-400/10 border-orange-400/20";
+                                            else if (log.agent.includes("Simulator")) tagColor = "text-red-400 bg-red-400/10 border-red-400/20";
+
+                                            return (
+                                                <div key={log.id} className="border-l border-slate-800 pl-3 py-0.5 hover:bg-slate-900/40 rounded transition-colors duration-150">
+                                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold border ${tagColor} mr-2 uppercase tracking-wide`}>
+                                                        {log.agent}
+                                                    </span>
+                                                    <span className="text-slate-300 font-mono">{log.text}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        <div ref={thoughtsEndRef} />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Zone 3: Knowledge Graph Visualization */}
+                            <section className="lg:col-span-7 space-y-3 flex flex-col">
+                                <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-400 flex justify-between items-center">
+                                    <span>Zone 3: Supply Chain Knowledge Graph Visualization</span>
+                                    <span className="text-[10px] text-slate-500 normal-case tracking-normal">Hover nodes to inspect supplier telemetry</span>
+                                </h2>
+                                <div className="bg-cyber-card border border-cyber-border rounded-xl p-5 flex-1 flex flex-col justify-between relative overflow-hidden min-h-[460px] max-h-[460px]">
+                                    
+                                    {/* Map Visualization Grid Container */}
+                                    <div className="w-full flex-1 flex items-center justify-center relative bg-[#090b11]/80 rounded-lg border border-cyber-border/40 p-2 overflow-hidden select-none">
+                                        
+                                        {/* Knowledge Graph Vector Art */}
+                                        <svg width="100%" height="100%" viewBox="0 0 600 340" className="max-w-full max-h-full">
+                                            <defs>
+                                                {/* Ambient glowing filters */}
+                                                <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+                                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                </filter>
+                                                <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                                                    <feGaussianBlur stdDeviation="4" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                </filter>
+                                                <linearGradient id="activeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#f59e0b" />
+                                                    <stop offset="100%" stopColor="#d97706" />
+                                                </linearGradient>
+                                            </defs>
+
+                                            {/* Directed Edge lines linking the hierarchy */}
+                                            {/* Machine to spare parts tier */}
+                                            <line x1="80" y1="170" x2="220" y2="90" stroke={isMachine2Critical ? "#f59e0b" : "#1e293b"} strokeWidth={isMachine2Critical ? "3.5" : "1.5"} strokeDasharray={isMachine2Critical ? "6,4" : ""} className={isMachine2Critical ? "animate-pulse" : ""} />
+                                            <line x1="80" y1="170" x2="220" y2="170" stroke="#1e293b" strokeWidth="1.5" />
+                                            <line x1="80" y1="170" x2="220" y2="250" stroke="#1e293b" strokeWidth="1.5" />
+
+                                            {/* Spare parts to Tier-1 Sourcing Nodes */}
+                                            {/* Electric Winding PART-004 links to SKF Munich & Siemens Shanghai */}
+                                            <line x1="220" y1="90" x2="380" y2="50" stroke={isMachine2Critical ? "#f59e0b" : "#1e293b"} strokeWidth={isMachine2Critical ? "3.5" : "1.5"} className={isMachine2Critical ? "animate-pulse" : ""} />
+                                            <line x1="220" y1="90" x2="380" y2="130" stroke="#1e293b" strokeWidth="1.5" />
+
+                                            {/* Bearing PART-001 Sourcing */}
+                                            <line x1="220" y1="170" x2="380" y2="50" stroke="#1e293b" strokeWidth="1.5" />
+                                            <line x1="220" y1="170" x2="380" y2="210" stroke="#1e293b" strokeWidth="1.5" />
+
+                                            {/* Hydraulic Seal PART-002 links to Graz and Cleveland */}
+                                            <line x1="220" y1="250" x2="380" y2="210" stroke="#1e293b" strokeWidth="1.5" />
+                                            <line x1="220" y1="250" x2="380" y2="290" stroke="#1e293b" strokeWidth="1.5" />
+
+                                            {/* Material dependency Tier-2 path linking CopperWorks fabrication */}
+                                            <line x1="380" y1="130" x2="520" y2="130" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
+                                            <line x1="380" y1="50" x2="520" y2="130" stroke={isMachine2Critical ? "#f59e0b" : "#1e293b"} strokeWidth={isMachine2Critical ? "2" : "1"} strokeDasharray="3,3" />
+
+                                            {/* Active Bottleneck dynamic pulsing indicator */}
+                                            {isMachine2Critical && (
+                                                <g>
+                                                    <circle cx="220" cy="90" r="14" fill="#f59e0b" opacity="0.15" className="animate-ping" />
+                                                    <circle cx="380" cy="50" r="14" fill="#f59e0b" opacity="0.15" className="animate-ping" />
+                                                </g>
+                                            )}
+
+                                            {/* HIERARCHICAL NODES */}
+                                            {/* Core Node: Machine Fleet (MCH-002 Focus) */}
+                                            <g transform="translate(80, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'High-Speed Fan B', role: 'Telemetry Root Source', details: 'Status: CRITICAL. Requires 3-Phase AC motor winding (PART-004) immediately to bypass 48H breakdown.' })}>
+                                                <rect x="-35" y="-18" width="70" height="36" rx="4" fill="#0f172a" stroke={isMachine2Critical ? "#ef4444" : "#3b82f6"} strokeWidth="2" />
+                                                <text textAnchor="middle" y="4" fill="#f8fafc" fontSize="10" fontWeight="bold" fontFamily="monospace">MCH-002</text>
+                                                <text textAnchor="middle" y="-23" fill="#94a3b8" fontSize="8" fontWeight="600" fontFamily="sans-serif">ROOT FLEET</text>
+                                            </g>
+
+                                            {/* Spare Parts Nodes */}
+                                            {/* Winding Node */}
+                                            <g transform="translate(220, 90)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: '3-Phase Motor Winding', role: 'Component Node (PART-004)', details: 'Relational database stock audit: OUT OF STOCK (Stock: 1, Reorder Pt: 3). Escalated sourcing to SKF Munich air-freight routing.' })}>
+                                                <circle r="12" fill="#0f172a" stroke={isMachine2Critical ? "#f59e0b" : "#475569"} strokeWidth="2" filter={isMachine2Critical ? "url(#glow-orange)" : ""} />
+                                                <text textAnchor="middle" y="3" fill={isMachine2Critical ? "#f59e0b" : "#cbd5e1"} fontSize="9" fontWeight="bold" fontFamily="monospace">P4</text>
+                                                <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-004</text>
+                                            </g>
+                                            {/* Bearing Node */}
+                                            <g transform="translate(220, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Heavy-Duty Bearing Cage', role: 'Component Node (PART-001)', details: 'Relational database stock audit: IN STOCK (Stock: 15, Reorder Pt: 5). Approved Sarah Jenkins ticket for direct dispatch.' })}>
+                                                <circle r="12" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+                                                <text textAnchor="middle" y="3" fill="#cbd5e1" fontSize="9" fontWeight="bold" fontFamily="monospace">P1</text>
+                                                <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-001</text>
+                                            </g>
+                                            {/* Impeller Node */}
+                                            <g transform="translate(220, 250)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'High-Pressure Hydraulic Seal', role: 'Component Node (PART-002)', details: 'Relational database stock audit: OUT OF STOCK (Stock: 1). Rerouted supply chain to Cleveland.' })}>
+                                                <circle r="12" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+                                                <text textAnchor="middle" y="3" fill="#cbd5e1" fontSize="9" fontWeight="bold" fontFamily="monospace">P2</text>
+                                                <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-002</text>
+                                            </g>
+
+                                            {/* Suppliers Tier-1 (Direct Candidates) */}
+                                            {/* SKF Munich direct winner */}
+                                            <g transform="translate(380, 50)" className="cursor-pointer group" onClick={() => setSelectedSupplierNode({ name: 'SKF Munich Logistics', role: 'Direct Supplier (Tier 1)', details: 'Winning candidate for Part-004. lead-time: 5 days, Sourcing optimization Resilience Score: 59.50. Air freight routes pre-approved.' })}>
+                                                <polygon points="0,-12 11,8 -11,8" fill="#0f172a" stroke={isMachine2Critical ? "#f59e0b" : "#475569"} strokeWidth="2" filter={isMachine2Critical ? "url(#glow-orange)" : ""} />
+                                                <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9" fontWeight="bold" fontFamily="sans-serif">SKF Munich</text>
+                                                <text textAnchor="middle" y="-18" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace">{isMachine2Critical ? "WINNER 59.50" : ""}</text>
+                                            </g>
+                                            {/* Siemens Shanghai */}
+                                            <g transform="translate(380, 130)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Siemens Shanghai Ltd', role: 'Direct Supplier (Tier 1)', details: 'Candidate for Part-004. lead-time: 28 days (Extreme maritime bottleneck penalty), Resilience Score: 18.20. High downtime risk.' })}>
+                                                <polygon points="0,-12 11,8 -11,8" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+                                                <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9" fontFamily="sans-serif">Siemens SH</text>
+                                            </g>
+                                            {/* Parker Hannifin */}
+                                            <g transform="translate(380, 210)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Parker Hannifin Cleveland', role: 'Direct Supplier (Tier 1)', details: 'Winning candidate for Part-002. lead-time: 2 days, Sourcing resilience score: 82.23. High quality low risk supplier.' })}>
+                                                <polygon points="0,-12 11,8 -11,8" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+                                                <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9" fontFamily="sans-serif">Parker Hannifin</text>
+                                            </g>
+                                            {/* VarnishTech Graz */}
+                                            <g transform="translate(380, 290)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'VarnishTech Graz', role: 'Direct Supplier (Tier 1)', details: 'Candidate for Part-002. lead-time: 6 days, price: $750, resilience score: 62.40.' })}>
+                                                <polygon points="0,-12 11,8 -11,8" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+                                                <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9" fontFamily="sans-serif">VarnishTech</text>
+                                            </g>
+
+                                            {/* Tier 2: Material Suppliers */}
+                                            <g transform="translate(520, 130)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'CopperWorks Ohio', role: 'Copper Fabricator (Tier 2)', details: 'Supplies raw high-grade wire to SKF Munich coil assembly line. Risk Profile: 0.10 (Low risk profile, stable).' })}>
+                                                <rect x="-24" y="-12" width="48" height="24" rx="2" fill="#0f172a" stroke="#1e293b" strokeWidth="1.5" />
+                                                <text textAnchor="middle" y="3" fill="#94a3b8" fontSize="8" fontWeight="bold" fontFamily="monospace">COPPER</text>
+                                                <text textAnchor="middle" y="23" fill="#cbd5e1" fontSize="9" fontFamily="sans-serif">CopperWorks</text>
+                                            </g>
+                                        </svg>
+
+                                        {/* Overlay details panel */}
+                                        {selectedSupplierNode && (
+                                            <div className="absolute bottom-4 left-4 right-4 bg-slate-950/95 border border-amber-500/20 rounded-lg p-3.5 backdrop-blur-sm font-mono text-xs shadow-2xl transition-all duration-300">
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <span className="text-amber-400 font-bold tracking-wide uppercase">{selectedSupplierNode.name}</span>
+                                                    <span className="text-[10px] text-slate-500 uppercase">{selectedSupplierNode.role}</span>
+                                                </div>
+                                                <p className="text-slate-300 leading-normal">{selectedSupplierNode.details}</p>
+                                                <button 
+                                                    onClick={() => setSelectedSupplierNode(null)} 
+                                                    className="absolute top-2 right-2 text-slate-500 hover:text-white"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Graph Legend */}
+                                    <div className="border-t border-cyber-border/40 pt-4 flex flex-wrap gap-4 justify-between font-mono text-[10px] text-slate-400">
+                                        <div className="flex space-x-3">
+                                            <span className="flex items-center space-x-1">
+                                                <span className="h-2 w-3 border border-blue-400 rounded-sm bg-[#0f172a]"></span>
+                                                <span>Fleet Root Node</span>
+                                            </span>
+                                            <span className="flex items-center space-x-1">
+                                                <span className="h-2.5 w-2.5 rounded-full border border-slate-500 bg-[#0f172a]"></span>
+                                                <span>Spare Parts Node</span>
+                                            </span>
+                                            <span className="flex items-center space-x-1">
+                                                <span className="h-0 w-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[9px] border-b-slate-400 bg-transparent"></span>
+                                                <span>Tier-1 Supplier</span>
+                                            </span>
+                                            <span className="flex items-center space-x-1">
+                                                <span className="h-2.5 w-4 border border-slate-700 bg-[#0f172a]"></span>
+                                                <span>Tier-2 Raw Mat</span>
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 text-amber-500">
+                                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+                                            <span className="font-bold">ACTIVE Bottleneck Re-route Track Highlighted</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+
+                        {/* Zone 4: Action Center (Active Maintenance Orders) */}
+                        <section className="space-y-3">
+                            <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-400">
+                                Zone 4: Action Center (Active Maintenance Orders)
+                            </h2>
+                            <div className="bg-cyber-card border border-cyber-border rounded-xl overflow-hidden shadow-xl">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left font-mono text-xs border-collapse">
+                                        <thead>
+                                            <tr className="bg-[#0f131c] text-slate-400 border-b border-cyber-border uppercase tracking-widest text-[9px]">
+                                                <th className="py-3.5 px-5">Ticket ID</th>
+                                                <th className="py-3.5 px-4">Equipment</th>
+                                                <th className="py-3.5 px-4">Priority</th>
+                                                <th className="py-3.5 px-4">Status</th>
+                                                <th className="py-3.5 px-4">Assigned Specialist</th>
+                                                <th className="py-3.5 px-4 text-right">Autonomous Procurement Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-cyber-border/40 text-slate-300">
+                                            {data && data.maintenance_orders && data.maintenance_orders.length > 0 ? (
+                                                data.maintenance_orders.map((order) => {
+                                                    const email = parseEmailDraft(order.root_cause);
+                                                    
+                                                    return (
+                                                        <tr key={order.id} className="hover:bg-slate-900/40 transition-colors duration-150">
+                                                            <td className="py-3.5 px-5 font-bold text-white">#{order.id}</td>
+                                                            <td className="py-3.5 px-4">
+                                                                <span className="font-semibold text-slate-200 block">{order.machine_id}</span>
+                                                                <span className="text-[10px] text-slate-500">Scheduled pdm</span>
+                                                            </td>
+                                                            <td className="py-3.5 px-4">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                                    order.priority === 'Critical' ? 'bg-red-500/10 text-red-400' :
+                                                                    order.priority === 'High' ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-700/20 text-slate-400'
+                                                                }`}>
+                                                                    {order.priority}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3.5 px-4">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                                    order.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                                    order.status === 'Dispatched_Sourcing_Active' ? 'bg-orange-500/10 text-orange-400' : 'bg-amber-500/10 text-amber-400'
+                                                                }`}>
+                                                                    {order.status.toUpperCase()}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3.5 px-4 text-slate-400">{order.assigned_technician}</td>
+                                                            <td className="py-3.5 px-4 text-right">
+                                                                {email ? (
+                                                                    <button
+                                                                        onClick={() => setSelectedEmail(email)}
+                                                                        className="px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-md hover:bg-blue-500 hover:text-white transition-all duration-200"
+                                                                    >
+                                                                        Inspect Email Draft
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="text-slate-500 italic text-[11px]">Direct Part Secure / No Email Needed</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="6" className="py-12 text-center text-slate-500 italic">
+                                                        No active maintenance orders processed inside PostgreSQL.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+
+                    {/* sliding Email Draft Inspector Modal */}
+                    {selectedEmail && (
+                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+                            <div className="bg-cyber-card border border-cyber-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl relative">
+                                <div className="border-b border-cyber-border bg-[#0f131c] px-6 py-4 flex justify-between items-center">
+                                    <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+                                        Autonomous Procurement Agent Draft
+                                    </h3>
+                                    <button 
+                                        onClick={() => setSelectedEmail(null)}
+                                        className="text-slate-400 hover:text-white transition-colors duration-150"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    {/* Email Headers */}
+                                    <div className="bg-slate-950 rounded-lg p-4 font-mono text-xs space-y-1.5 border border-cyber-border/80">
+                                        <div><span className="text-slate-500">From:</span> <span className="text-emerald-400">{selectedEmail.from}</span></div>
+                                        <div><span className="text-slate-500">To:</span> <span className="text-blue-400">{selectedEmail.to}</span></div>
+                                        <div><span className="text-slate-500">Subject:</span> <span className="text-white font-bold">{selectedEmail.subject}</span></div>
+                                        <div><span className="text-slate-500">Date:</span> <span className="text-slate-400">{selectedEmail.date}</span></div>
+                                    </div>
+                                    
+                                    {/* Email Body */}
+                                    <div className="bg-slate-950 rounded-lg p-4 font-mono text-xs max-h-80 overflow-y-auto border border-cyber-border/80 leading-relaxed text-slate-300 whitespace-pre-wrap">
+                                        {selectedEmail.body}
+                                    </div>
+                                </div>
+                                <div className="border-t border-cyber-border px-6 py-4 bg-[#0f131c] flex justify-end space-x-3 font-mono text-xs">
+                                    <button 
+                                        onClick={() => setSelectedEmail(null)}
+                                        className="px-4 py-2 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors duration-150"
+                                    >
+                                        Dismiss
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            alert("Expedited dispatch webhook triggered! Order confirmed.");
+                                            setSelectedEmail(null);
+                                        }}
+                                        className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors duration-150"
+                                    >
+                                        Approve & Dispatch Webhook
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
