@@ -19,6 +19,8 @@ import {
   RotateCcw
 } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
 // Inline Sparkline Component using native React SVG paths
 function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
   if (!data || data.length < 2) return null;
@@ -79,7 +81,7 @@ export default function Home() {
   // Core API Poller
   const refreshData = async () => {
     try {
-      const res = await fetch("/api/data");
+      const res = await fetch(`${API_BASE}/api/data`);
       if (res.ok) {
         const payload = await res.json();
         setData(payload);
@@ -113,7 +115,7 @@ export default function Home() {
     ]);
 
     try {
-      const res = await fetch("/api/simulate", { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/simulate`, { method: "POST" });
       if (res.ok) {
         const payload = await res.json();
         
