@@ -3,6 +3,9 @@ import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = 'force-dynamic';
+
+
 // Manually load the root .env file to get DATABASE_URL
 let databaseUrl = process.env.DATABASE_URL;
 
