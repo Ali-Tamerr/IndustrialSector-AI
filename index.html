@@ -112,8 +112,11 @@
                 return `${x},${y}`;
             }).join(" ");
 
+            const cx = width - 2;
+            const cy = height - ((data[data.length - 1] - min) / range) * height;
+
             return (
-                <svg width={width} height={height} className="overflow-visible">
+                <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
                     <polyline
                         fill="none"
                         stroke={color}
@@ -124,15 +127,15 @@
                     />
                     {/* Pulsing indicator at latest point */}
                     <circle 
-                        cx={width} 
-                        cy={height - ((data[data.length - 1] - min) / range) * height} 
+                        cx={cx} 
+                        cy={cy} 
                         r="3" 
                         fill={color}
                         className="animate-ping"
                     />
                     <circle 
-                        cx={width} 
-                        cy={height - ((data[data.length - 1] - min) / range) * height} 
+                        cx={cx} 
+                        cy={cy} 
                         r="2.5" 
                         fill={color}
                     />
