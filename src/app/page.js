@@ -77,9 +77,78 @@ export default function Home() {
     { id: 1, agent: "System", type: "info", text: "Autonomous Control Tower Initialized. Scanning network..." },
     { id: 2, agent: "System", type: "info", text: "PostgreSQL relational & vector databases online. Standing by..." }
   ]);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
   const thoughtsEndRef = useRef(null);
+
+  const tutorialSteps = [
+    {
+      title: "Welcome to the Autonomic Control Tower",
+      description: "This dashboard orchestrates an advanced, offline-first multi-agent industrial repair system. When machinery fails, specialized AI agents automatically diagnose the failure, audit spare parts inventories, optimize supply-chain logistics, and prepare supplier purchase orders in seconds.",
+      icon: <Cpu className="w-12 h-12 text-blue-400 animate-pulse" />,
+      selector: null,
+    },
+    {
+      title: "Zone 1: Telemetry Live Monitor",
+      description: "Real-time sensor arrays track Winding Temperature, Radial Vibration, Discharge Pressure, and Coil Current for your factory fleet. Custom SVG sparklines display live 24-hour fluctuations to identify abnormal spikes before they become breakdowns.",
+      icon: <Activity className="w-12 h-12 text-emerald-400" />,
+      selector: "zone-1",
+    },
+    {
+      title: "Autonomous Agent Catalyst",
+      description: "Clicking 'Simulate Bearing Failure on Machine 2' injects a live fault in the fleet. This acts as the catalyst for our AI agents to step in, collaborate, and execute emergency procurement actions.",
+      icon: <Play className="w-12 h-12 text-red-400 animate-pulse" />,
+      selector: "simulator-btn",
+    },
+    {
+      title: "Zone 2: Multi-Agent Execution Log",
+      description: "Observe the 'Thoughts' stream—the live, step-by-step reasoning logs of collaborating agents. Watch the Anomaly Agent flag the failure, the Diagnostic Agent query technical manuals, and the Sourcing Agent negotiate part routing.",
+      icon: <Layers className="w-12 h-12 text-amber-400" />,
+      selector: "zone-2",
+    },
+    {
+      title: "Zone 3: Supply Chain Knowledge Graph",
+      description: "A dynamic semantic graph mapping spare parts and Tier-1 and Tier-2 suppliers. Hover over nodes to inspect real-time logistics. When a bottleneck or failure occurs, the best routing path is automatically highlighted in orange.",
+      icon: <Settings className="w-12 h-12 text-orange-400 animate-spin" />,
+      selector: "zone-3",
+    },
+    {
+      title: "Zone 4: Action Center",
+      description: "Here, automated purchase and dispatch tickets are created in PostgreSQL. Click 'Inspect Email Draft' to review professional, AI-crafted supplier procurement contracts complete with lead-time, price, and resilience scores.",
+      icon: <Inbox className="w-12 h-12 text-purple-400" />,
+      selector: "zone-4",
+    }
+  ];
+
+  // Auto trigger tutorial on first visit
+  useEffect(() => {
+    const hasSeen = localStorage.getItem("hasSeenTutorial");
+    if (!hasSeen) {
+      const timer = setTimeout(() => {
+        setShowTutorial(true);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Scroll and highlight selector element during step changes
+  useEffect(() => {
+    if (showTutorial) {
+      const step = tutorialSteps[tutorialStep];
+      if (step && step.selector) {
+        const element = document.getElementById(step.selector);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("ring-2", "ring-blue-500", "ring-offset-4", "ring-offset-[#06080c]", "scale-[1.015]");
+          return () => {
+            element.classList.remove("ring-2", "ring-blue-500", "ring-offset-4", "ring-offset-[#06080c]", "scale-[1.015]");
+          };
+        }
+      }
+    }
+  }, [tutorialStep, showTutorial]);
 
   // Core API Poller
   const refreshData = async () => {
@@ -232,13 +301,22 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-5">
+        <div className="flex items-center space-x-3.5">
           <div className="hidden lg:flex flex-col text-right font-mono text-[10px]">
             <span className="text-slate-500">FLEET PERFORMANCE</span>
             <span className="text-emerald-400 font-bold tracking-widest">99.78% RESILIENT</span>
           </div>
 
           <button
+            onClick={() => { setTutorialStep(0); setShowTutorial(true); }}
+            className="px-3 py-2 font-mono text-xs font-semibold rounded border bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center space-x-1.5"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Dashboard Tour</span>
+          </button>
+
+          <button
+            id="simulator-btn"
             onClick={handleSimulation}
             disabled={simulating}
             className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-2 ${
@@ -257,7 +335,7 @@ export default function Home() {
       <main className="p-6 max-w-7xl mx-auto space-y-6">
         
         {/* Zone 1: Telemetry Live Monitor */}
-        <section className="space-y-3">
+        <section id="zone-1" className="space-y-3 transition-all duration-500">
           <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
             <Activity className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
             <span>Zone 1: Telemetry Live Monitor (Fleet Grid)</span>
@@ -345,7 +423,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Zone 2: Thoughts Stream Terminal */}
-          <section className="lg:col-span-5 space-y-3 flex flex-col">
+          <section id="zone-2" className="lg:col-span-5 space-y-3 flex flex-col transition-all duration-500">
             <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
               <Layers className="w-3.5 h-3.5 text-blue-400" />
               <span>Zone 2: Multi-Agent Execution Log (Thoughts Stream)</span>
@@ -389,7 +467,7 @@ export default function Home() {
           </section>
 
           {/* Zone 3: Knowledge Graph */}
-          <section className="lg:col-span-7 space-y-3 flex flex-col">
+          <section id="zone-3" className="lg:col-span-7 space-y-3 flex flex-col transition-all duration-500">
             <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <Settings className="w-3.5 h-3.5 text-blue-400" />
@@ -534,7 +612,7 @@ export default function Home() {
         </div>
 
         {/* Zone 4: Action Center */}
-        <section className="space-y-3">
+        <section id="zone-4" className="space-y-3 transition-all duration-500">
           <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
             <Inbox className="w-3.5 h-3.5 text-blue-400" />
             <span>Zone 4: Action Center (Active Maintenance Orders)</span>
@@ -611,6 +689,84 @@ export default function Home() {
         </section>
 
       </main>
+
+      {/* Tutorial Tour Guide Overlay */}
+      {showTutorial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-[#0c0f17]/95 border border-[#182030] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative p-6 space-y-6 animate-fadeIn font-sans text-slate-300">
+            
+            {/* Header / Skip */}
+            <div className="flex justify-between items-start">
+              <span className="text-[9px] font-mono font-bold uppercase py-0.5 px-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
+                STEP {tutorialStep + 1} OF {tutorialSteps.length}
+              </span>
+              <button 
+                onClick={closeTutorial}
+                className="text-slate-500 hover:text-white font-mono text-xs hover:bg-slate-800/60 px-2.5 py-1 rounded transition-colors"
+              >
+                Skip Tour ✕
+              </button>
+            </div>
+
+            {/* Icon & Title */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="p-4 bg-slate-900/60 rounded-full border border-[#182030] shadow-inner">
+                {tutorialSteps[tutorialStep].icon}
+              </div>
+              <h3 className="text-lg font-bold text-white tracking-wide">
+                {tutorialSteps[tutorialStep].title}
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-normal max-w-sm">
+                {tutorialSteps[tutorialStep].description}
+              </p>
+            </div>
+
+            {/* Progress Dots */}
+            <div className="flex justify-center space-x-2">
+              {tutorialSteps.map((_, idx) => (
+                <span 
+                  key={idx} 
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === tutorialStep ? "w-6 bg-blue-500" : "w-1.5 bg-slate-700"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-between items-center pt-2 border-t border-[#182030]/50 font-mono text-xs">
+              <button
+                disabled={tutorialStep === 0}
+                onClick={() => setTutorialStep(prev => prev - 1)}
+                className={`px-4 py-2 rounded border transition-colors ${
+                  tutorialStep === 0 
+                    ? "text-slate-600 border-slate-900 cursor-not-allowed" 
+                    : "text-slate-300 border-slate-800 hover:bg-slate-800"
+                }`}
+              >
+                ◀ Back
+              </button>
+              
+              {tutorialStep < tutorialSteps.length - 1 ? (
+                <button
+                  onClick={() => setTutorialStep(prev => prev + 1)}
+                  className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors shadow-[0_0_15px_rgba(37,99,235,0.2)]"
+                >
+                  Next Step ▶
+                </button>
+              ) : (
+                <button
+                  onClick={closeTutorial}
+                  className="px-5 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                >
+                  Get Started ✓
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Slide-over / Modal Inspector */}
       {selectedEmail && (
