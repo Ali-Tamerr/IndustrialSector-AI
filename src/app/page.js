@@ -40,7 +40,7 @@ function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
   const cy = height - ((latestVal - min) / range) * height;
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
       <polyline
         fill="none"
         stroke={color}
@@ -52,10 +52,13 @@ function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
       <circle 
         cx={cx - 2} 
         cy={cy} 
-        r="3" 
+        r="4" 
         fill={color}
-        className="animate-ping"
-      />
+        opacity="0.3"
+      >
+        <animate attributeName="r" values="3;6;3" dur="1.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite" />
+      </circle>
       <circle 
         cx={cx - 2} 
         cy={cy} 
