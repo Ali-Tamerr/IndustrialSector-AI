@@ -90,41 +90,47 @@ export default function Home() {
       icon: <Cpu className="w-12 h-12 text-blue-400 animate-pulse" />,
       selector: null,
       positionClass: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg",
+      style: {},
     },
     {
       title: "Zone 1: Telemetry Live Monitor",
       description: "Real-time sensor arrays track Winding Temperature, Radial Vibration, Discharge Pressure, and Coil Current for your factory fleet. Custom SVG sparklines display live 24-hour fluctuations to identify abnormal spikes before they become breakdowns.",
       icon: <Activity className="w-12 h-12 text-emerald-400" />,
       selector: "zone-1",
-      positionClass: "fixed bottom-6 right-6 md:right-12 md:bottom-12 w-full max-w-sm",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", bottom: "24px", right: "24px", left: "auto", top: "auto", transform: "none" },
     },
     {
       title: "Autonomous Agent Catalyst",
       description: "Clicking 'Simulate Bearing Failure on Machine 2' injects a live fault in the fleet. This acts as the catalyst for our AI agents to step in, collaborate, and execute emergency procurement actions.",
       icon: <Play className="w-12 h-12 text-red-400 animate-pulse" />,
       selector: "simulator-btn",
-      positionClass: "fixed top-24 left-6 md:left-12 w-full max-w-sm",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", left: "24px", right: "auto", bottom: "auto", transform: "none" },
     },
     {
       title: "Zone 2: Multi-Agent Execution Log",
       description: "Observe the 'Thoughts' stream—the live, step-by-step reasoning logs of collaborating agents. Watch the Anomaly Agent flag the failure, the Diagnostic Agent query technical manuals, and the Sourcing Agent negotiate part routing.",
       icon: <Layers className="w-12 h-12 text-amber-400" />,
       selector: "zone-2",
-      positionClass: "fixed top-24 right-6 md:right-12 w-full max-w-sm",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", right: "24px", left: "auto", bottom: "auto", transform: "none" },
     },
     {
       title: "Zone 3: Supply Chain Knowledge Graph",
       description: "A dynamic semantic graph mapping spare parts and Tier-1 and Tier-2 suppliers. Hover over nodes to inspect real-time logistics. When a bottleneck or failure occurs, the best routing path is automatically highlighted in orange.",
       icon: <Settings className="w-12 h-12 text-orange-400 animate-spin" />,
       selector: "zone-3",
-      positionClass: "fixed top-24 left-6 md:left-12 w-full max-w-sm",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", left: "24px", right: "auto", bottom: "auto", transform: "none" },
     },
     {
       title: "Zone 4: Action Center",
       description: "Here, automated purchase and dispatch tickets are created in PostgreSQL. Click 'Inspect Email Draft' to review professional, AI-crafted supplier procurement contracts complete with lead-time, price, and resilience scores.",
       icon: <Inbox className="w-12 h-12 text-purple-400" />,
       selector: "zone-4",
-      positionClass: "fixed top-24 left-1/2 -translate-x-1/2 w-full max-w-sm",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", left: "50%", transform: "translateX(-50%)", right: "auto", bottom: "auto" },
     }
   ];
 
@@ -708,11 +714,14 @@ export default function Home() {
             ? "bg-slate-950/20 pointer-events-none" 
             : "bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4"
         }`}>
-          <div className={`bg-[#0c0f17]/95 border border-[#182030] rounded-2xl overflow-hidden shadow-2xl relative p-6 space-y-6 animate-fadeIn font-sans text-slate-300 transition-all duration-500 ease-in-out pointer-events-auto ${
-            tutorialSteps[tutorialStep].selector 
-              ? tutorialSteps[tutorialStep].positionClass 
-              : "w-full max-w-lg"
-          }`}>
+          <div 
+            style={tutorialSteps[tutorialStep].style}
+            className={`bg-[#0c0f17]/95 border border-[#182030] rounded-2xl overflow-hidden shadow-2xl relative p-6 space-y-6 animate-fadeIn font-sans text-slate-300 transition-all duration-500 ease-in-out pointer-events-auto ${
+              tutorialSteps[tutorialStep].selector 
+                ? tutorialSteps[tutorialStep].positionClass 
+                : "w-full max-w-lg"
+            }`}
+          >
             
             {/* Header / Skip */}
             <div className="flex justify-between items-start">
