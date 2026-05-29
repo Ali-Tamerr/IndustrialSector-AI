@@ -16,7 +16,14 @@ import {
   Mail, 
   HelpCircle,
   Play,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Trash,
+  ArrowRight,
+  Sparkles,
+  Building,
+  Database,
+  LayoutGrid
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
@@ -82,6 +89,54 @@ export default function Home() {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
   const thoughtsEndRef = useRef(null);
+
+  // Setup Portal states to explain project and configure data from scratch
+  const [isSetupCompleted, setIsSetupCompleted] = useState(false);
+  const [activeSetupTab, setActiveSetupTab] = useState("presets");
+  const [seeding, setSeeding] = useState(false);
+  const [customMachines, setCustomMachines] = useState([
+    { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
+  ]);
+
+  // Load project initialization state
+  useEffect(() => {
+    const completed = localStorage.getItem("isSetupCompleted");
+    if (completed === "true") {
+      setIsSetupCompleted(true);
+    }
+  }, []);
+
+  const handleSetup = async (type, templateId = null) => {
+    setSeeding(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/setup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          templateId,
+          customMachines: type === "custom" ? customMachines : []
+        })
+      });
+      if (res.ok) {
+        localStorage.setItem("isSetupCompleted", "true");
+        setIsSetupCompleted(true);
+        await refreshData();
+        // Trigger tour onboarding dynamically on startup
+        localStorage.removeItem("hasSeenTutorial");
+        setShowTutorial(true);
+        setTutorialStep(0);
+      } else {
+        const errData = await res.json();
+        alert("Setup failed: " + errData.error);
+      }
+    } catch (err) {
+      console.error("Setup connection failed:", err);
+      alert("Database connection failed. Please check if your DATABASE_URL in .env is correct.");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const tutorialSteps = [
     {
@@ -286,10 +341,316 @@ export default function Home() {
 
   // Determine graph states
   const isM2Anomaly = useMemo(() => {
-    if (!data) return false;
-    const m2 = data.machines.find(m => m.id === "MCH-002");
-    return m2 && m2.status === "Critical";
+    if (!data || !data.machines) return false;
+    return data.machines.some(m => m.status === "Critical" || m.status === "Degraded");
   }, [data]);
+
+  const firstMachine = useMemo(() => {
+    if (data && data.machines && data.machines.length > 0) {
+      return data.machines[0];
+    }
+    return { id: "MCH-002", name: "High-Speed Industrial Fan B", status: "Operational" };
+  }, [data]);
+
+  if (!isSetupCompleted) {
+    return (
+      <div className="min-h-screen bg-[#06080c] text-slate-300 font-sans p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden select-none selection:bg-blue-600/30">
+        
+        {/* Glow backgrounds */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="w-full max-w-4xl space-y-8 z-10 animate-fadeIn">
+          {/* Header */}
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span>ORCHESTRATOR INITIALIZATION CORE</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
+              AUTONOMIC INDUSTRIAL CONTROL TOWER
+            </h1>
+            <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
+              Seeding a hybrid multi-agent predictive maintenance (PdM) ecosystem. Experience automated machine diagnostics and semantic supply-chain logistics.
+            </p>
+          </div>
+
+          {/* Section: Concept & Problem Explanation */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#0c0f17]/60 border border-[#182030] p-6 rounded-2xl backdrop-blur-md">
+            
+            <div className="space-y-3">
+              <div className="h-10 w-10 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider">The Downtime Crisis</h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                When critical assets break down unexpectedly in traditional factories, operations halt instantly. Engineers spend days diagnosing parts, auditing stocks over phones, and facing shipping delays—costing $22,000+ per minute in idle production.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="h-10 w-10 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-center">
+                <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
+              </div>
+              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider">Multi-Agent Diagnostics</h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                This system unifies monitoring. Upon sensor threshold drift, specialized AI agents immediately diagnose failure modes, query machine manuals stored inside a vector database (RAG), and prepare repair plans.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="h-10 w-10 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-center">
+                <Layers className="w-5 h-5 text-emerald-400" />
+              </div>
+              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider">Optimal Sourcing Bypass</h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                If the spare part is out of stock, a sourcing agent traverses a Tier-1 & Tier-2 supplier graph. It chooses SKF Munich (5-day air freight) over Siemens Shanghai (28-day maritime delay), drafts purchase orders, and alerts engineers.
+              </p>
+            </div>
+
+          </div>
+
+          {/* Interactive Console: Setup choices */}
+          <div className="bg-[#0c0f17] border border-[#182030] rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex border-b border-[#182030] bg-[#090b10] font-mono text-xs">
+              <button 
+                onClick={() => setActiveSetupTab("presets")}
+                className={`flex-1 py-3.5 text-center font-bold transition-all ${activeSetupTab === "presets" ? "text-blue-400 border-b-2 border-blue-500 bg-[#0c0f17]" : "text-slate-500 hover:text-slate-300"}`}
+              >
+                <LayoutGrid className="inline-block w-4 h-4 mr-2" />
+                SELECT A READY-TO-RUN TEMPLATE
+              </button>
+              <button 
+                onClick={() => setActiveSetupTab("custom")}
+                className={`flex-1 py-3.5 text-center font-bold transition-all ${activeSetupTab === "custom" ? "text-blue-400 border-b-2 border-blue-500 bg-[#0c0f17]" : "text-slate-500 hover:text-slate-300"}`}
+              >
+                <Plus className="inline-block w-4 h-4 mr-2" />
+                BUILD CUSTOM FLEET FROM ZERO
+              </button>
+            </div>
+
+            <div className="p-6">
+              {activeSetupTab === "presets" ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    {/* Preset 1: Steel Rolling Mill */}
+                    <div 
+                      onClick={() => handleSetup("template", "steel")}
+                      className="border border-[#182030] bg-[#06080c]/50 p-5 rounded-xl hover:border-blue-500/60 hover:bg-[#0c0f17] cursor-pointer group transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Building className="w-12 h-12 text-blue-400" />
+                      </div>
+                      <span className="text-[9px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">STEEL MILL</span>
+                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-blue-400 transition-colors">Heavy Industrial Mill</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed font-sans">
+                        Fleet of rotary gear pumps, cooling fans, and compressors. Designed for testing ball-bearing degradation.
+                      </p>
+                      <div className="text-[9px] font-mono text-slate-500 mt-4 flex items-center space-x-1.5">
+                        <span>3 Assets</span>
+                        <span>·</span>
+                        <span>Munich Air-Freight Routing</span>
+                      </div>
+                    </div>
+
+                    {/* Preset 2: Petrochemical Refinery */}
+                    <div 
+                      onClick={() => handleSetup("template", "petrochemical")}
+                      className="border border-[#182030] bg-[#06080c]/50 p-5 rounded-xl hover:border-blue-500/60 hover:bg-[#0c0f17] cursor-pointer group transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Activity className="w-12 h-12 text-emerald-400" />
+                      </div>
+                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">PETROCHEMICAL</span>
+                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-emerald-400 transition-colors">Refinery Hydrocracker</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed font-sans">
+                        Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals.
+                      </p>
+                      <div className="text-[9px] font-mono text-slate-500 mt-4 flex items-center space-x-1.5">
+                        <span>3 Assets</span>
+                        <span>·</span>
+                        <span>Houston Fast Seal Routing</span>
+                      </div>
+                    </div>
+
+                    {/* Preset 3: Automotive Assembly */}
+                    <div 
+                      onClick={() => handleSetup("template", "automotive")}
+                      className="border border-[#182030] bg-[#06080c]/50 p-5 rounded-xl hover:border-blue-500/60 hover:bg-[#0c0f17] cursor-pointer group transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Cpu className="w-12 h-12 text-purple-400" />
+                      </div>
+                      <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">AUTOMOTIVE</span>
+                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-purple-400 transition-colors">6-Axis Assembly Robotics</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed font-sans">
+                        Robot joint gearboxes, painting line drives, and assembly cells. Optimized for harmonic gear fault diagnostic testing.
+                      </p>
+                      <div className="text-[9px] font-mono text-slate-500 mt-4 flex items-center space-x-1.5">
+                        <span>3 Assets</span>
+                        <span>·</span>
+                        <span>Yaskawa Welder Robotics</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-4 max-h-[260px] overflow-y-auto pr-2">
+                    {customMachines.map((machine, index) => (
+                      <div key={index} className="border border-[#182030] bg-[#06080c]/40 p-4 rounded-xl relative space-y-4 font-mono text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-blue-400 font-bold">ASSET #{index + 1} CONFIGURATION</span>
+                          {customMachines.length > 1 && (
+                            <button 
+                              onClick={() => setCustomMachines(prev => prev.filter((_, i) => i !== index))}
+                              className="text-red-400 hover:text-red-300 font-bold"
+                            >
+                              <Trash className="w-3.5 h-3.5 inline mr-1" /> Remove
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-[10px] text-slate-500 mb-1">ASSET ID</label>
+                            <input 
+                              type="text" 
+                              value={machine.id} 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, id: val } : m));
+                              }}
+                              className="w-full bg-[#0c0f17] border border-[#182030] rounded p-2 text-white outline-none focus:border-blue-500 font-mono"
+                              placeholder="e.g. MCH-101"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-500 mb-1">ASSET NAME</label>
+                            <input 
+                              type="text" 
+                              value={machine.name} 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, name: val } : m));
+                              }}
+                              className="w-full bg-[#0c0f17] border border-[#182030] rounded p-2 text-white outline-none focus:border-blue-500 font-sans"
+                              placeholder="e.g. Compressor Fan Alpha"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-500 mb-1">BAY LOCATION</label>
+                            <input 
+                              type="text" 
+                              value={machine.location} 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, location: val } : m));
+                              }}
+                              className="w-full bg-[#0c0f17] border border-[#182030] rounded p-2 text-white outline-none focus:border-blue-500 font-sans"
+                              placeholder="e.g. Bay 4 - Assembly"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Critical thresholds */}
+                        <div>
+                          <span className="block text-[10px] text-slate-500 mb-2">OPERATIONAL WARNING LIMIT THRESHOLDS</span>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1">Winding Temp (°C)</label>
+                              <input 
+                                type="number" 
+                                value={machine.thresholds.temperature} 
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, temperature: val } } : m));
+                                }}
+                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1">Vibration (mm/s)</label>
+                              <input 
+                                type="number" 
+                                value={machine.thresholds.vibration} 
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, vibration: val } } : m));
+                                }}
+                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1">Discharge Pres (Bar)</label>
+                              <input 
+                                type="number" 
+                                value={machine.thresholds.pressure} 
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, pressure: val } } : m));
+                                }}
+                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1">Coil Current (Amps)</label>
+                              <input 
+                                type="number" 
+                                value={machine.thresholds.current} 
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, current: val } } : m));
+                                }}
+                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between items-center font-mono text-xs">
+                    <button
+                      disabled={customMachines.length >= 3}
+                      onClick={() => setCustomMachines(prev => [
+                        ...prev,
+                        { id: `MCH-10${prev.length + 1}`, name: "", location: "", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
+                      ])}
+                      className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg hover:bg-slate-800 text-slate-300 disabled:opacity-50"
+                    >
+                      <Plus className="w-3.5 h-3.5 inline mr-1.5" /> Add Another Asset
+                    </button>
+                    
+                    <button
+                      disabled={seeding || customMachines.some(m => !m.name.trim() || !m.location.trim())}
+                      onClick={() => handleSetup("custom")}
+                      className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center space-x-2 animate-pulse"
+                    >
+                      <span>Initialize Custom Fleet</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Loading overlay */}
+        {seeding && (
+          <div className="fixed inset-0 z-50 bg-[#06080c]/90 backdrop-blur-sm flex flex-col items-center justify-center text-blue-500 font-mono">
+            <Activity className="h-10 w-10 animate-spin mb-4" />
+            <div className="animate-pulse tracking-widest text-xs uppercase">Hydrating PostgreSQL Relational Schema & Seeding Chroma DB...</div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (loading && !data) {
     return (
@@ -333,6 +694,19 @@ export default function Home() {
           </button>
 
           <button
+            onClick={() => {
+              if (confirm("Reset current project to zero and re-configure machinery/templates?")) {
+                localStorage.removeItem("isSetupCompleted");
+                setIsSetupCompleted(false);
+              }
+            }}
+            className="px-3 py-2 font-mono text-xs font-semibold rounded border bg-red-950/20 text-red-400 border-red-500/20 hover:bg-red-600 hover:text-white transition-all duration-300 flex items-center space-x-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset Fleet</span>
+          </button>
+
+          <button
             id="simulator-btn"
             onClick={handleSimulation}
             disabled={simulating}
@@ -343,7 +717,7 @@ export default function Home() {
             } shadow-[0_0_15px_rgba(239,68,68,0.03)]`}
           >
             <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
-            <span>{simulating ? "PROCESSING AGENTS..." : "Simulate Bearing Failure on Machine 2"}</span>
+            <span>{simulating ? "PROCESSING AGENTS..." : `Simulate Failure on ${firstMachine.id}`}</span>
           </button>
         </div>
       </header>
@@ -533,9 +907,9 @@ export default function Home() {
                   )}
 
                   {/* Nodes */}
-                  <g transform="translate(80, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'High-Speed Fan B', role: 'Telemetry Root Source', details: 'Status: CRITICAL. Requires 3-Phase AC motor winding (PART-004) immediately to bypass 48H breakdown.' })}>
+                  <g transform="translate(80, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: firstMachine.name, role: 'Telemetry Root Source', details: `Status: ${firstMachine.status}. Requires critical spares immediately to bypass active downtime warnings.` })}>
                     <rect x="-35" y="-18" width="70" height="36" rx="4" fill="#0c0f17" stroke={isM2Anomaly ? "#ef4444" : "#2563eb"} strokeWidth="2" />
-                    <text textAnchor="middle" y="4" fill="#f8fafc" fontSize="10" fontWeight="bold" fontFamily="monospace">MCH-002</text>
+                    <text textAnchor="middle" y="4" fill="#f8fafc" fontSize="10" fontWeight="bold" fontFamily="monospace">{firstMachine.id}</text>
                     <text textAnchor="middle" y="-23" fill="#64748b" fontSize="8" fontWeight="600">ROOT FLEET</text>
                   </g>
 
