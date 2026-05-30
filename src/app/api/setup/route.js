@@ -49,9 +49,19 @@ export async function POST(req) {
     const body = await req.json();
     const { type, templateId, customMachines } = body;
 
-    // A. Drop or clear the database tables in correct relational order
+    // A. Clear the database tables in correct relational order without blocking concurrent SELECTs
     await client.query("BEGIN;");
-    await client.query("TRUNCATE TABLE supplier_edges, supplier_graph, maintenance_orders, sensor_telemetry, machines, inventory RESTART IDENTITY CASCADE;");
+    await client.query("DELETE FROM supplier_edges;");
+    await client.query("DELETE FROM supplier_graph;");
+    await client.query("DELETE FROM maintenance_orders;");
+    await client.query("DELETE FROM sensor_telemetry;");
+    await client.query("DELETE FROM machines;");
+    await client.query("DELETE FROM inventory;");
+
+    // Reset auto-increment sequences cleanly
+    await client.query("ALTER SEQUENCE supplier_edges_edge_id_seq RESTART WITH 1;");
+    await client.query("ALTER SEQUENCE maintenance_orders_id_seq RESTART WITH 1;");
+    await client.query("ALTER SEQUENCE sensor_telemetry_id_seq RESTART WITH 1;");
 
     let machinesToSeed = [];
     let inventoryToSeed = [];
