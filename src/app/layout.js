@@ -1,4 +1,5 @@
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata = {
   title: "Autonomous Industrial Control Tower",
@@ -17,7 +18,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="font-sans antialiased text-slate-200 bg-[#06080c] min-h-screen">
-        {children}
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
