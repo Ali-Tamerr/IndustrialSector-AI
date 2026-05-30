@@ -126,15 +126,63 @@ export default function Home() {
     { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
   ]);
 
-  // Load project initialization state
+  // Projects Portal State variables
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [projectNameInput, setProjectNameInput] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("steel");
+
+  // Load project initialization state & projects list
   useEffect(() => {
     const completed = localStorage.getItem("isSetupCompleted");
     if (completed === "true") {
       setIsSetupCompleted(true);
     }
+    const savedProjects = localStorage.getItem("projects");
+    if (savedProjects) {
+      try {
+        setProjects(JSON.parse(savedProjects));
+      } catch (e) {
+        console.error("Failed to parse projects:", e);
+      }
+    }
+    const savedActiveId = localStorage.getItem("activeProjectId");
+    if (savedActiveId) {
+      setActiveProjectId(savedActiveId);
+    }
   }, []);
 
-  const handleSetup = async (type, templateId = null) => {
+  const generateDefaultName = (type, templateId) => {
+    const customPrefixes = [
+      "Quantum Factory", "Cyber-Physical Grid", "Hyperion Facility", "Apex Assembly",
+      "Omni-Nexus Fleet", "Specter Automation", "Vanguard Complex", "Helix Industrial"
+    ];
+    const steelPrefixes = [
+      "Heavy Steel Mill", "Titanium Smelter", "Vulcan Ironworks", "Forge Nexus",
+      "Apex Rolling Complex", "Pinnacle Steel Grid"
+    ];
+    const petroPrefixes = [
+      "Hydrocracker Hub", "Refinery Grid", "Petrochemical Nexus", "Octane Transfer Complex",
+      "Aero-Chemical Base", "Solvent Processing Sector"
+    ];
+    const autoPrefixes = [
+      "6-Axis Assembly Sector", "Welding Line Beta", "Precision Motion Base", "Robotics Assembly Grid",
+      "Automotive Cell Delta", "Kinetic Assembler Facility"
+    ];
+
+    let prefixes = customPrefixes;
+    if (type === "template") {
+      if (templateId === "steel") prefixes = steelPrefixes;
+      else if (templateId === "petrochemical") prefixes = petroPrefixes;
+      else if (templateId === "automotive") prefixes = autoPrefixes;
+    }
+    
+    const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    return `${randomPrefix} #${randomNum}`;
+  };
+
+  const handleSetup = async (type, templateId = null, customMchs = null) => {
     setSeeding(true);
     try {
       const res = await fetch(`${API_BASE}/api/setup`, {
@@ -143,7 +191,7 @@ export default function Home() {
         body: JSON.stringify({
           type,
           templateId,
-          customMachines: type === "custom" ? customMachines : []
+          customMachines: type === "custom" ? (customMchs || customMachines) : []
         })
       });
       if (res.ok) {
@@ -165,6 +213,61 @@ export default function Home() {
       setSeeding(false);
     }
   };
+
+  const handleCreateProject = async (type) => {
+    const finalName = projectNameInput.trim() || generateDefaultName(type, selectedTemplateId);
+    const newProject = {
+      id: "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+      name: finalName,
+      type,
+      templateId: type === "template" ? selectedTemplateId : null,
+      customMachines: type === "custom" ? customMachines : [],
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    localStorage.setItem("projects", JSON.stringify(updatedProjects));
+    
+    setActiveProjectId(newProject.id);
+    localStorage.setItem("activeProjectId", newProject.id);
+    setProjectNameInput("");
+
+    await handleSetup(type, newProject.templateId, newProject.customMachines);
+  };
+
+  const handleLaunchProject = async (proj) => {
+    setActiveProjectId(proj.id);
+    localStorage.setItem("activeProjectId", proj.id);
+    await handleSetup(proj.type, proj.templateId, proj.customMachines);
+  };
+
+  const handleRenameProject = (projId, newName) => {
+    if (!projId) return;
+    const updated = projects.map(p => p.id === projId ? { ...p, name: newName } : p);
+    setProjects(updated);
+    localStorage.setItem("projects", JSON.stringify(updated));
+  };
+
+  const handleDeleteProject = (projId, e) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this project config?")) return;
+    
+    const updated = projects.filter(p => p.id !== projId);
+    setProjects(updated);
+    localStorage.setItem("projects", JSON.stringify(updated));
+
+    if (activeProjectId === projId) {
+      setActiveProjectId(null);
+      localStorage.removeItem("activeProjectId");
+      localStorage.removeItem("isSetupCompleted");
+      setIsSetupCompleted(false);
+    }
+  };
+
+  const activeProject = useMemo(() => {
+    return projects.find(p => p.id === activeProjectId) || null;
+  }, [projects, activeProjectId]);
 
   const tutorialSteps = [
     {
