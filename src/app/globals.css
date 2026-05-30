@@ -43,3 +43,68 @@ body {
   background-size: 100% 4px, 6px 100%;
   pointer-events: none;
 }
+
+/* Premium Background & Theme Animations */
+@keyframes pulseSlow {
+  0%, 100% {
+    transform: scale(1) translate(0px, 0px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1) translate(20px, -20px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulseSlowAlt {
+  0%, 100% {
+    transform: scale(1) translate(0px, 0px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.15) translate(-30px, 15px);
+    opacity: 0.55;
+  }
+}
+
+@keyframes gridMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 64px 64px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 15s ease-in-out infinite;
+}
+
+.animate-pulse-slow-alt {
+  animation: pulseSlowAlt 20s ease-in-out infinite;
+}
+
+.animate-grid-move {
+  animation: gridMove 25s linear infinite;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Global body overrides for smooth theme switching */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
