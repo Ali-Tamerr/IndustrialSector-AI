@@ -354,143 +354,201 @@ export default function Home() {
 
   if (!isSetupCompleted) {
     return (
-      <div className="min-h-screen bg-[#06080c] text-slate-300 font-sans p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden select-none selection:bg-blue-600/30">
+      <div className="min-h-screen bg-[#030508] text-slate-300 font-sans p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden select-none selection:bg-cyan-500/30">
         
-        {/* Glow backgrounds */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        {/* Futuristic Grid Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.004)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.004)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#030508_10%,#030508_100%)] pointer-events-none"></div>
 
-        <div className="w-full max-w-4xl space-y-8 z-10 animate-fadeIn">
-          {/* Header */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+        {/* Ambient Neon Floating Glow Meshes */}
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-600/[0.03] rounded-full blur-[140px] pointer-events-none animate-pulse-slow"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/[0.03] rounded-full blur-[140px] pointer-events-none animate-pulse-slow"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-blue-600/[0.015] rounded-full blur-[160px] pointer-events-none"></div>
+
+        <div className="w-full max-w-5xl space-y-10 z-10 animate-fadeIn">
+          
+          {/* Main Header / Branding */}
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-cyan-950/20 border border-cyan-500/20 text-cyan-400 text-[10px] font-mono tracking-[0.2em] font-bold shadow-[0_0_15px_rgba(6,182,212,0.05)]">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
               <span>ORCHESTRATOR INITIALIZATION CORE</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-              AUTONOMIC INDUSTRIAL CONTROL TOWER
+            
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight uppercase font-mono bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400 bg-clip-text text-transparent filter drop-shadow-[0_2px_10px_rgba(6,182,212,0.1)]">
+              AUTONOMIC CONTROL TOWER
             </h1>
+            
             <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Seeding a hybrid multi-agent predictive maintenance (PdM) ecosystem. Experience automated machine diagnostics and semantic supply-chain logistics.
+              Activate an autonomic, offline-first multi-agent predictive maintenance (PdM) fleet. Unify industrial telemetry, RAG diagnostics, and automated supply-chain graph routing.
             </p>
           </div>
 
-          {/* Section: Concept & Problem Explanation */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#0c0f17]/60 border border-[#182030] p-6 rounded-2xl backdrop-blur-md">
+          {/* Section: Concept / Problem & Solution Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div className="space-y-3">
-              <div className="h-10 w-10 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
+            {/* Card 1: Downtime Crisis */}
+            <div className="relative backdrop-blur-md bg-white/[0.01] border border-[#1b2336]/60 rounded-2xl p-6 transition-all duration-300 hover:border-red-500/20 hover:bg-white/[0.015] hover:shadow-[0_0_30px_rgba(239,68,68,0.03)] hover:-translate-y-0.5 group overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500/10 via-red-500/40 to-red-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
+              
+              <div className="flex justify-between items-start mb-5">
+                <div className="h-10 w-10 bg-red-950/20 border border-red-500/25 rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(239,68,68,0.1)]">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase">01 // CRITICAL</span>
               </div>
-              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider">The Downtime Crisis</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                When critical assets break down unexpectedly in traditional factories, operations halt instantly. Engineers spend days diagnosing parts, auditing stocks over phones, and facing shipping delays—costing $22,000+ per minute in idle production.
+
+              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider mb-2">The Downtime Crisis</h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                Machinery breakdown is catastrophic. Industrial plants lose $22,000+ per minute when critical assets fail. Manual diagnostics, phone Tag, and surprise spare-stock deficits stall recovery for days or weeks.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div className="h-10 w-10 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-center">
-                <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
+            {/* Card 2: Multi-Agent RAG */}
+            <div className="relative backdrop-blur-md bg-white/[0.01] border border-[#1b2336]/60 rounded-2xl p-6 transition-all duration-300 hover:border-blue-500/25 hover:bg-white/[0.015] hover:shadow-[0_0_30px_rgba(59,130,246,0.03)] hover:-translate-y-0.5 group overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/10 via-blue-500/40 to-blue-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
+              
+              <div className="flex justify-between items-start mb-5">
+                <div className="h-10 w-10 bg-blue-950/20 border border-blue-500/25 rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(59,130,246,0.1)]">
+                  <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
+                </div>
+                <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase">02 // COMPUTE</span>
               </div>
-              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider">Multi-Agent Diagnostics</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                This system unifies monitoring. Upon sensor threshold drift, specialized AI agents immediately diagnose failure modes, query machine manuals stored inside a vector database (RAG), and prepare repair plans.
+
+              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider mb-2">Multi-Agent Diagnostics</h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                This system unifies monitoring. Upon sensor drift, specialized AI agents immediately diagnose failure modes, query machine manuals inside a vector database (RAG), and prepare targeted engineering repair tickets.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div className="h-10 w-10 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-center">
-                <Layers className="w-5 h-5 text-emerald-400" />
+            {/* Card 3: Optimal Sourcing */}
+            <div className="relative backdrop-blur-md bg-white/[0.01] border border-[#1b2336]/60 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-500/20 hover:bg-white/[0.015] hover:shadow-[0_0_30px_rgba(16,185,129,0.03)] hover:-translate-y-0.5 group overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/10 via-emerald-500/40 to-emerald-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
+              
+              <div className="flex justify-between items-start mb-5">
+                <div className="h-10 w-10 bg-emerald-950/20 border border-emerald-500/25 rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]">
+                  <Layers className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase">03 // RESOLVE</span>
               </div>
-              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider">Optimal Sourcing Bypass</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                If the spare part is out of stock, a sourcing agent traverses a Tier-1 & Tier-2 supplier graph. It chooses SKF Munich (5-day air freight) over Siemens Shanghai (28-day maritime delay), drafts purchase orders, and alerts engineers.
+
+              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider mb-2">Optimal Sourcing bypass</h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                When a replacement part is out of stock, Sourcing agents automatically traverse the supply chain graph, choosing SKF Munich (5-day air-freight) over Siemens Shanghai (28-day maritime bottleneck) to bypass delays.
               </p>
             </div>
 
           </div>
 
-          {/* Interactive Console: Setup choices */}
-          <div className="bg-[#0c0f17] border border-[#182030] rounded-2xl overflow-hidden shadow-2xl">
-            <div className="flex border-b border-[#182030] bg-[#090b10] font-mono text-xs">
+          {/* Seeding & Custom Setup Console Panel */}
+          <div className="bg-[#080b11]/90 border border-[#1b2336]/80 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+            
+            {/* High-Tech Tab Bar */}
+            <div className="flex border-b border-[#1b2336]/80 bg-[#06080c] font-mono text-xs p-1 gap-1">
               <button 
                 onClick={() => setActiveSetupTab("presets")}
-                className={`flex-1 py-3.5 text-center font-bold transition-all ${activeSetupTab === "presets" ? "text-blue-400 border-b-2 border-blue-500 bg-[#0c0f17]" : "text-slate-500 hover:text-slate-300"}`}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
+                  activeSetupTab === "presets" 
+                    ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
               >
-                <LayoutGrid className="inline-block w-4 h-4 mr-2" />
-                SELECT A READY-TO-RUN TEMPLATE
+                <LayoutGrid className="w-4 h-4" />
+                Select Ready-to-Run Factory Template
               </button>
               <button 
                 onClick={() => setActiveSetupTab("custom")}
-                className={`flex-1 py-3.5 text-center font-bold transition-all ${activeSetupTab === "custom" ? "text-blue-400 border-b-2 border-blue-500 bg-[#0c0f17]" : "text-slate-500 hover:text-slate-300"}`}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
+                  activeSetupTab === "custom" 
+                    ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
               >
-                <Plus className="inline-block w-4 h-4 mr-2" />
-                BUILD CUSTOM FLEET FROM ZERO
+                <Plus className="w-4 h-4" />
+                Build Custom Fleet from Scratch
               </button>
             </div>
 
-            <div className="p-6">
+            {/* Panel Body */}
+            <div className="p-6 md:p-8">
               {activeSetupTab === "presets" ? (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     
                     {/* Preset 1: Steel Rolling Mill */}
                     <div 
                       onClick={() => handleSetup("template", "steel")}
-                      className="border border-[#182030] bg-[#06080c]/50 p-5 rounded-xl hover:border-blue-500/60 hover:bg-[#0c0f17] cursor-pointer group transition-all duration-300 relative overflow-hidden"
+                      className="border border-[#1b2336]/70 bg-[#05070a]/40 p-5 rounded-2xl hover:border-blue-500/50 hover:bg-blue-950/[0.04] hover:shadow-[0_0_30px_rgba(59,130,246,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
                     >
-                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Building className="w-12 h-12 text-blue-400" />
+                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Building className="w-20 h-20 text-blue-400" />
                       </div>
-                      <span className="text-[9px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">STEEL MILL</span>
-                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-blue-400 transition-colors">Heavy Industrial Mill</h4>
-                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed font-sans">
-                        Fleet of rotary gear pumps, cooling fans, and compressors. Designed for testing ball-bearing degradation.
-                      </p>
-                      <div className="text-[9px] font-mono text-slate-500 mt-4 flex items-center space-x-1.5">
-                        <span>3 Assets</span>
-                        <span>·</span>
-                        <span>Munich Air-Freight Routing</span>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25 uppercase tracking-wider">STEEL_MILL</span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-400 group-hover:animate-ping"></span>
+                        </div>
+                        <h4 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Heavy Steel Rolling Mill</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                          Baseline fleet consisting of Rotary Gear Pumps, Industrial Exhaust Fans, and Pneumatic Compressors. Optimized for testing ball-bearing degradation.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
+                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
+                        <span className="text-blue-400/80 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
                       </div>
                     </div>
 
                     {/* Preset 2: Petrochemical Refinery */}
                     <div 
                       onClick={() => handleSetup("template", "petrochemical")}
-                      className="border border-[#182030] bg-[#06080c]/50 p-5 rounded-xl hover:border-blue-500/60 hover:bg-[#0c0f17] cursor-pointer group transition-all duration-300 relative overflow-hidden"
+                      className="border border-[#1b2336]/70 bg-[#05070a]/40 p-5 rounded-2xl hover:border-emerald-500/50 hover:bg-emerald-950/[0.04] hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
                     >
-                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Activity className="w-12 h-12 text-emerald-400" />
+                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Activity className="w-20 h-20 text-emerald-400" />
                       </div>
-                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">PETROCHEMICAL</span>
-                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-emerald-400 transition-colors">Refinery Hydrocracker</h4>
-                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed font-sans">
-                        Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals.
-                      </p>
-                      <div className="text-[9px] font-mono text-slate-500 mt-4 flex items-center space-x-1.5">
-                        <span>3 Assets</span>
-                        <span>·</span>
-                        <span>Houston Fast Seal Routing</span>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25 uppercase tracking-wider">HYDROCRACKER</span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 group-hover:animate-ping"></span>
+                        </div>
+                        <h4 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">Petrochemical Refinery</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                          Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals and Houston fast seal logistics routing.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
+                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
+                        <span className="text-emerald-400/80 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
                       </div>
                     </div>
 
                     {/* Preset 3: Automotive Assembly */}
                     <div 
                       onClick={() => handleSetup("template", "automotive")}
-                      className="border border-[#182030] bg-[#06080c]/50 p-5 rounded-xl hover:border-blue-500/60 hover:bg-[#0c0f17] cursor-pointer group transition-all duration-300 relative overflow-hidden"
+                      className="border border-[#1b2336]/70 bg-[#05070a]/40 p-5 rounded-2xl hover:border-purple-500/50 hover:bg-purple-950/[0.04] hover:shadow-[0_0_30px_rgba(168,85,247,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
                     >
-                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Cpu className="w-12 h-12 text-purple-400" />
+                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Cpu className="w-20 h-20 text-purple-400" />
                       </div>
-                      <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">AUTOMOTIVE</span>
-                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-purple-400 transition-colors">6-Axis Assembly Robotics</h4>
-                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed font-sans">
-                        Robot joint gearboxes, painting line drives, and assembly cells. Optimized for harmonic gear fault diagnostic testing.
-                      </p>
-                      <div className="text-[9px] font-mono text-slate-500 mt-4 flex items-center space-x-1.5">
-                        <span>3 Assets</span>
-                        <span>·</span>
-                        <span>Yaskawa Welder Robotics</span>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/25 uppercase tracking-wider">ROBOTICS</span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-purple-400 group-hover:animate-ping"></span>
+                        </div>
+                        <h4 className="text-base font-bold text-white group-hover:text-purple-400 transition-colors">6-Axis Assembly Robotics</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                          Robot joint gearboxes, painting line drives, and assembly cells. Optimized for testing high-precision harmonic gear fault diagnostic routines.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
+                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
+                        <span className="text-purple-400/80 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
                       </div>
                     </div>
 
@@ -498,24 +556,29 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="space-y-4 max-h-[260px] overflow-y-auto pr-2">
+                  {/* Custom Fleet Builder */}
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                     {customMachines.map((machine, index) => (
-                      <div key={index} className="border border-[#182030] bg-[#06080c]/40 p-4 rounded-xl relative space-y-4 font-mono text-xs">
-                        <div className="flex justify-between items-center">
-                          <span className="text-blue-400 font-bold">ASSET #{index + 1} CONFIGURATION</span>
+                      <div key={index} className="border border-[#1b2336]/80 bg-[#05070a]/50 p-5 rounded-2xl relative space-y-4 font-mono text-xs">
+                        <div className="flex justify-between items-center border-b border-[#1b2336]/60 pb-3">
+                          <span className="text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                            Asset #{index + 1} System Profile
+                          </span>
+                          
                           {customMachines.length > 1 && (
                             <button 
                               onClick={() => setCustomMachines(prev => prev.filter((_, i) => i !== index))}
-                              className="text-red-400 hover:text-red-300 font-bold"
+                              className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors"
                             >
-                              <Trash className="w-3.5 h-3.5 inline mr-1" /> Remove
+                              <Trash className="w-3.5 h-3.5" /> Remove
                             </button>
                           )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">ASSET ID</label>
+                            <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Asset ID Tag</label>
                             <input 
                               type="text" 
                               value={machine.id} 
@@ -523,12 +586,12 @@ export default function Home() {
                                 const val = e.target.value;
                                 setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, id: val } : m));
                               }}
-                              className="w-full bg-[#0c0f17] border border-[#182030] rounded p-2 text-white outline-none focus:border-blue-500 font-mono"
+                              className="w-full bg-[#080b11] border border-[#1b2336] rounded-xl p-2.5 text-white outline-none focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all font-mono"
                               placeholder="e.g. MCH-101"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">ASSET NAME</label>
+                            <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Equipment Name</label>
                             <input 
                               type="text" 
                               value={machine.name} 
@@ -536,12 +599,12 @@ export default function Home() {
                                 const val = e.target.value;
                                 setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, name: val } : m));
                               }}
-                              className="w-full bg-[#0c0f17] border border-[#182030] rounded p-2 text-white outline-none focus:border-blue-500 font-sans"
-                              placeholder="e.g. Compressor Fan Alpha"
+                              className="w-full bg-[#080b11] border border-[#1b2336] rounded-xl p-2.5 text-white outline-none focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all font-sans"
+                              placeholder="e.g. Conveyor Belt Motor A"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">BAY LOCATION</label>
+                            <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Bay Location</label>
                             <input 
                               type="text" 
                               value={machine.location} 
@@ -549,18 +612,18 @@ export default function Home() {
                                 const val = e.target.value;
                                 setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, location: val } : m));
                               }}
-                              className="w-full bg-[#0c0f17] border border-[#182030] rounded p-2 text-white outline-none focus:border-blue-500 font-sans"
-                              placeholder="e.g. Bay 4 - Assembly"
+                              className="w-full bg-[#080b11] border border-[#1b2336] rounded-xl p-2.5 text-white outline-none focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all font-sans"
+                              placeholder="e.g. Bay 4 - Extraction Line"
                             />
                           </div>
                         </div>
 
                         {/* Critical thresholds */}
-                        <div>
-                          <span className="block text-[10px] text-slate-500 mb-2">OPERATIONAL WARNING LIMIT THRESHOLDS</span>
+                        <div className="pt-2">
+                          <span className="block text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div>
-                              <label className="block text-[9px] text-slate-500 mb-1">Winding Temp (°C)</label>
+                              <label className="block text-[9px] text-slate-500 mb-1 font-bold">Winding Temp (°C)</label>
                               <input 
                                 type="number" 
                                 value={machine.thresholds.temperature} 
@@ -568,11 +631,11 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, temperature: val } } : m));
                                 }}
-                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] text-slate-500 mb-1">Vibration (mm/s)</label>
+                              <label className="block text-[9px] text-slate-500 mb-1 font-bold">Vibration (mm/s)</label>
                               <input 
                                 type="number" 
                                 value={machine.thresholds.vibration} 
@@ -580,11 +643,11 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, vibration: val } } : m));
                                 }}
-                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] text-slate-500 mb-1">Discharge Pres (Bar)</label>
+                              <label className="block text-[9px] text-slate-500 mb-1 font-bold">Discharge Pres (Bar)</label>
                               <input 
                                 type="number" 
                                 value={machine.thresholds.pressure} 
@@ -592,11 +655,11 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, pressure: val } } : m));
                                 }}
-                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] text-slate-500 mb-1">Coil Current (Amps)</label>
+                              <label className="block text-[9px] text-slate-500 mb-1 font-bold">Coil Current (Amps)</label>
                               <input 
                                 type="number" 
                                 value={machine.thresholds.current} 
@@ -604,7 +667,7 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, current: val } } : m));
                                 }}
-                                className="w-full bg-[#0c0f17] border border-[#182030] rounded p-1.5 text-white outline-none focus:border-blue-500"
+                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
                               />
                             </div>
                           </div>
@@ -614,22 +677,22 @@ export default function Home() {
                     ))}
                   </div>
 
-                  <div className="flex justify-between items-center font-mono text-xs">
+                  <div className="flex justify-between items-center font-mono text-xs pt-4 border-t border-[#1b2336]/60">
                     <button
                       disabled={customMachines.length >= 3}
                       onClick={() => setCustomMachines(prev => [
                         ...prev,
                         { id: `MCH-10${prev.length + 1}`, name: "", location: "", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
                       ])}
-                      className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg hover:bg-slate-800 text-slate-300 disabled:opacity-50"
+                      className="px-4 py-2.5 bg-[#090e18] border border-[#1b2336] rounded-xl hover:bg-[#121b2d] hover:border-slate-700 text-slate-300 disabled:opacity-50 transition-all font-bold flex items-center gap-1.5"
                     >
-                      <Plus className="w-3.5 h-3.5 inline mr-1.5" /> Add Another Asset
+                      <Plus className="w-4 h-4" /> Add Another Asset
                     </button>
                     
                     <button
                       disabled={seeding || customMachines.some(m => !m.name.trim() || !m.location.trim())}
                       onClick={() => handleSetup("custom")}
-                      className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center space-x-2 animate-pulse"
+                      className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
                     >
                       <span>Initialize Custom Fleet</span>
                       <ArrowRight className="w-4 h-4" />
@@ -641,11 +704,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Loading overlay */}
+        {/* Dynamic seeding overlay */}
         {seeding && (
-          <div className="fixed inset-0 z-50 bg-[#06080c]/90 backdrop-blur-sm flex flex-col items-center justify-center text-blue-500 font-mono">
-            <Activity className="h-10 w-10 animate-spin mb-4" />
-            <div className="animate-pulse tracking-widest text-xs uppercase">Hydrating PostgreSQL Relational Schema & Seeding Chroma DB...</div>
+          <div className="fixed inset-0 z-50 bg-[#030508]/95 backdrop-blur-md flex flex-col items-center justify-center text-cyan-400 font-mono">
+            <Activity className="h-10 w-10 animate-spin mb-4 text-cyan-400" />
+            <div className="animate-pulse tracking-[0.15em] text-xs uppercase">Hydrating PostgreSQL schemas & building Chroma Vector DB...</div>
           </div>
         )}
       </div>
