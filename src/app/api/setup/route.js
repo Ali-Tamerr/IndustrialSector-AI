@@ -405,10 +405,24 @@ export async function POST(req) {
           [anomalyMachineId]
         );
 
-        // Create the automated maintenance ticket
+        // Create the automated maintenance ticket with a rich pre-seeded AI Sourcing Contract Email Draft
         const rootCause = `Automated Predictive Maintenance Alert: Thermal & mechanical degradation thresholds breached on ${activeMachine.name}. ` +
           `Vibration reading of ${badVib.toFixed(2)} mm/s exceeded the limit of ${thresholds.vibration} mm/s. ` +
-          `Winding temperature spiked to ${badTemp.toFixed(1)}°C. Automatic RAG parts audit initiated for replacement components. Sourcing active.`;
+          `Winding temperature spiked to ${badTemp.toFixed(1)}°C. Automatic RAG parts audit initiated for replacement components. Sourcing active.\n\n` +
+          `Subject: URGENT: Autonomous Sourcing Bypass Route for ${activeMachine.id}\n` +
+          `To: logistics@skf.de\n` +
+          `From: ai-orchestrator@industrial-tower.internal\n` +
+          `Date: ${new Date().toUTCString()}\n\n` +
+          `Dear SKF Munich Logistics Team,\n\n` +
+          `This is an automated purchase request dispatched by the Autonomic Industrial Control Tower.\n\n` +
+          `Our predictive maintenance models have flagged a critical bearing degradation event on ${activeMachine.name} (${activeMachine.id}). To bypass catastrophic line failure and avoid $22,000/minute downtime penalties, our multi-agent sourcing router has initiated emergency procurement of a 3-Phase Electric Motor Winding (PART-004).\n\n` +
+          `Supply Chain Path Resilience Scoring Model Summary:\n` +
+          `- Selected Supplier: SKF Munich (DDP Air freight, 5-day lead-time)\n` +
+          `- Alternate Evaluated: Siemens Shanghai (Maritime transit delay bottleneck, 28-day penalty)\n` +
+          `- Path Sourcing Optimization Resilience Score: 59.50 (Approved)\n\n` +
+          `Please dispatch one unit to fluids bay processing location immediately.\n\n` +
+          `Best regards,\n` +
+          `Autonomous Procurement Agent`;
 
         await client.query(
           `INSERT INTO maintenance_orders (machine_id, priority, status, root_cause, assigned_technician)
