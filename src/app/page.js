@@ -123,8 +123,17 @@ export default function Home() {
   const [activeSetupTab, setActiveSetupTab] = useState("presets");
   const [seeding, setSeeding] = useState(false);
   const [customMachines, setCustomMachines] = useState([
-    { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
+    { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15, required_part_id: "PART-001" } }
   ]);
+
+  // Visual Editor Configurator panel states
+  const [showEditor, setShowEditor] = useState(false);
+  const [editorTab, setEditorTab] = useState("machines");
+  const [editorMachines, setEditorMachines] = useState([]);
+  const [editorInventory, setEditorInventory] = useState([]);
+  const [editorNodes, setEditorNodes] = useState([]);
+  const [editorEdges, setEditorEdges] = useState([]);
+  const [savingConfig, setSavingConfig] = useState(false);
 
   // Projects Portal State variables
   const [projects, setProjects] = useState([]);
@@ -288,6 +297,203 @@ export default function Home() {
   const activeProject = useMemo(() => {
     return projects.find(p => p.id === activeProjectId) || null;
   }, [projects, activeProjectId]);
+
+  const firstMachine = useMemo(() => {
+    if (data && data.machines && data.machines.length > 0) {
+      return data.machines[0];
+    }
+    return { id: "MCH-002", name: "High-Speed Industrial Fan B", status: "Operational" };
+  }, [data]);
+
+  // Dynamically map and layout supply chain graph nodes into Column coordinates
+  const layoutNodes = useMemo(() => {
+    if (!data || !data.graph || !data.graph.nodes) return {};
+
+    const nodes = data.graph.nodes;
+    const parts = nodes.filter(n => n.type === 'Part');
+    const suppliers = nodes.filter(n => n.type === 'Supplier');
+    const materials = nodes.filter(n => n.type === 'Material');
+
+    const mapped = {};
+
+    // 1. Add active root machine
+    const firstMachineId = firstMachine?.id || "MCH-001";
+    mapped[firstMachineId] = {
+      id: firstMachineId,
+      name: firstMachine?.name || "Root Asset",
+      type: 'Machine',
+      x: 80,
+      y: 170,
+      details: `Status: ${firstMachine?.status || 'Operational'}. Telemetry source node.`
+    };
+
+    // 2. Layout Parts at x = 220
+    parts.forEach((p, idx) => {
+      const count = parts.length;
+      const spacing = count > 3 ? 60 : 80;
+      const startY = 170 - ((count - 1) * spacing) / 2;
+      mapped[p.id] = {
+        ...p,
+        x: 220,
+        y: startY + idx * spacing
+      };
+    });
+
+    // 3. Layout Suppliers at x = 380
+    suppliers.forEach((s, idx) => {
+      const count = suppliers.length;
+      const spacing = count > 4 ? 50 : 80;
+      const startY = 170 - ((count - 1) * spacing) / 2;
+      mapped[s.id] = {
+        ...s,
+        x: 380,
+        y: startY + idx * spacing
+      };
+    });
+
+    // 4. Layout Materials at x = 520
+    materials.forEach((m, idx) => {
+      const count = materials.length;
+      const spacing = count > 2 ? 60 : 80;
+      const startY = 170 - ((count - 1) * spacing) / 2;
+      mapped[m.id] = {
+        ...m,
+        x: 520,
+        y: startY + idx * spacing
+      };
+    });
+
+    return mapped;
+  }, [data, firstMachine]);
+
+  // Load custom presets inside the visual editor
+  const handleLoadPreset = (presetType) => {
+    if (presetType === "steel") {
+      setEditorMachines([
+        { id: "MCH-001", name: "Rotary Gear Pump A", location: "Bay 3 - Fluids Processing", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15, required_part_id: "PART-001" } },
+        { id: "MCH-002", name: "High-Speed Industrial Fan B", location: "Bay 7 - Ventilation and Exhaust", thresholds: { temperature: 80, vibration: 10, pressure: 3, current: 20, required_part_id: "PART-004" } },
+        { id: "MCH-003", name: "Heavy-Duty Compressor C", location: "Bay 12 - Pneumatics & Air Power", thresholds: { temperature: 95, vibration: 7.5, pressure: 8.5, current: 25, required_part_id: "PART-002" } }
+      ]);
+      setEditorInventory([
+        { part_id: "PART-001", part_name: "Heavy-Duty Bearing Assembly", stock_level: 15, reorder_point: 5, cost: 120.50, location: "Warehouse A - Aisle 4" },
+        { part_id: "PART-002", part_name: "High-Pressure Hydraulic Seal", stock_level: 3, reorder_point: 10, cost: 45.00, location: "Warehouse A - Aisle 6" },
+        { part_id: "PART-003", part_name: "Centrifugal Pump Impeller", stock_level: 8, reorder_point: 2, cost: 350.00, location: "Warehouse B - Aisle 2" },
+        { part_id: "PART-004", part_name: "3-Phase Electric Motor Winding", stock_level: 1, reorder_point: 3, cost: 850.00, location: "Warehouse B - Aisle 5" }
+      ]);
+      setEditorNodes([
+        { id: "PART-001", name: "Heavy-Duty Bearing Assembly", type: "Part", risk: 0, email: "" },
+        { id: "PART-002", name: "High-Pressure Hydraulic Seal", type: "Part", risk: 0, email: "" },
+        { id: "PART-003", name: "Centrifugal Pump Impeller", type: "Part", risk: 0, email: "" },
+        { id: "PART-004", name: "3-Phase Electric Motor Winding", type: "Part", risk: 0, email: "" },
+        { id: "SUP-001", name: "Siemens Shanghai", type: "Supplier", risk: 0.70, email: "procurement@siemens.cn" },
+        { id: "SUP-002", name: "SKF Munich", type: "Supplier", risk: 0.15, email: "logistics@skf.de" },
+        { id: "SUP-003", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" },
+        { id: "SUP-004", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" },
+        { id: "SUP-005", name: "Parker Hannifin Cleveland", type: "Supplier", risk: 0.05, email: "orders@parkerhannifin.com" },
+        { id: "SUP-006", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" }
+      ]);
+      setEditorEdges([
+        { source: "SUP-002", target: "PART-001", relationship: "SUPPLIES", transit: 5, price: 450.00 },
+        { source: "SUP-005", target: "PART-002", relationship: "SUPPLIES", transit: 2, price: 35.00 },
+        { source: "SUP-006", target: "PART-003", relationship: "SUPPLIES", transit: 14, price: 250.00 },
+        { source: "SUP-001", target: "PART-004", relationship: "SUPPLIES", transit: 28, price: 850.00 },
+        { source: "SUP-002", target: "PART-004", relationship: "SUPPLIES", transit: 5, price: 1200.00 }
+      ]);
+    } else if (presetType === "petrochemical") {
+      setEditorMachines([
+        { id: "MCH-201", name: "Crude Transfer Pump Alpha", location: "Bay 5 - Hydrocracking", thresholds: { temperature: 95.0, vibration: 8.5, pressure: 12.0, current: 40.0, required_part_id: "PART-203" } },
+        { id: "MCH-202", name: "Gas Combustion Turbine Beta", location: "Bay 9 - Power Generation", thresholds: { temperature: 110.0, vibration: 12.0, pressure: 16.5, current: 85.0, required_part_id: "PART-201" } },
+        { id: "MCH-203", name: "Heavy Heat Exchanger Fan", location: "Bay 2 - Cooling Complex", thresholds: { temperature: 85.0, vibration: 9.0, pressure: 4.5, current: 18.0, required_part_id: "PART-204" } }
+      ]);
+      setEditorInventory([
+        { part_id: "PART-201", part_name: "Extreme Heat Gas Turbine Valve", stock_level: 2, reorder_point: 5, cost: 2450.00, location: "Warehouse C - Aisle 1" },
+        { part_id: "PART-202", part_name: "Fluorosilicone High-Pressure Gasket", stock_level: 25, reorder_point: 10, cost: 85.00, location: "Warehouse A - Aisle 9" },
+        { part_id: "PART-203", part_name: "Petrochemical Centrifugal Impeller", stock_level: 1, reorder_point: 3, cost: 1450.00, location: "Warehouse C - Aisle 3" },
+        { part_id: "PART-204", part_name: "Exchanger Fan 3-Phase Rotor Winding", stock_level: 8, reorder_point: 2, cost: 720.00, location: "Warehouse B - Aisle 7" }
+      ]);
+      setEditorNodes([
+        { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", type: "Part", risk: 0, email: "" },
+        { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", type: "Part", risk: 0, email: "" },
+        { id: "PART-203", name: "Petrochemical Centrifugal Impeller", type: "Part", risk: 0, email: "" },
+        { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", type: "Part", risk: 0, email: "" },
+        { id: "SUP-201", name: "GE Power Systems Logistics", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
+        { id: "SUP-202", name: "Chevron Seals Houston", type: "Supplier", risk: 0.04, email: "houston.sales@chevronseals.com" },
+        { id: "SUP-203", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
+        { id: "SUP-204", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" }
+      ]);
+      setEditorEdges([
+        { source: "SUP-201", target: "PART-201", relationship: "SUPPLIES", transit: 4, price: 3200.00 },
+        { source: "SUP-202", target: "PART-202", relationship: "SUPPLIES", transit: 1, price: 95.00 },
+        { source: "SUP-203", target: "PART-203", relationship: "SUPPLIES", transit: 12, price: 1750.00 },
+        { source: "SUP-204", target: "PART-204", relationship: "SUPPLIES", transit: 6, price: 850.00 },
+        { source: "SUP-201", target: "PART-203", relationship: "SUPPLIES", transit: 26, price: 1250.00 }
+      ]);
+    } else if (presetType === "automotive") {
+      setEditorMachines([
+        { id: "MCH-301", name: "6-Axis Welder Robot Joint", location: "Bay 1 - Welding Cell", thresholds: { temperature: 80.0, vibration: 15.0, pressure: 5.0, current: 30.0, required_part_id: "PART-301" } },
+        { id: "MCH-302", name: "Main Assembly Conveyor Drive", location: "Bay 6 - Painting Line", thresholds: { temperature: 75.0, vibration: 8.0, pressure: 6.0, current: 22.0, required_part_id: "PART-302" } },
+        { id: "MCH-303", name: "Fleet Pneumatic Compressor Main", location: "Bay 14 - Assembly Main", thresholds: { temperature: 90.0, vibration: 9.5, pressure: 9.0, current: 50.0, required_part_id: "PART-303" } }
+      ]);
+      setEditorInventory([
+        { part_id: "PART-301", part_name: "Harmonic Welder Gear Box Drive", stock_level: 0, reorder_point: 2, cost: 3850.00, location: "Warehouse D - Aisle 3" },
+        { part_id: "PART-302", part_name: "3-Phase Drive Motor Brushless", stock_level: 5, reorder_point: 2, cost: 950.00, location: "Warehouse B - Aisle 1" },
+        { part_id: "PART-303", part_name: "Pneumatic Double Solenoid Valve", stock_level: 2, reorder_point: 8, cost: 140.00, location: "Warehouse A - Aisle 2" },
+        { part_id: "PART-304", part_name: "Welder Copper Cable Core", stock_level: 12, reorder_point: 5, cost: 220.00, location: "Warehouse B - Aisle 9" }
+      ]);
+      setEditorNodes([
+        { id: "PART-301", name: "Harmonic Welder Gear Box Drive", type: "Part", risk: 0, email: "" },
+        { id: "PART-302", name: "3-Phase Drive Motor Brushless", type: "Part", risk: 0, email: "" },
+        { id: "PART-303", name: "Pneumatic Double Solenoid Valve", type: "Part", risk: 0, email: "" },
+        { id: "PART-304", name: "Welder Copper Cable Core", type: "Part", risk: 0, email: "" },
+        { id: "SUP-301", name: "Yaskawa Motoman Logistics", type: "Supplier", risk: 0.05, email: "logistics@yaskawa.com" },
+        { id: "SUP-302", name: "SMC Pneumatics Cleveland", type: "Supplier", risk: 0.03, email: "orders@smcpneumatics.com" },
+        { id: "SUP-303", name: "Siemens Munich", type: "Supplier", risk: 0.10, email: "logistics@siemens.de" },
+        { id: "SUP-304", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" }
+      ]);
+      setEditorEdges([
+        { source: "SUP-301", target: "PART-301", relationship: "SUPPLIES", transit: 7, price: 4200.00 },
+        { source: "SUP-302", target: "PART-303", relationship: "SUPPLIES", transit: 2, price: 120.00 },
+        { source: "SUP-303", target: "PART-302", relationship: "SUPPLIES", transit: 5, price: 1100.00 },
+        { source: "SUP-304", target: "PART-304", relationship: "SUPPLIES", transit: 3, price: 195.00 },
+        { source: "SUP-303", target: "PART-301", relationship: "SUPPLIES", transit: 29, price: 3900.00 }
+      ]);
+    } else if (presetType === "empty") {
+      setEditorMachines([]);
+      setEditorInventory([]);
+      setEditorNodes([]);
+      setEditorEdges([]);
+    }
+  };
+
+  // POST newly visual configurations directly into PostgreSQL DB
+  const handleSaveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          machines: editorMachines,
+          inventory: editorInventory,
+          nodes: editorNodes,
+          edges: editorEdges
+        })
+      });
+      if (res.ok) {
+        setShowEditor(false);
+        await refreshData();
+        alert("Factory fleet structure successfully synchronized with PostgreSQL DB!");
+      } else {
+        const err = await res.json();
+        alert("Failed to synchronize structures: " + err.error);
+      }
+    } catch (err) {
+      console.error("Config save failed:", err);
+      alert("Connection to backend database failed.");
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const tutorialSteps = [
     {
@@ -515,13 +721,6 @@ export default function Home() {
   const isM2Anomaly = useMemo(() => {
     if (!data || !data.machines) return false;
     return data.machines.some(m => m.status === "Critical" || m.status === "Degraded");
-  }, [data]);
-
-  const firstMachine = useMemo(() => {
-    if (data && data.machines && data.machines.length > 0) {
-      return data.machines[0];
-    }
-    return { id: "MCH-002", name: "High-Speed Industrial Fan B", status: "Operational" };
   }, [data]);
 
   if (!isSetupCompleted) {
@@ -1104,9 +1303,7 @@ export default function Home() {
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Dashboard Tour</span>
-          </button>
-
-          <button
+          </button>          <button
             onClick={() => {
               if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
                 setIsSetupCompleted(false);
@@ -1126,6 +1323,24 @@ export default function Home() {
           >
             <LayoutGrid className="w-3.5 h-3.5" />
             <span>Projects Portal</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
+              setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
+              setEditorNodes(data?.graph?.nodes ? JSON.parse(JSON.stringify(data.graph.nodes)) : []);
+              setEditorEdges(data?.graph?.links ? JSON.parse(JSON.stringify(data.graph.links)) : []);
+              setShowEditor(true);
+            }}
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+              theme === 'dark'
+                ? 'bg-slate-900 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
+                : 'bg-white text-cyan-700 border-cyan-200/80 hover:bg-cyan-600 hover:text-white shadow-sm'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Configure Fleet & Graph</span>
           </button>
 
           <button
@@ -1307,132 +1522,234 @@ export default function Home() {
             <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-5 flex-1 flex flex-col justify-between relative overflow-hidden min-h-[460px] max-h-[460px]`}>
               
               <div className={`w-full flex-1 flex items-center justify-center relative rounded-lg border p-2 overflow-hidden select-none transition-all duration-300 ${theme === 'dark' ? 'bg-[#06080c]/60 border-[#182030]/40' : 'bg-slate-50 border-slate-100 shadow-inner'}`}>
-                <svg width="100%" height="100%" viewBox="0 0 600 340" className="max-w-full max-h-full">
-                  <defs>
-                    <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="6" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                    <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="4" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-
-                  {/* Directed Edge lines linking the hierarchy */}
-                  <line x1="80" y1="170" x2="220" y2="90" stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")} strokeWidth={isM2Anomaly ? "3.5" : "1.5"} strokeDasharray={isM2Anomaly ? "6,4" : ""} />
-                  <line x1="80" y1="170" x2="220" y2="170" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-                  <line x1="80" y1="170" x2="220" y2="250" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-
-                  <line x1="220" y1="90" x2="380" y2="50" stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")} strokeWidth={isM2Anomaly ? "3.5" : "1.5"} />
-                  <line x1="220" y1="90" x2="380" y2="130" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-
-                  <line x1="220" y1="170" x2="380" y2="50" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-                  <line x1="220" y1="170" x2="380" y2="210" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-
-                  <line x1="220" y1="250" x2="380" y2="210" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-                  <line x1="220" y1="250" x2="380" y2="290" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-
-                  <line x1="380" y1="130" x2="520" y2="130" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1" strokeDasharray="3,3" />
-                  <line x1="380" y1="50" x2="520" y2="130" stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")} strokeWidth={isM2Anomaly ? "2" : "1"} strokeDasharray="3,3" />
-
-                  {isM2Anomaly && (
-                    <g>
-                      <circle cx="220" cy="90" r="14" fill="#f59e0b" opacity="0.15" className="animate-ping" />
-                      <circle cx="380" cy="50" r="14" fill="#f59e0b" opacity="0.15" className="animate-ping" />
-                    </g>
-                  )}
-
-                  {/* Nodes */}
-                  <g transform="translate(80, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: firstMachine.name, role: 'Telemetry Root Source', details: `Status: ${firstMachine.status}. Requires critical spares immediately to bypass active downtime warnings.` })}>
-                    <rect x="-35" y="-18" width="70" height="36" rx="4" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isM2Anomaly ? "#ef4444" : "#2563eb"} strokeWidth="2" />
-                    <text textAnchor="middle" y="4" fill={theme === 'dark' ? "#f8fafc" : "#1e293b"} fontSize="10" fontWeight="bold" fontFamily="monospace">{firstMachine.id}</text>
-                    <text textAnchor="middle" y="-23" fill="#64748b" fontSize="8" fontWeight="600">ROOT FLEET</text>
-                  </g>
-
-                  <g transform="translate(220, 90)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: '3-Phase Motor Winding', role: 'Component Node (PART-004)', details: 'Relational database stock audit: OUT OF STOCK (Stock: 1, Reorder Pt: 3). Escalated sourcing to SKF Munich air-freight routing.' })}>
-                    <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isM2Anomaly ? "url(#glow-orange)" : ""} />
-                    <text textAnchor="middle" y="3" fill={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#cbd5e1" : "#475569")} fontSize="9" fontWeight="bold" fontFamily="monospace">P4</text>
-                    <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-004</text>
-                  </g>
-
-                  <g transform="translate(220, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Heavy-Duty Bearing Cage', role: 'Component Node (PART-001)', details: 'Relational database stock audit: IN STOCK (Stock: 15, Reorder Pt: 5). Approved Sarah Jenkins ticket for direct dispatch.' })}>
-                    <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
-                    <text textAnchor="middle" y="3" fill={theme === 'dark' ? "#cbd5e1" : "#475569"} fontSize="9" fontWeight="bold" fontFamily="monospace">P1</text>
-                    <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-001</text>
-                  </g>
-
-                  <g transform="translate(220, 250)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'High-Pressure Hydraulic Seal', role: 'Component Node (PART-002)', details: 'Relational database stock audit: OUT OF STOCK (Stock: 1). Rerouted supply chain to Cleveland.' })}>
-                    <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
-                    <text textAnchor="middle" y="3" fill={theme === 'dark' ? "#cbd5e1" : "#475569"} fontSize="9" fontWeight="bold" fontFamily="monospace">P2</text>
-                    <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-002</text>
-                  </g>
-
-                  <g transform="translate(380, 50)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'SKF Munich Logistics', role: 'Direct Supplier (Tier 1)', details: 'Winning candidate for Part-004. lead-time: 5 days, Sourcing optimization Resilience Score: 59.50. Air freight routes pre-approved.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isM2Anomaly ? "url(#glow-orange)" : ""} />
-                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9" fontWeight="bold">SKF Munich</text>
-                    <text textAnchor="middle" y="-18" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace">{isM2Anomaly ? "WINNER 59.50" : ""}</text>
-                  </g>
-
-                  <g transform="translate(380, 130)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Siemens Shanghai Ltd', role: 'Direct Supplier (Tier 1)', details: 'Candidate for Part-004. lead-time: 28 days (Extreme maritime bottleneck penalty), Resilience Score: 18.20. High downtime risk.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
-                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">Siemens SH</text>
-                  </g>
-
-                  <g transform="translate(380, 210)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Parker Hannifin Cleveland', role: 'Direct Supplier (Tier 1)', details: 'Winning candidate for Part-002. lead-time: 2 days, Sourcing resilience score: 82.23. High quality low risk supplier.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
-                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">Parker Hannifin</text>
-                  </g>
-
-                  <g transform="translate(380, 290)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'VarnishTech Graz', role: 'Direct Supplier (Tier 1)', details: 'Candidate for Part-002. lead-time: 6 days, price: $750, resilience score: 62.40.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
-                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">VarnishTech</text>
-                  </g>
-
-                  <g transform="translate(520, 130)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'CopperWorks Ohio', role: 'Copper Fabricator (Tier 2)', details: 'Supplies raw high-grade wire to SKF Munich coil assembly line. Risk Profile: 0.10 (Low risk profile, stable).' })}>
-                    <rect x="-24" y="-12" width="48" height="24" rx="2" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-                    <text textAnchor="middle" y="3" fill="#94a3b8" fontSize="8" fontWeight="bold" fontFamily="monospace">COPPER</text>
-                    <text textAnchor="middle" y="23" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">CopperWorks</text>
-                  </g>
-                </svg>
-
-                {selectedSupplierNode && (
-                  <div className={`absolute bottom-4 left-4 right-4 border rounded-lg p-3.5 backdrop-blur-sm font-mono text-xs shadow-2xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-950/95 border-amber-500/20 text-slate-300' : 'bg-white/95 border-amber-500/40 text-slate-700 shadow-[0_10px_30px_rgba(0,0,0,0.08)]'}`}>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className={`font-bold tracking-wide uppercase ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>{selectedSupplierNode.name}</span>
-                      <span className="text-[9px] text-slate-500 uppercase">{selectedSupplierNode.role}</span>
+                {(!data?.graph?.nodes || data.graph.nodes.length === 0) ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center font-mono text-xs select-none animate-fadeIn">
+                    <div className={`p-4 rounded-full border border-dashed mb-3 ${theme === 'dark' ? 'bg-[#0c0f17] border-slate-700/50' : 'bg-slate-50 border-slate-300'}`}>
+                      <Activity className={`h-8 w-8 text-slate-500 animate-pulse`} />
                     </div>
-                    <p className={`leading-normal ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{selectedSupplierNode.details}</p>
+                    <p className={`font-bold tracking-wider uppercase mb-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>Supply Chain Graph is Empty</p>
+                    <p className="text-[10px] text-slate-500 max-w-sm mb-4 leading-relaxed">
+                      No parts or suppliers have been registered for this custom fleet project yet. Use the configurator below to build your supply chain pathways.
+                    </p>
                     <button 
-                      onClick={() => setSelectedSupplierNode(null)} 
-                      className="absolute top-2 right-2 text-slate-500 hover:text-white"
+                      onClick={() => {
+                        setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
+                        setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
+                        setEditorNodes(data?.graph?.nodes ? JSON.parse(JSON.stringify(data.graph.nodes)) : []);
+                        setEditorEdges(data?.graph?.links ? JSON.parse(JSON.stringify(data.graph.links)) : []);
+                        setShowEditor(true);
+                      }}
+                      className="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-mono text-[9px] font-bold rounded-lg hover:from-cyan-500 hover:to-blue-500 transition-all duration-300 flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
                     >
-                      ✕
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Seed or Edit Structure</span>
                     </button>
                   </div>
+                ) : (
+                  <svg width="100%" height="100%" viewBox="0 0 600 340" className="max-w-full max-h-full">
+                    <defs>
+                      <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="6" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                      <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+
+                    {/* Sourcing active highlights detection */}
+                    {(() => {
+                      const activeOrder = data.maintenance_orders?.find(o => o.status.includes('Sourcing') || o.status === 'Pending_Sourcing');
+                      const failedMachine = data.machines?.find(m => m.id === activeOrder?.machine_id);
+                      const requiredPartId = failedMachine?.critical_thresholds?.required_part_id || "PART-004";
+                      const winnerSupplierName = activeOrder?.root_cause?.match(/Selected Supplier:\s*([^\n\r]+)/)?.[1]?.replace(/\([^)]+\)/g, "")?.trim() || "";
+
+                      // Build lines connecting machine node to all Part nodes
+                      const partNodes = Object.values(layoutNodes).filter(n => n.type === 'Part');
+                      const rootId = firstMachine?.id || "MCH-001";
+                      const rootCoords = layoutNodes[rootId] || { x: 80, y: 170 };
+
+                      return (
+                        <g>
+                          {/* 1. Draw connections from Machine node to all Part nodes */}
+                          {partNodes.map(p => {
+                            const isPathSourced = activeOrder && p.id === requiredPartId;
+                            return (
+                              <line
+                                key={`mach-to-${p.id}`}
+                                x1={rootCoords.x}
+                                y1={rootCoords.y}
+                                x2={p.x}
+                                y2={p.y}
+                                stroke={isPathSourced ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")}
+                                strokeWidth={isPathSourced ? "3.5" : "1.5"}
+                                strokeDasharray={isPathSourced ? "6,4" : ""}
+                              />
+                            );
+                          })}
+
+                          {/* 2. Draw connections between Parts, Suppliers, and Materials from links data */}
+                          {(data.graph.links || []).map((link, idx) => {
+                            const src = layoutNodes[link.source];
+                            const tgt = layoutNodes[link.target];
+                            if (!src || !tgt) return null;
+
+                            // Determine if this path connects to the required part and is the winner supplier
+                            const isRequiredPartEdge = (src.id === requiredPartId || tgt.id === requiredPartId);
+                            const isWinnerEdge = activeOrder && isRequiredPartEdge && 
+                              (src.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) || 
+                               tgt.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) ||
+                               activeOrder.root_cause.toLowerCase().includes(src.name.toLowerCase()) ||
+                               activeOrder.root_cause.toLowerCase().includes(tgt.name.toLowerCase()));
+
+                            return (
+                              <line
+                                key={`edge-${idx}`}
+                                x1={src.x}
+                                y1={src.y}
+                                x2={tgt.x}
+                                y2={tgt.y}
+                                stroke={isWinnerEdge ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")}
+                                strokeWidth={isWinnerEdge ? "3.5" : "1.5"}
+                              />
+                            );
+                          })}
+
+                          {/* 3. Render Ping effects for actively sourced nodes */}
+                          {activeOrder && Object.values(layoutNodes).map(node => {
+                            const isTargetPart = node.type === 'Part' && node.id === requiredPartId;
+                            const isWinnerSupplier = node.type === 'Supplier' && 
+                              (node.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) || 
+                               activeOrder.root_cause.toLowerCase().includes(node.name.toLowerCase()));
+
+                            if (isTargetPart || isWinnerSupplier) {
+                              return (
+                                <circle
+                                  key={`ping-${node.id}`}
+                                  cx={node.x}
+                                  cy={node.y}
+                                  r="14"
+                                  fill="#f59e0b"
+                                  opacity="0.15"
+                                  className="animate-ping"
+                                />
+                              );
+                            }
+                            return null;
+                          })}
+
+                          {/* 4. Render Machine Root Node */}
+                          {(() => {
+                            const isCritical = firstMachine?.status === "Critical" || firstMachine?.status === "Degraded";
+                            return (
+                              <g transform={`translate(${rootCoords.x}, ${rootCoords.y})`} className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: firstMachine?.name || "Root Asset", role: 'Telemetry Root Source', details: `Status: ${firstMachine?.status || 'Operational'}. Requires critical spares immediately to bypass active downtime warnings.` })}>
+                                <rect x="-35" y="-18" width="70" height="36" rx="4" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isCritical ? "#ef4444" : "#2563eb"} strokeWidth="2" />
+                                <text textAnchor="middle" y="4" fill={theme === 'dark' ? "#f8fafc" : "#1e293b"} fontSize="10" fontWeight="bold" fontFamily="monospace">{firstMachine?.id || "MCH-001"}</text>
+                                <text textAnchor="middle" y="-23" fill="#64748b" fontSize="8" fontWeight="600">ROOT FLEET</text>
+                              </g>
+                            );
+                          })()}
+
+                          {/* 5. Render Parts, Suppliers, Materials */}
+                          {Object.values(layoutNodes).filter(n => n.type !== 'Machine').map(node => {
+                            const isTargetPart = activeOrder && node.type === 'Part' && node.id === requiredPartId;
+                            const isWinnerSupplier = activeOrder && node.type === 'Supplier' && 
+                              (node.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) || 
+                               activeOrder.root_cause.toLowerCase().includes(node.name.toLowerCase()));
+                            const isHighlighted = isTargetPart || isWinnerSupplier;
+
+                            if (node.type === 'Part') {
+                              return (
+                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer" onClick={() => {
+                                  const invItem = data.inventory?.find(i => i.part_id === node.id);
+                                  setSelectedSupplierNode({
+                                    name: node.name,
+                                    role: `Component Node (${node.id})`,
+                                    details: invItem ? `Relational database stock audit: ${invItem.stock_level <= invItem.reorder_point ? 'LOW STOCK' : 'IN STOCK'} (Stock: ${invItem.stock_level}, Reorder Pt: ${invItem.reorder_point}). Value: $${invItem.cost}. Storage Location: ${invItem.location}.` : `Part configuration node. Sourcing active.`
+                                  });
+                                }}>
+                                  <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isHighlighted ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isHighlighted ? "url(#glow-orange)" : ""} />
+                                  <text textAnchor="middle" y="3" fill={isHighlighted ? "#f59e0b" : (theme === 'dark' ? "#cbd5e1" : "#475569")} fontSize="9" fontWeight="bold" fontFamily="monospace">{node.id.replace("PART-", "P")}</text>
+                                  <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">{node.id}</text>
+                                </g>
+                              );
+                            } else if (node.type === 'Supplier') {
+                              return (
+                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer" onClick={() => {
+                                  setSelectedSupplierNode({
+                                    name: node.name,
+                                    role: 'Direct Supplier (Tier 1)',
+                                    details: `Supplier risk rating: ${(node.risk * 100).toFixed(0)}%. Email contact: ${node.email || 'N/A'}. Emergency transit route pre-approved for priority fulfillment.`
+                                  });
+                                }}>
+                                  <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isHighlighted ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isHighlighted ? "url(#glow-orange)" : ""} />
+                                  <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9" fontWeight="bold">{node.name.length > 12 ? node.name.substr(0, 10) + ".." : node.name}</text>
+                                  {isHighlighted && (
+                                    <text textAnchor="middle" y="-18" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace">WINNER</text>
+                                  )}
+                                </g>
+                              );
+                            } else {
+                              // Material Node
+                              return (
+                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer" onClick={() => {
+                                  setSelectedSupplierNode({
+                                    name: node.name,
+                                    role: 'Raw Material (Tier 2)',
+                                    details: `Raw material items used in parts production. Sourcing risk score: ${(node.risk * 100).toFixed(0)}%.`
+                                  });
+                                }}>
+                                  <rect x="-24" y="-12" width="48" height="24" rx="2" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
+                                  <text textAnchor="middle" y="3" fill="#94a3b8" fontSize="8" fontWeight="bold" fontFamily="monospace">MATERIAL</text>
+                                  <text textAnchor="middle" y="23" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">{node.name.length > 12 ? node.name.substr(0, 10) + ".." : node.name}</text>
+                                </g>
+                              );
+                            }
+                          })}
+                        </g>
+                      );
+                    })()}
+                  </svg>
                 )}
               </div>
 
-              {/* Legend */}
-              <div className={`border-t pt-4 flex flex-wrap gap-4 justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
-                <div className="flex space-x-3">
-                  <span className="flex items-center space-x-1">
-                    <span className={`h-2 w-3 border border-blue-500 rounded-sm ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
-                    <span>Fleet Node</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <span className={`h-2.5 w-2.5 rounded-full border border-slate-500 ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
-                    <span>Part ID</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <span className="h-0 w-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[9px] border-b-slate-400 bg-transparent"></span>
-                    <span>Direct Supp.</span>
-                  </span>
+              {selectedSupplierNode && (
+                <div className={`absolute bottom-4 left-4 right-4 border rounded-lg p-3.5 backdrop-blur-sm font-mono text-xs shadow-2xl transition-all duration-300 bg-slate-950/95 border-amber-500/20 text-slate-350 ${theme === 'dark' ? 'bg-slate-950/95 border-amber-500/20 text-slate-300' : 'bg-white/95 border-amber-500/40 text-slate-700 shadow-[0_10px_30px_rgba(0,0,0,0.08)]'}`}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className={`font-bold tracking-wide uppercase ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>{selectedSupplierNode.name}</span>
+                    <span className="text-[9px] text-slate-500 uppercase">{selectedSupplierNode.role}</span>
+                  </div>
+                  <p className={`leading-normal ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{selectedSupplierNode.details}</p>
+                  <button 
+                    onClick={() => setSelectedSupplierNode(null)} 
+                    className="absolute top-2 right-2 text-slate-555 hover:text-white"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="flex items-center space-x-2 text-amber-500">
-                  <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-                  <span className="font-bold">Active Sourcing Bottleneck Highlighted</span>
-                </div>
+              )}
+            </div>
+
+            {/* Legend */}
+            <div className={`border-t pt-4 flex flex-wrap gap-4 justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
+              <div className="flex space-x-3">
+                <span className="flex items-center space-x-1">
+                  <span className={`h-2 w-3 border border-blue-500 rounded-sm ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
+                  <span>Fleet Node</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <span className={`h-2.5 w-2.5 rounded-full border border-slate-500 ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
+                  <span>Part ID</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <span className="h-0 w-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[9px] border-b-slate-400 bg-transparent"></span>
+                  <span>Direct Supp.</span>
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 text-amber-500">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+                <span className="font-bold">Active Sourcing Bottleneck Highlighted</span>
               </div>
             </div>
           </section>
@@ -1654,6 +1971,705 @@ export default function Home() {
                 Approve & Send
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visual Editor Configurator Modal Panel */}
+      {showEditor && (
+        <div className="fixed inset-0 z-55 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`w-full max-w-5xl rounded-2xl border flex flex-col max-h-[90vh] overflow-hidden shadow-2xl transition-all duration-300 ${
+            theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-300 shadow-[0_0_50px_rgba(6,182,212,0.15)]' : 'bg-white border-slate-200 text-slate-700'
+          }`}>
+            
+            {/* Modal Header */}
+            <div className={`border-b px-6 py-4 flex justify-between items-center ${
+              theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/80' : 'border-slate-100 bg-slate-50'
+            }`}>
+              <div>
+                <h3 className={`font-mono text-sm font-bold uppercase tracking-wider flex items-center space-x-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-slate-800'
+                }`}>
+                  <Settings className="w-5 h-5 text-cyan-400 animate-spin-slow" />
+                  <span>Visual Fleet & Graph Configurator</span>
+                </h3>
+                <p className="text-[10px] text-slate-500 font-mono mt-0.5">Customize your factory machines, spare parts catalog, and supply chain routing nodes/edges</p>
+              </div>
+              <button 
+                onClick={() => setShowEditor(false)}
+                className={`text-slate-500 hover:text-slate-300 transition-colors p-1.5 rounded-lg ${
+                  theme === 'dark' ? 'hover:bg-slate-800/45' : 'hover:bg-slate-100'
+                }`}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Presets Quick Load Bar inside modal */}
+            <div className={`px-6 py-3.5 border-b flex flex-wrap items-center justify-between gap-3 text-xs font-mono bg-cyan-950/[0.08] ${
+              theme === 'dark' ? 'border-[#182030]/60 text-slate-400' : 'border-slate-150 text-slate-600'
+            }`}>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">LOAD PRESET STRUCTURES:</span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("steel")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-blue-950/20 border-blue-500/30 text-blue-400 hover:bg-blue-900/30'
+                      : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Heavy Steel Mill
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("petrochemical")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/30'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                >
+                  Petrochemical Refinery
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("automotive")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-purple-950/20 border-purple-500/30 text-purple-400 hover:bg-purple-900/30'
+                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                  }`}
+                >
+                  Robotics Assembly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("empty")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'
+                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Clear to Empty (Zero)
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Tabs Selector */}
+            <div className={`flex border-b font-mono text-xs p-1 gap-1 ${
+              theme === 'dark' ? 'border-[#182030]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-50'
+            }`}>
+              {[
+                { tabId: "machines", label: "Fleet Assets", icon: <Cpu className="w-3.5 h-3.5" /> },
+                { tabId: "inventory", label: "Spare Inventory", icon: <Database className="w-3.5 h-3.5" /> },
+                { tabId: "nodes", label: "Graph Nodes", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+                { tabId: "edges", label: "Graph Edges", icon: <Activity className="w-3.5 h-3.5" /> },
+              ].map(t => (
+                <button
+                  key={t.tabId}
+                  onClick={() => setEditorTab(t.tabId)}
+                  className={`flex-1 py-2.5 px-3 rounded-lg font-bold uppercase transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                    editorTab === t.tabId
+                      ? (theme === 'dark' 
+                          ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.05)]" 
+                          : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/20"
+                  }`}
+                >
+                  {t.icon}
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Modal Body / Tab Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              
+              {/* FLEET ASSETS TAB */}
+              {editorTab === "machines" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Fleet Asset System Profiles ({editorMachines.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditorMachines(prev => [
+                        ...prev,
+                        { id: `MCH-10${prev.length + 1}`, name: `Asset ${prev.length + 1}`, location: "Bay 1 Assembly", thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" } }
+                      ])}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Fleet Machine
+                    </button>
+                  </div>
+
+                  {editorMachines.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No machines defined in custom fleet database. Click "Add Fleet Machine" or load a preset.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editorMachines.map((m, idx) => (
+                        <div key={idx} className={`border p-4 rounded-xl space-y-3 font-mono text-xs relative ${
+                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                        }`}>
+                          <div className="flex justify-between items-center border-b pb-2 mb-2 border-slate-700/20">
+                            <span className="text-cyan-500 font-bold">Fleet Asset #{idx + 1} Profile</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditorMachines(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
+                            >
+                              <Trash className="w-3 h-3" /> Remove
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Asset ID</label>
+                              <input
+                                type="text"
+                                value={m.id}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, id: val } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'
+                                } border`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Name</label>
+                              <input
+                                type="text"
+                                value={m.name}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500'
+                                } border`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Bay Location</label>
+                              <input
+                                type="text"
+                                value={m.location}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, location: val } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                } border`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Requires Spare Part</label>
+                              <select
+                                value={m.thresholds?.required_part_id || "PART-001"}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, required_part_id: val } } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                } border`}
+                              >
+                                {editorInventory.length === 0 ? (
+                                  <option value="PART-001">PART-001 (Default)</option>
+                                ) : (
+                                  editorInventory.map(part => (
+                                    <option key={part.part_id} value={part.part_id}>{part.part_id} - {part.part_name}</option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <span className="block text-[9px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Winding Temp limit (°C)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.temperature || 90.0}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, temperature: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Vibration limit (mm/s)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.vibration || 8.0}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, vibration: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Discharge Pres limit (Bar)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.pressure || 6.5}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, pressure: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Coil Amps limit (A)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.current || 15.0}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, current: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SPARE INVENTORY TAB */}
+              {editorTab === "inventory" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Spare Parts Catalog ({editorInventory.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditorInventory(prev => [
+                        ...prev,
+                        { part_id: `PART-10${prev.length + 1}`, part_name: `Spare Part ${prev.length + 1}`, stock_level: 5, reorder_point: 2, cost: 150.00, location: "Warehouse A - Aisle 1" }
+                      ])}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Spare Part
+                    </button>
+                  </div>
+
+                  {editorInventory.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No spare parts defined. Click "Add Spare Part" or load a preset.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editorInventory.map((item, idx) => (
+                        <div key={idx} className={`border p-4 rounded-xl grid grid-cols-1 md:grid-cols-7 gap-3 font-mono text-xs relative ${
+                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                        }`}>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Part ID</label>
+                            <input
+                              type="text"
+                              value={item.part_id}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, part_id: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Part Name</label>
+                            <input
+                              type="text"
+                              value={item.part_name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, part_name: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Stock Level</label>
+                            <input
+                              type="number"
+                              value={item.stock_level}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, stock_level: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Reorder Pt</label>
+                            <input
+                              type="number"
+                              value={item.reorder_point}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, reorder_point: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Unit Cost ($)</label>
+                            <input
+                              type="number"
+                              value={item.cost}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0.0;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, cost: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div className="flex items-end justify-between gap-2">
+                            <div className="flex-1">
+                              <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Location</label>
+                              <input
+                                type="text"
+                                value={item.location}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, location: val } : p));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                } border`}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEditorInventory(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-300 font-bold p-2.5 rounded-lg border border-red-500/10 hover:bg-red-500/10"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* GRAPH NODES TAB */}
+              {editorTab === "nodes" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Supply Chain Nodes ({editorNodes.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditorNodes(prev => [
+                        ...prev,
+                        { id: `SUP-10${prev.length + 1}`, name: `Supplier ${prev.length + 1}`, type: "Supplier", risk: 0.15, email: "sales@supplier.com" }
+                      ])}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Graph Node
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {editorNodes.map((n, idx) => (
+                      <div key={idx} className={`border p-4 rounded-xl space-y-3 font-mono text-xs relative ${
+                        theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                      }`}>
+                        <div className="flex justify-between items-center border-b pb-1.5 mb-1.5 border-slate-700/20">
+                          <span className="text-cyan-500 font-bold uppercase text-[10px]">Node #{idx + 1} Profile</span>
+                          <button
+                            type="button"
+                            onClick={() => setEditorNodes(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
+                          >
+                            <Trash className="w-3 h-3" /> Remove
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node ID (Tag)</label>
+                            <input
+                              type="text"
+                              value={n.id}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, id: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Name</label>
+                            <input
+                              type="text"
+                              value={n.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Type</label>
+                            <select
+                              value={n.type}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, type: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              <option value="Supplier">Supplier (Tier 1)</option>
+                              <option value="Part">Spare Part Component</option>
+                              <option value="Material">Raw Material (Tier 2)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Supplier Risk (0.0 to 1.0)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={n.risk || 0.0}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0.0;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, risk: val } : item));
+                              }}
+                              disabled={n.type === "Part"}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                n.type === "Part" ? "bg-slate-850/40 text-slate-500 cursor-not-allowed border-slate-800" :
+                                (theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800')
+                              } border`}
+                            />
+                          </div>
+                        </div>
+                        {n.type === "Supplier" && (
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Contact Email</label>
+                            <input
+                              type="email"
+                              value={n.email || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, email: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                              placeholder="sales@supplier.com"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* GRAPH EDGES TAB */}
+              {editorTab === "edges" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Supplier Graph Routing Edges ({editorEdges.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const defaultSource = editorNodes.find(n => n.type === "Supplier")?.id || "SUP-001";
+                        const defaultTarget = editorNodes.find(n => n.type === "Part")?.id || "PART-001";
+                        setEditorEdges(prev => [
+                          ...prev,
+                          { source: defaultSource, target: defaultTarget, relationship: "SUPPLIES", transit: 5, price: 200.00 }
+                        ]);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Graph Connection (Edge)
+                    </button>
+                  </div>
+
+                  {editorEdges.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No routing connections mapped in the database. Click "Add Graph Connection" or load a preset.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editorEdges.map((e, idx) => (
+                        <div key={idx} className={`border p-4 rounded-xl grid grid-cols-1 md:grid-cols-6 gap-3 font-mono text-xs relative ${
+                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                        }`}>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Source (From)</label>
+                            <select
+                              value={e.source}
+                              onChange={(val) => {
+                                const v = val.target.value;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, source: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              {editorNodes.map(node => (
+                                <option key={node.id} value={node.id}>{node.id} ({node.name})</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Target (To)</label>
+                            <select
+                              value={e.target}
+                              onChange={(val) => {
+                                const v = val.target.value;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, target: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              {editorNodes.map(node => (
+                                <option key={node.id} value={node.id}>{node.id} ({node.name})</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Relationship</label>
+                            <select
+                              value={e.relationship}
+                              onChange={(val) => {
+                                const v = val.target.value;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, relationship: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              <option value="SUPPLIES">SUPPLIES (Supplier &rarr; Part)</option>
+                              <option value="USED_IN">USED_IN (Material &rarr; Part)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Transit Lead Time (Days)</label>
+                            <input
+                              type="number"
+                              value={e.transit}
+                              onChange={(val) => {
+                                const v = parseInt(val.target.value) || 0;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, transit: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Price / Cost ($)</label>
+                            <input
+                              type="number"
+                              value={e.price}
+                              onChange={(val) => {
+                                const v = parseFloat(val.target.value) || 0.0;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, price: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div className="flex items-end justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setEditorEdges(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-300 font-bold p-2.5 rounded-lg border border-red-500/10 hover:bg-red-500/10"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className={`border-t px-6 py-4 flex justify-between items-center font-mono text-xs ${
+              theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/90' : 'border-slate-100 bg-slate-50'
+            }`}>
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                {savingConfig ? "WRITING TO FACTORY DB..." : "STANDING BY TO COMMIT CONFIG"}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditor(false)}
+                  className={`px-4 py-2 rounded-xl transition-all duration-200 border ${
+                    theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200/50'
+                  }`}
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConfig}
+                  disabled={savingConfig}
+                  className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.2)] disabled:opacity-50"
+                >
+                  {savingConfig ? "Synchronizing..." : "Apply & Sync to Factory DB"}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
