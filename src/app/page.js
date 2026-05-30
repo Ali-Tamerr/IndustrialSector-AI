@@ -137,6 +137,9 @@ export default function Home() {
     const completed = localStorage.getItem("isSetupCompleted");
     if (completed === "true") {
       setIsSetupCompleted(true);
+      if (window.location.hash !== "#dashboard") {
+        window.history.replaceState(null, "", "#dashboard");
+      }
     }
     const savedProjects = localStorage.getItem("projects");
     if (savedProjects) {
@@ -151,6 +154,20 @@ export default function Home() {
       setActiveProjectId(savedActiveId);
     }
   }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.hash !== "#dashboard") {
+        setIsSetupCompleted(false);
+        setActiveProjectId(null);
+        localStorage.removeItem("activeProjectId");
+        localStorage.removeItem("isSetupCompleted");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
 
   const generateDefaultName = (type, templateId) => {
     const customPrefixes = [
@@ -197,6 +214,9 @@ export default function Home() {
       if (res.ok) {
         localStorage.setItem("isSetupCompleted", "true");
         setIsSetupCompleted(true);
+        if (window.location.hash !== "#dashboard") {
+          window.history.pushState(null, "", "#dashboard");
+        }
         await refreshData();
         // Trigger tour onboarding dynamically on startup
         localStorage.removeItem("hasSeenTutorial");
@@ -1093,6 +1113,9 @@ export default function Home() {
                 setActiveProjectId(null);
                 localStorage.removeItem("activeProjectId");
                 localStorage.removeItem("isSetupCompleted");
+                if (window.location.hash === "#dashboard") {
+                  window.history.pushState(null, "", window.location.pathname);
+                }
               }
             }}
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
