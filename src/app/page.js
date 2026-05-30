@@ -23,10 +23,14 @@ import {
   Sparkles,
   Building,
   Database,
-  LayoutGrid
+  LayoutGrid,
+  Sun,
+  Moon
 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
+  ? ""
+  : (process.env.NEXT_PUBLIC_API_URL || "");
 
 // Inline Sparkline Component using native React SVG paths
 function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
@@ -89,6 +93,30 @@ export default function Home() {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
   const thoughtsEndRef = useRef(null);
+
+  const [theme, setTheme] = useState("dark");
+
+  // Load and apply theme globally
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("appTheme") || "dark";
+    setTheme(savedTheme);
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("appTheme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
 
   // Setup Portal states to explain project and configure data from scratch
   const [isSetupCompleted, setIsSetupCompleted] = useState(false);
@@ -309,15 +337,36 @@ export default function Home() {
 
   // Status badges configurations
   const getStatusBadges = (status) => {
+    const isDark = theme === "dark";
     switch (status) {
       case "Operational":
-        return { label: "Stable", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", dot: "bg-emerald-400", sparkColor: "#10b981" };
+        return { 
+          label: "Stable", 
+          bg: isDark ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-emerald-55 text-emerald-700 border-emerald-300", 
+          dot: "bg-emerald-500", 
+          sparkColor: "#10b981" 
+        };
       case "Degraded":
-        return { label: "Warning", bg: "bg-amber-500/10 text-amber-400 border-amber-500/20", dot: "bg-amber-400", sparkColor: "#f59e0b" };
+        return { 
+          label: "Warning", 
+          bg: isDark ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-amber-55 text-amber-700 border-amber-300", 
+          dot: "bg-amber-500", 
+          sparkColor: "#f59e0b" 
+        };
       case "Critical":
-        return { label: "Anomaly", bg: "bg-red-500/10 text-red-400 border-red-500/20", dot: "bg-red-400", sparkColor: "#ef4444" };
+        return { 
+          label: "Anomaly", 
+          bg: isDark ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-55 text-red-700 border-red-300", 
+          dot: "bg-red-500", 
+          sparkColor: "#ef4444" 
+        };
       default:
-        return { label: "Inactive", bg: "bg-slate-500/10 text-slate-400 border-slate-500/20", dot: "bg-slate-400", sparkColor: "#64748b" };
+        return { 
+          label: "Inactive", 
+          bg: isDark ? "bg-slate-500/10 text-slate-400 border-slate-500/20" : "bg-slate-100 text-slate-700 border-slate-200", 
+          dot: "bg-slate-500", 
+          sparkColor: "#64748b" 
+        };
     }
   };
 
@@ -354,102 +403,112 @@ export default function Home() {
 
   if (!isSetupCompleted) {
     return (
-      <div className="min-h-screen bg-[#030508] text-slate-300 font-sans p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden select-none selection:bg-cyan-500/30">
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} font-sans p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden select-none selection:bg-cyan-500/30 transition-colors duration-300`}>
         
-        {/* Futuristic Grid Overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.004)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.004)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#030508_10%,#030508_100%)] pointer-events-none"></div>
+        {/* Prismatic Digital Grid Background */}
+        <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none animate-grid-move`}></div>
+        <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,${theme === 'dark' ? '#030508' : '#f8fafc'}_10%,${theme === 'dark' ? '#030508' : '#f8fafc'}_100%)] pointer-events-none`}></div>
 
-        {/* Ambient Neon Floating Glow Meshes */}
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-600/[0.03] rounded-full blur-[140px] pointer-events-none animate-pulse-slow"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/[0.03] rounded-full blur-[140px] pointer-events-none animate-pulse-slow"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-blue-600/[0.015] rounded-full blur-[160px] pointer-events-none"></div>
+        {/* Ambient Floating Glow Mesh Spheres */}
+        <div className={`absolute top-[-15%] left-[-15%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.045]' : 'bg-purple-400/[0.06]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow`}></div>
+        <div className={`absolute bottom-[-15%] right-[-15%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.045]' : 'bg-cyan-400/[0.06]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow-alt`}></div>
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[580px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.035]'} rounded-full blur-[150px] pointer-events-none`}></div>
+
+        {/* Theme Toggle Button positioned absolute in the top-right corner */}
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
+          <button
+            onClick={toggleTheme}
+            className={`p-3 rounded-full border transition-all duration-300 flex items-center justify-center ${
+              theme === 'dark'
+                ? 'bg-slate-950/40 border-slate-800 text-yellow-400 hover:bg-slate-900 hover:text-yellow-300 hover:scale-105 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 shadow-[0_6px_20px_rgba(0,0,0,0.06)] hover:scale-105'
+            }`}
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+        </div>
 
         <div className="w-full max-w-5xl space-y-10 z-10 animate-fadeIn">
           
-          {/* Main Header / Branding */}
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-cyan-950/20 border border-cyan-500/20 text-cyan-400 text-[10px] font-mono tracking-[0.2em] font-bold shadow-[0_0_15px_rgba(6,182,212,0.05)]">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
+            <div className={`inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full ${theme === 'dark' ? 'bg-cyan-950/20 border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-600 shadow-sm'} text-[10px] font-mono tracking-[0.2em] font-bold`}>
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
               <span>ORCHESTRATOR INITIALIZATION CORE</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight uppercase font-mono bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400 bg-clip-text text-transparent filter drop-shadow-[0_2px_10px_rgba(6,182,212,0.1)]">
+            <h1 className={`text-4xl md:text-5xl font-extrabold tracking-tight uppercase font-mono ${theme === 'dark' ? 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400' : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600'} bg-clip-text text-transparent filter drop-shadow-[0_2px_10px_rgba(6,182,212,0.1)]`}>
               AUTONOMIC CONTROL TOWER
             </h1>
             
-            <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-650'} max-w-2xl mx-auto leading-relaxed`}>
               Activate an autonomic, offline-first multi-agent predictive maintenance (PdM) fleet. Unify industrial telemetry, RAG diagnostics, and automated supply-chain graph routing.
             </p>
           </div>
 
-          {/* Section: Concept / Problem & Solution Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            {/* Card 1: Downtime Crisis */}
-            <div className="relative backdrop-blur-md bg-white/[0.01] border border-[#1b2336]/60 rounded-2xl p-6 transition-all duration-300 hover:border-red-500/20 hover:bg-white/[0.015] hover:shadow-[0_0_30px_rgba(239,68,68,0.03)] hover:-translate-y-0.5 group overflow-hidden">
+            <div className={`relative backdrop-blur-md ${theme === 'dark' ? 'bg-white/[0.01] border-[#1b2336]/60 hover:bg-white/[0.015] hover:border-red-500/25' : 'bg-white/60 border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:bg-white/80 hover:border-red-500/30'} rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(239,68,68,0.03)] hover:-translate-y-0.5 group overflow-hidden`}>
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500/10 via-red-500/40 to-red-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
               
               <div className="flex justify-between items-start mb-5">
-                <div className="h-10 w-10 bg-red-950/20 border border-red-500/25 rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(239,68,68,0.1)]">
+                <div className={`h-10 w-10 ${theme === 'dark' ? 'bg-red-950/20 border-red-500/25' : 'bg-red-50 border-red-200'} rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(239,68,68,0.1)]`}>
                   <AlertTriangle className="w-5 h-5 text-red-400" />
                 </div>
-                <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase">01 // CRITICAL</span>
+                <span className={`text-[9px] font-mono tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase`}>01 // CRITICAL</span>
               </div>
 
-              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider mb-2">The Downtime Crisis</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+              <h3 className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider mb-2`}>The Downtime Crisis</h3>
+              <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
                 Machinery breakdown is catastrophic. Industrial plants lose $22,000+ per minute when critical assets fail. Manual diagnostics, phone Tag, and surprise spare-stock deficits stall recovery for days or weeks.
               </p>
             </div>
 
-            {/* Card 2: Multi-Agent RAG */}
-            <div className="relative backdrop-blur-md bg-white/[0.01] border border-[#1b2336]/60 rounded-2xl p-6 transition-all duration-300 hover:border-blue-500/25 hover:bg-white/[0.015] hover:shadow-[0_0_30px_rgba(59,130,246,0.03)] hover:-translate-y-0.5 group overflow-hidden">
+            <div className={`relative backdrop-blur-md ${theme === 'dark' ? 'bg-white/[0.01] border-[#1b2336]/60 hover:bg-white/[0.015] hover:border-blue-500/25' : 'bg-white/60 border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:bg-white/80 hover:border-blue-500/30'} rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.03)] hover:-translate-y-0.5 group overflow-hidden`}>
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/10 via-blue-500/40 to-blue-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
               
               <div className="flex justify-between items-start mb-5">
-                <div className="h-10 w-10 bg-blue-950/20 border border-blue-500/25 rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(59,130,246,0.1)]">
+                <div className={`h-10 w-10 ${theme === 'dark' ? 'bg-blue-950/20 border-blue-500/25' : 'bg-blue-50 border-blue-200'} rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(59,130,246,0.1)]`}>
                   <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
                 </div>
-                <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase">02 // COMPUTE</span>
+                <span className={`text-[9px] font-mono tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase`}>02 // COMPUTE</span>
               </div>
 
-              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider mb-2">Multi-Agent Diagnostics</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+              <h3 className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider mb-2`}>Multi-Agent Diagnostics</h3>
+              <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
                 This system unifies monitoring. Upon sensor drift, specialized AI agents immediately diagnose failure modes, query machine manuals inside a vector database (RAG), and prepare targeted engineering repair tickets.
               </p>
             </div>
 
-            {/* Card 3: Optimal Sourcing */}
-            <div className="relative backdrop-blur-md bg-white/[0.01] border border-[#1b2336]/60 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-500/20 hover:bg-white/[0.015] hover:shadow-[0_0_30px_rgba(16,185,129,0.03)] hover:-translate-y-0.5 group overflow-hidden">
+            <div className={`relative backdrop-blur-md ${theme === 'dark' ? 'bg-white/[0.01] border-[#1b2336]/60 hover:bg-white/[0.015] hover:border-emerald-500/20' : 'bg-white/60 border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:bg-white/80 hover:border-emerald-500/30'} rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.03)] hover:-translate-y-0.5 group overflow-hidden`}>
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/10 via-emerald-500/40 to-emerald-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
               
               <div className="flex justify-between items-start mb-5">
-                <div className="h-10 w-10 bg-emerald-950/20 border border-emerald-500/25 rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]">
+                <div className={`h-10 w-10 ${theme === 'dark' ? 'bg-emerald-950/20 border-emerald-500/25' : 'bg-emerald-50 border-emerald-200'} rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]`}>
                   <Layers className="w-5 h-5 text-emerald-400" />
                 </div>
-                <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase">03 // RESOLVE</span>
+                <span className={`text-[9px] font-mono tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase`}>03 // RESOLVE</span>
               </div>
 
-              <h3 className="text-sm font-bold font-mono text-white uppercase tracking-wider mb-2">Optimal Sourcing bypass</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+              <h3 className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider mb-2`}>Optimal Sourcing bypass</h3>
+              <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
                 When a replacement part is out of stock, Sourcing agents automatically traverse the supply chain graph, choosing SKF Munich (5-day air-freight) over Siemens Shanghai (28-day maritime bottleneck) to bypass delays.
               </p>
             </div>
 
           </div>
 
-          {/* Seeding & Custom Setup Console Panel */}
-          <div className="bg-[#080b11]/90 border border-[#1b2336]/80 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+          <div className={`${theme === 'dark' ? 'bg-[#080b11]/90 border-[#1b2336]/80' : 'bg-white/80 border-slate-200 shadow-xl'} border rounded-2xl overflow-hidden`}>
             
-            {/* High-Tech Tab Bar */}
-            <div className="flex border-b border-[#1b2336]/80 bg-[#06080c] font-mono text-xs p-1 gap-1">
+            <div className={`flex border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-55'} font-mono text-xs p-1 gap-1`}>
               <button 
                 onClick={() => setActiveSetupTab("presets")}
                 className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
                   activeSetupTab === "presets" 
-                    ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                    : "text-slate-500 hover:text-slate-300"
+                    ? (theme === 'dark' 
+                        ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
+                        : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
+                    : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -459,8 +518,10 @@ export default function Home() {
                 onClick={() => setActiveSetupTab("custom")}
                 className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
                   activeSetupTab === "custom" 
-                    ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                    : "text-slate-500 hover:text-slate-300"
+                    ? (theme === 'dark' 
+                        ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
+                        : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
+                    : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
                 }`}
               >
                 <Plus className="w-4 h-4" />
@@ -468,16 +529,18 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Panel Body */}
             <div className="p-6 md:p-8">
               {activeSetupTab === "presets" ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     
-                    {/* Preset 1: Steel Rolling Mill */}
                     <div 
                       onClick={() => handleSetup("template", "steel")}
-                      className="border border-[#1b2336]/70 bg-[#05070a]/40 p-5 rounded-2xl hover:border-blue-500/50 hover:bg-blue-950/[0.04] hover:shadow-[0_0_30px_rgba(59,130,246,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+                      className={`border ${
+                        theme === 'dark' 
+                          ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-blue-500/50 hover:bg-blue-950/[0.04]' 
+                          : 'border-slate-200 bg-slate-50/50 hover:border-blue-500 hover:bg-blue-50/20 shadow-sm'
+                      } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(59,130,246,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
                     >
                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Building className="w-20 h-20 text-blue-400" />
@@ -485,25 +548,28 @@ export default function Home() {
                       
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25 uppercase tracking-wider">STEEL_MILL</span>
+                          <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-blue-400 bg-blue-500/10 border-blue-500/25' : 'text-blue-600 bg-blue-50 border-blue-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>STEEL_MILL</span>
                           <span className="h-1.5 w-1.5 rounded-full bg-blue-400 group-hover:animate-ping"></span>
                         </div>
-                        <h4 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Heavy Steel Rolling Mill</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                        <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-blue-500 transition-colors`}>Heavy Steel Rolling Mill</h4>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
                           Baseline fleet consisting of Rotary Gear Pumps, Industrial Exhaust Fans, and Pneumatic Compressors. Optimized for testing ball-bearing degradation.
                         </p>
                       </div>
 
                       <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
                         <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
-                        <span className="text-blue-400/80 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
+                        <span className="text-blue-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
                       </div>
                     </div>
 
-                    {/* Preset 2: Petrochemical Refinery */}
                     <div 
                       onClick={() => handleSetup("template", "petrochemical")}
-                      className="border border-[#1b2336]/70 bg-[#05070a]/40 p-5 rounded-2xl hover:border-emerald-500/50 hover:bg-emerald-950/[0.04] hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+                      className={`border ${
+                        theme === 'dark' 
+                          ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-emerald-500/50 hover:bg-emerald-950/[0.04]' 
+                          : 'border-slate-200 bg-slate-50/50 hover:border-emerald-500 hover:bg-emerald-50/20 shadow-sm'
+                      } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
                     >
                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Activity className="w-20 h-20 text-emerald-400" />
@@ -511,25 +577,28 @@ export default function Home() {
                       
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25 uppercase tracking-wider">HYDROCRACKER</span>
+                          <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-emerald-600 bg-emerald-50 border-emerald-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>HYDROCRACKER</span>
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 group-hover:animate-ping"></span>
                         </div>
-                        <h4 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">Petrochemical Refinery</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                        <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-emerald-500 transition-colors`}>Petrochemical Refinery</h4>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
                           Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals and Houston fast seal logistics routing.
                         </p>
                       </div>
 
                       <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
                         <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
-                        <span className="text-emerald-400/80 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
+                        <span className="text-emerald-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
                       </div>
                     </div>
 
-                    {/* Preset 3: Automotive Assembly */}
                     <div 
                       onClick={() => handleSetup("template", "automotive")}
-                      className="border border-[#1b2336]/70 bg-[#05070a]/40 p-5 rounded-2xl hover:border-purple-500/50 hover:bg-purple-950/[0.04] hover:shadow-[0_0_30px_rgba(168,85,247,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+                      className={`border ${
+                        theme === 'dark' 
+                          ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-purple-500/50 hover:bg-purple-950/[0.04]' 
+                          : 'border-slate-200 bg-slate-50/50 hover:border-purple-500 hover:bg-purple-50/20 shadow-sm'
+                      } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
                     >
                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Cpu className="w-20 h-20 text-purple-400" />
@@ -537,18 +606,18 @@ export default function Home() {
                       
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/25 uppercase tracking-wider">ROBOTICS</span>
+                          <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-purple-400 bg-purple-500/10 border-purple-500/25' : 'text-purple-600 bg-purple-50 border-purple-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>ROBOTICS</span>
                           <span className="h-1.5 w-1.5 rounded-full bg-purple-400 group-hover:animate-ping"></span>
                         </div>
-                        <h4 className="text-base font-bold text-white group-hover:text-purple-400 transition-colors">6-Axis Assembly Robotics</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
+                        <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-emerald-500 transition-colors`}>6-Axis Assembly Robotics</h4>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
                           Robot joint gearboxes, painting line drives, and assembly cells. Optimized for testing high-precision harmonic gear fault diagnostic routines.
                         </p>
                       </div>
 
                       <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
                         <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
-                        <span className="text-purple-400/80 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
+                        <span className="text-purple-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">LOAD MODULE <ArrowRight className="w-3 h-3" /></span>
                       </div>
                     </div>
 
@@ -556,13 +625,12 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Custom Fleet Builder */}
                   <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                     {customMachines.map((machine, index) => (
-                      <div key={index} className="border border-[#1b2336]/80 bg-[#05070a]/50 p-5 rounded-2xl relative space-y-4 font-mono text-xs">
+                      <div key={index} className={`border ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#05070a]/50' : 'border-slate-200 bg-slate-50'} p-5 rounded-2xl relative space-y-4 font-mono text-xs`}>
                         <div className="flex justify-between items-center border-b border-[#1b2336]/60 pb-3">
-                          <span className="text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                          <span className="text-cyan-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse"></span>
                             Asset #{index + 1} System Profile
                           </span>
                           
@@ -586,7 +654,7 @@ export default function Home() {
                                 const val = e.target.value;
                                 setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, id: val } : m));
                               }}
-                              className="w-full bg-[#080b11] border border-[#1b2336] rounded-xl p-2.5 text-white outline-none focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all font-mono"
+                              className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-mono`}
                               placeholder="e.g. MCH-101"
                             />
                           </div>
@@ -599,7 +667,7 @@ export default function Home() {
                                 const val = e.target.value;
                                 setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, name: val } : m));
                               }}
-                              className="w-full bg-[#080b11] border border-[#1b2336] rounded-xl p-2.5 text-white outline-none focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all font-sans"
+                              className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-sans`}
                               placeholder="e.g. Conveyor Belt Motor A"
                             />
                           </div>
@@ -612,13 +680,12 @@ export default function Home() {
                                 const val = e.target.value;
                                 setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, location: val } : m));
                               }}
-                              className="w-full bg-[#080b11] border border-[#1b2336] rounded-xl p-2.5 text-white outline-none focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all font-sans"
+                              className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-sans`}
                               placeholder="e.g. Bay 4 - Extraction Line"
                             />
                           </div>
                         </div>
 
-                        {/* Critical thresholds */}
                         <div className="pt-2">
                           <span className="block text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -631,7 +698,7 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, temperature: val } } : m));
                                 }}
-                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
+                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336]' : 'bg-white border-slate-200'} rounded-lg p-2 text-white outline-none focus:border-cyan-500`}
                               />
                             </div>
                             <div>
@@ -643,7 +710,7 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, vibration: val } } : m));
                                 }}
-                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
+                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336]' : 'bg-white border-slate-200'} rounded-lg p-2 text-white outline-none focus:border-cyan-500`}
                               />
                             </div>
                             <div>
@@ -655,7 +722,7 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, pressure: val } } : m));
                                 }}
-                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
+                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336]' : 'bg-white border-slate-200'} rounded-lg p-2 text-white outline-none focus:border-cyan-500`}
                               />
                             </div>
                             <div>
@@ -667,7 +734,7 @@ export default function Home() {
                                   const val = parseFloat(e.target.value) || 0;
                                   setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, current: val } } : m));
                                 }}
-                                className="w-full bg-[#080b11] border border-[#1b2336] rounded-lg p-2 text-white outline-none focus:border-cyan-500"
+                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336]' : 'bg-white border-slate-200'} rounded-lg p-2 text-white outline-none focus:border-cyan-500`}
                               />
                             </div>
                           </div>
@@ -684,7 +751,7 @@ export default function Home() {
                         ...prev,
                         { id: `MCH-10${prev.length + 1}`, name: "", location: "", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
                       ])}
-                      className="px-4 py-2.5 bg-[#090e18] border border-[#1b2336] rounded-xl hover:bg-[#121b2d] hover:border-slate-700 text-slate-300 disabled:opacity-50 transition-all font-bold flex items-center gap-1.5"
+                      className={`px-4 py-2.5 ${theme === 'dark' ? 'bg-[#090e18] border-[#1b2336]' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'} rounded-xl transition-all font-bold flex items-center gap-1.5`}
                     >
                       <Plus className="w-4 h-4" /> Add Another Asset
                     </button>
@@ -704,7 +771,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Dynamic seeding overlay */}
         {seeding && (
           <div className="fixed inset-0 z-50 bg-[#030508]/95 backdrop-blur-md flex flex-col items-center justify-center text-cyan-400 font-mono">
             <Activity className="h-10 w-10 animate-spin mb-4 text-cyan-400" />
@@ -717,7 +783,7 @@ export default function Home() {
 
   if (loading && !data) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[#0a0d13] text-blue-500 font-mono">
+      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-blue-600'} font-mono`}>
         <Activity className="h-10 w-10 animate-spin mb-4" />
         <div className="animate-pulse tracking-widest text-xs">SYNCHRONIZING CONTROL TOWER METRICS...</div>
       </div>
@@ -725,32 +791,44 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#06080c] pb-12 font-sans select-none text-slate-300">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} pb-12 font-sans select-none transition-colors duration-300 relative overflow-hidden`}>
       
+      {/* Prismatic Digital Grid Background for Dashboard */}
+      <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none animate-grid-move`}></div>
+      
+      {/* Ambient Floating Glow Mesh Spheres */}
+      <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.04]' : 'bg-purple-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow`}></div>
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow-alt`}></div>
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
+
       {/* Dynamic Header */}
-      <header className="border-b border-[#182030] bg-[#0c0f17]/95 px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
+      <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300 relative z-10`}>
         <div className="flex items-center space-x-3">
-          <div className="h-8.5 w-8.5 bg-blue-600/10 rounded border border-blue-500/30 flex items-center justify-center">
+          <div className={`h-8.5 w-8.5 ${theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'} rounded border flex items-center justify-center`}>
             <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
           </div>
           <div>
-            <h1 className="font-mono text-[16px] font-extrabold tracking-wider text-white flex items-center">
+            <h1 className={`font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-800'} flex items-center`}>
               AUTONOMIC INDUSTRIAL CONTROL TOWER
-              <span className="ml-3 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">AGENT_ORCHESTRATOR</span>
+              <span className={`ml-3 px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'} border`}>AGENT_ORCHESTRATOR</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Predictive Maintenance & Supply Chain Sourcing Graph</p>
+            <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} font-mono tracking-widest uppercase`}>Predictive Maintenance & Supply Chain Sourcing Graph</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-3.5">
           <div className="hidden lg:flex flex-col text-right font-mono text-[10px]">
-            <span className="text-slate-500">FLEET PERFORMANCE</span>
-            <span className="text-emerald-400 font-bold tracking-widest">99.78% RESILIENT</span>
+            <span className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>FLEET PERFORMANCE</span>
+            <span className={`${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'} font-bold tracking-widest`}>99.78% RESILIENT</span>
           </div>
 
           <button
             onClick={() => { setTutorialStep(0); setShowTutorial(true); }}
-            className="px-3 py-2 font-mono text-xs font-semibold rounded border bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center space-x-1.5"
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+              theme === 'dark'
+                ? 'bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white'
+                : 'bg-blue-50 text-blue-600 border-blue-200/80 hover:bg-blue-600 hover:text-white shadow-sm'
+            }`}
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Dashboard Tour</span>
@@ -763,7 +841,11 @@ export default function Home() {
                 setIsSetupCompleted(false);
               }
             }}
-            className="px-3 py-2 font-mono text-xs font-semibold rounded border bg-red-950/20 text-red-400 border-red-500/20 hover:bg-red-600 hover:text-white transition-all duration-300 flex items-center space-x-1.5"
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+              theme === 'dark'
+                ? 'bg-red-950/20 text-red-400 border-red-500/20 hover:bg-red-600 hover:text-white'
+                : 'bg-red-50 text-red-655 border-red-200/85 hover:bg-red-600 hover:text-white shadow-sm'
+            }`}
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Fleet</span>
@@ -776,11 +858,26 @@ export default function Home() {
             className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-2 ${
               simulating
                 ? "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed"
-                : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
-            } shadow-[0_0_15px_rgba(239,68,68,0.03)]`}
+                : (theme === 'dark'
+                    ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
+                    : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
+            }`}
           >
             <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
             <span>{simulating ? "PROCESSING AGENTS..." : `Simulate Failure on ${firstMachine.id}`}</span>
+          </button>
+
+          {/* Theme Toggle Button positioned at the far right of the sticky header */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2.5 rounded-full border transition-all duration-300 flex items-center justify-center ${
+              theme === 'dark'
+                ? 'bg-slate-950/40 border-slate-800 text-yellow-400 hover:bg-slate-900 hover:text-yellow-300 hover:scale-105 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-105'
+            }`}
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
       </header>
@@ -803,7 +900,7 @@ export default function Home() {
               const vibHistory = data.telemetry[machine.id]?.map(p => p.vibration) || [];
 
               return (
-                <div key={machine.id} className="bg-[#0c0f17] border border-[#182030] rounded-xl p-5 hover:border-slate-700 transition-all duration-300 relative overflow-hidden group">
+                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden pointer-events-none">
                     <div className={`absolute top-2.5 right-[-26px] transform rotate-45 text-center text-[9px] font-mono font-bold uppercase py-0.5 w-[90px] ${
                       machine.status === "Operational" ? "bg-emerald-500/10 text-emerald-400" :
@@ -815,7 +912,7 @@ export default function Home() {
 
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="font-mono text-white font-bold tracking-wide">{machine.name}</h3>
+                      <h3 className={`font-mono font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{machine.name}</h3>
                       <span className="text-[10px] text-slate-500 font-mono tracking-wider">{machine.id} · {machine.location}</span>
                     </div>
                     <span className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded-full border ${health.bg} flex items-center space-x-1 mr-6`}>
@@ -826,16 +923,16 @@ export default function Home() {
 
                   {latest ? (
                     <div className="space-y-4 font-mono">
-                      <div className="grid grid-cols-2 gap-4 border-b border-[#182030]/60 pb-4">
+                      <div className={`grid grid-cols-2 gap-4 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
                         <div>
                           <div className="text-[10px] text-slate-500 uppercase tracking-wider">Winding Temp</div>
-                          <div className="text-xl font-bold text-slate-200 mt-0.5">
+                          <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                             {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
                           </div>
                         </div>
                         <div>
                           <div className="text-[10px] text-slate-500 uppercase tracking-wider">Radial Vibration</div>
-                          <div className="text-xl font-bold text-slate-200 mt-0.5">
+                          <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                             {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
                           </div>
                         </div>
@@ -844,19 +941,19 @@ export default function Home() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Discharge Pressure</span>
-                          <span className="text-xs font-bold text-slate-300">{latest.pressure.toFixed(2)} Bar</span>
+                          <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.pressure.toFixed(2)} Bar</span>
                         </div>
                         <div>
                           <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Coil Amperage</span>
-                          <span className="text-xs font-bold text-slate-300">{latest.current.toFixed(1)} A</span>
+                          <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
                         </div>
                       </div>
 
                       {/* Sparkline trends */}
-                      <div className="mt-4 pt-4 border-t border-[#182030]/40 flex justify-between items-center">
+                      <div className={`mt-4 pt-4 border-t flex justify-between items-center ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
                         <div className="text-[9px] text-slate-500 font-bold leading-tight">
                           <div>24H REALTIME GRAPH</div>
-                          <div className="text-slate-400 mt-0.5">TEMP + VIB</div>
+                          <div className={`mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>TEMP + VIB</div>
                         </div>
                         <div className="h-9 opacity-80 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
                           <Sparkline data={tempHistory} color={health.sparkColor} width={70} height={32} />
@@ -883,8 +980,8 @@ export default function Home() {
               <span>Zone 2: Multi-Agent Execution Log (Thoughts Stream)</span>
             </h2>
             
-            <div className="bg-[#080a0f] border border-[#182030] rounded-xl flex-1 flex flex-col overflow-hidden scanlines shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px]">
-              <div className="border-b border-[#182030]/80 px-4 py-2.5 bg-[#0c0f17] flex items-center justify-between font-mono text-[9px] text-slate-500">
+            <div className={`bg-[#080a0f] border rounded-xl flex-1 flex flex-col overflow-hidden scanlines shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px] ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-200'}`}>
+              <div className={`border-b px-4 py-2.5 bg-[#0c0f17] flex items-center justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/80' : 'border-slate-250'}`}>
                 <div className="flex items-center space-x-1.5">
                   <span className="h-2 w-2 rounded-full bg-red-500/20"></span>
                   <span className="h-2 w-2 rounded-full bg-yellow-500/20"></span>
@@ -930,9 +1027,9 @@ export default function Home() {
               <span className="text-[9px] text-slate-500 normal-case tracking-normal">Click nodes to query relation pathways</span>
             </h2>
 
-            <div className="bg-[#0c0f17] border border-[#182030] rounded-xl p-5 flex-1 flex flex-col justify-between relative overflow-hidden min-h-[460px] max-h-[460px]">
+            <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-5 flex-1 flex flex-col justify-between relative overflow-hidden min-h-[460px] max-h-[460px]`}>
               
-              <div className="w-full flex-1 flex items-center justify-center relative bg-[#06080c]/60 rounded-lg border border-[#182030]/40 p-2 overflow-hidden select-none">
+              <div className={`w-full flex-1 flex items-center justify-center relative rounded-lg border p-2 overflow-hidden select-none transition-all duration-300 ${theme === 'dark' ? 'bg-[#06080c]/60 border-[#182030]/40' : 'bg-slate-50 border-slate-100 shadow-inner'}`}>
                 <svg width="100%" height="100%" viewBox="0 0 600 340" className="max-w-full max-h-full">
                   <defs>
                     <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
@@ -946,21 +1043,21 @@ export default function Home() {
                   </defs>
 
                   {/* Directed Edge lines linking the hierarchy */}
-                  <line x1="80" y1="170" x2="220" y2="90" stroke={isM2Anomaly ? "#f59e0b" : "#1e293b"} strokeWidth={isM2Anomaly ? "3.5" : "1.5"} strokeDasharray={isM2Anomaly ? "6,4" : ""} />
-                  <line x1="80" y1="170" x2="220" y2="170" stroke="#1e293b" strokeWidth="1.5" />
-                  <line x1="80" y1="170" x2="220" y2="250" stroke="#1e293b" strokeWidth="1.5" />
+                  <line x1="80" y1="170" x2="220" y2="90" stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")} strokeWidth={isM2Anomaly ? "3.5" : "1.5"} strokeDasharray={isM2Anomaly ? "6,4" : ""} />
+                  <line x1="80" y1="170" x2="220" y2="170" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
+                  <line x1="80" y1="170" x2="220" y2="250" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
 
-                  <line x1="220" y1="90" x2="380" y2="50" stroke={isM2Anomaly ? "#f59e0b" : "#1e293b"} strokeWidth={isM2Anomaly ? "3.5" : "1.5"} />
-                  <line x1="220" y1="90" x2="380" y2="130" stroke="#1e293b" strokeWidth="1.5" />
+                  <line x1="220" y1="90" x2="380" y2="50" stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")} strokeWidth={isM2Anomaly ? "3.5" : "1.5"} />
+                  <line x1="220" y1="90" x2="380" y2="130" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
 
-                  <line x1="220" y1="170" x2="380" y2="50" stroke="#1e293b" strokeWidth="1.5" />
-                  <line x1="220" y1="170" x2="380" y2="210" stroke="#1e293b" strokeWidth="1.5" />
+                  <line x1="220" y1="170" x2="380" y2="50" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
+                  <line x1="220" y1="170" x2="380" y2="210" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
 
-                  <line x1="220" y1="250" x2="380" y2="210" stroke="#1e293b" strokeWidth="1.5" />
-                  <line x1="220" y1="250" x2="380" y2="290" stroke="#1e293b" strokeWidth="1.5" />
+                  <line x1="220" y1="250" x2="380" y2="210" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
+                  <line x1="220" y1="250" x2="380" y2="290" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
 
-                  <line x1="380" y1="130" x2="520" y2="130" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
-                  <line x1="380" y1="50" x2="520" y2="130" stroke={isM2Anomaly ? "#f59e0b" : "#1e293b"} strokeWidth={isM2Anomaly ? "2" : "1"} strokeDasharray="3,3" />
+                  <line x1="380" y1="130" x2="520" y2="130" stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1" strokeDasharray="3,3" />
+                  <line x1="380" y1="50" x2="520" y2="130" stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")} strokeWidth={isM2Anomaly ? "2" : "1"} strokeDasharray="3,3" />
 
                   {isM2Anomaly && (
                     <g>
@@ -971,64 +1068,64 @@ export default function Home() {
 
                   {/* Nodes */}
                   <g transform="translate(80, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: firstMachine.name, role: 'Telemetry Root Source', details: `Status: ${firstMachine.status}. Requires critical spares immediately to bypass active downtime warnings.` })}>
-                    <rect x="-35" y="-18" width="70" height="36" rx="4" fill="#0c0f17" stroke={isM2Anomaly ? "#ef4444" : "#2563eb"} strokeWidth="2" />
-                    <text textAnchor="middle" y="4" fill="#f8fafc" fontSize="10" fontWeight="bold" fontFamily="monospace">{firstMachine.id}</text>
+                    <rect x="-35" y="-18" width="70" height="36" rx="4" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isM2Anomaly ? "#ef4444" : "#2563eb"} strokeWidth="2" />
+                    <text textAnchor="middle" y="4" fill={theme === 'dark' ? "#f8fafc" : "#1e293b"} fontSize="10" fontWeight="bold" fontFamily="monospace">{firstMachine.id}</text>
                     <text textAnchor="middle" y="-23" fill="#64748b" fontSize="8" fontWeight="600">ROOT FLEET</text>
                   </g>
 
                   <g transform="translate(220, 90)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: '3-Phase Motor Winding', role: 'Component Node (PART-004)', details: 'Relational database stock audit: OUT OF STOCK (Stock: 1, Reorder Pt: 3). Escalated sourcing to SKF Munich air-freight routing.' })}>
-                    <circle r="12" fill="#0c0f17" stroke={isM2Anomaly ? "#f59e0b" : "#475569"} strokeWidth="2" filter={isM2Anomaly ? "url(#glow-orange)" : ""} />
-                    <text textAnchor="middle" y="3" fill={isM2Anomaly ? "#f59e0b" : "#cbd5e1"} fontSize="9" fontWeight="bold" fontFamily="monospace">P4</text>
+                    <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isM2Anomaly ? "url(#glow-orange)" : ""} />
+                    <text textAnchor="middle" y="3" fill={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#cbd5e1" : "#475569")} fontSize="9" fontWeight="bold" fontFamily="monospace">P4</text>
                     <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-004</text>
                   </g>
 
                   <g transform="translate(220, 170)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Heavy-Duty Bearing Cage', role: 'Component Node (PART-001)', details: 'Relational database stock audit: IN STOCK (Stock: 15, Reorder Pt: 5). Approved Sarah Jenkins ticket for direct dispatch.' })}>
-                    <circle r="12" fill="#0c0f17" stroke="#475569" strokeWidth="2" />
-                    <text textAnchor="middle" y="3" fill="#cbd5e1" fontSize="9" fontWeight="bold" fontFamily="monospace">P1</text>
+                    <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
+                    <text textAnchor="middle" y="3" fill={theme === 'dark' ? "#cbd5e1" : "#475569"} fontSize="9" fontWeight="bold" fontFamily="monospace">P1</text>
                     <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-001</text>
                   </g>
 
                   <g transform="translate(220, 250)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'High-Pressure Hydraulic Seal', role: 'Component Node (PART-002)', details: 'Relational database stock audit: OUT OF STOCK (Stock: 1). Rerouted supply chain to Cleveland.' })}>
-                    <circle r="12" fill="#0c0f17" stroke="#475569" strokeWidth="2" />
-                    <text textAnchor="middle" y="3" fill="#cbd5e1" fontSize="9" fontWeight="bold" fontFamily="monospace">P2</text>
+                    <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
+                    <text textAnchor="middle" y="3" fill={theme === 'dark' ? "#cbd5e1" : "#475569"} fontSize="9" fontWeight="bold" fontFamily="monospace">P2</text>
                     <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">PART-002</text>
                   </g>
 
                   <g transform="translate(380, 50)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'SKF Munich Logistics', role: 'Direct Supplier (Tier 1)', details: 'Winning candidate for Part-004. lead-time: 5 days, Sourcing optimization Resilience Score: 59.50. Air freight routes pre-approved.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill="#0c0f17" stroke={isM2Anomaly ? "#f59e0b" : "#475569"} strokeWidth="2" filter={isM2Anomaly ? "url(#glow-orange)" : ""} />
-                    <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9" fontWeight="bold">SKF Munich</text>
+                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isM2Anomaly ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isM2Anomaly ? "url(#glow-orange)" : ""} />
+                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9" fontWeight="bold">SKF Munich</text>
                     <text textAnchor="middle" y="-18" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace">{isM2Anomaly ? "WINNER 59.50" : ""}</text>
                   </g>
 
                   <g transform="translate(380, 130)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Siemens Shanghai Ltd', role: 'Direct Supplier (Tier 1)', details: 'Candidate for Part-004. lead-time: 28 days (Extreme maritime bottleneck penalty), Resilience Score: 18.20. High downtime risk.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill="#0c0f17" stroke="#475569" strokeWidth="2" />
-                    <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9">Siemens SH</text>
+                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
+                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">Siemens SH</text>
                   </g>
 
                   <g transform="translate(380, 210)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'Parker Hannifin Cleveland', role: 'Direct Supplier (Tier 1)', details: 'Winning candidate for Part-002. lead-time: 2 days, Sourcing resilience score: 82.23. High quality low risk supplier.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill="#0c0f17" stroke="#475569" strokeWidth="2" />
-                    <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9">Parker Hannifin</text>
+                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
+                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">Parker Hannifin</text>
                   </g>
 
                   <g transform="translate(380, 290)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'VarnishTech Graz', role: 'Direct Supplier (Tier 1)', details: 'Candidate for Part-002. lead-time: 6 days, price: $750, resilience score: 62.40.' })}>
-                    <polygon points="0,-12 11,8 -11,8" fill="#0c0f17" stroke="#475569" strokeWidth="2" />
-                    <text textAnchor="middle" y="22" fill="#cbd5e1" fontSize="9">VarnishTech</text>
+                    <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#475569" : "#94a3b8"} strokeWidth="2" />
+                    <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">VarnishTech</text>
                   </g>
 
                   <g transform="translate(520, 130)" className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: 'CopperWorks Ohio', role: 'Copper Fabricator (Tier 2)', details: 'Supplies raw high-grade wire to SKF Munich coil assembly line. Risk Profile: 0.10 (Low risk profile, stable).' })}>
-                    <rect x="-24" y="-12" width="48" height="24" rx="2" fill="#0c0f17" stroke="#1e293b" strokeWidth="1.5" />
+                    <rect x="-24" y="-12" width="48" height="24" rx="2" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
                     <text textAnchor="middle" y="3" fill="#94a3b8" fontSize="8" fontWeight="bold" fontFamily="monospace">COPPER</text>
-                    <text textAnchor="middle" y="23" fill="#cbd5e1" fontSize="9">CopperWorks</text>
+                    <text textAnchor="middle" y="23" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">CopperWorks</text>
                   </g>
                 </svg>
 
                 {selectedSupplierNode && (
-                  <div className="absolute bottom-4 left-4 right-4 bg-slate-950/95 border border-amber-500/20 rounded-lg p-3.5 backdrop-blur-sm font-mono text-xs shadow-2xl transition-all duration-300">
+                  <div className={`absolute bottom-4 left-4 right-4 border rounded-lg p-3.5 backdrop-blur-sm font-mono text-xs shadow-2xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-950/95 border-amber-500/20 text-slate-300' : 'bg-white/95 border-amber-500/40 text-slate-700 shadow-[0_10px_30px_rgba(0,0,0,0.08)]'}`}>
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-amber-400 font-bold tracking-wide uppercase">{selectedSupplierNode.name}</span>
+                      <span className={`font-bold tracking-wide uppercase ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>{selectedSupplierNode.name}</span>
                       <span className="text-[9px] text-slate-500 uppercase">{selectedSupplierNode.role}</span>
                     </div>
-                    <p className="text-slate-300 leading-normal">{selectedSupplierNode.details}</p>
+                    <p className={`leading-normal ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{selectedSupplierNode.details}</p>
                     <button 
                       onClick={() => setSelectedSupplierNode(null)} 
                       className="absolute top-2 right-2 text-slate-500 hover:text-white"
@@ -1040,14 +1137,14 @@ export default function Home() {
               </div>
 
               {/* Legend */}
-              <div className="border-t border-[#182030]/40 pt-4 flex flex-wrap gap-4 justify-between font-mono text-[9px] text-slate-500">
+              <div className={`border-t pt-4 flex flex-wrap gap-4 justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
                 <div className="flex space-x-3">
                   <span className="flex items-center space-x-1">
-                    <span className="h-2 w-3 border border-blue-500 rounded-sm bg-[#0c0f17]"></span>
+                    <span className={`h-2 w-3 border border-blue-500 rounded-sm ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
                     <span>Fleet Node</span>
                   </span>
                   <span className="flex items-center space-x-1">
-                    <span className="h-2.5 w-2.5 rounded-full border border-slate-500 bg-[#0c0f17]"></span>
+                    <span className={`h-2.5 w-2.5 rounded-full border border-slate-500 ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
                     <span>Part ID</span>
                   </span>
                   <span className="flex items-center space-x-1">
@@ -1072,11 +1169,11 @@ export default function Home() {
             <span>Zone 4: Action Center (Active Maintenance Orders)</span>
           </h2>
 
-          <div className="bg-[#0c0f17] border border-[#182030] rounded-xl overflow-hidden shadow-2xl">
+          <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl overflow-hidden`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left font-mono text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#0f131c] text-slate-500 border-b border-[#182030] uppercase tracking-widest text-[9px]">
+                  <tr className={`${theme === 'dark' ? 'bg-[#0f131c] border-[#182030]' : 'bg-slate-50 border-slate-100'} text-slate-500 border-b uppercase tracking-widest text-[9px]`}>
                     <th className="py-3.5 px-5">Ticket ID</th>
                     <th className="py-3.5 px-4">Equipment</th>
                     <th className="py-3.5 px-4">Priority</th>
@@ -1085,16 +1182,16 @@ export default function Home() {
                     <th className="py-3.5 px-4 text-right">Autonomous Procurement Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#182030]/40 text-slate-300">
+                <tbody className={`divide-y ${theme === 'dark' ? 'divide-[#182030]/40 text-slate-300' : 'divide-slate-100 text-slate-700'}`}>
                   {data?.maintenance_orders && data.maintenance_orders.length > 0 ? (
                     data.maintenance_orders.map((order) => {
                       const email = getEmailDraftContent(order.root_cause);
                       
                       return (
-                        <tr key={order.id} className="hover:bg-slate-900/40 transition-colors duration-150">
-                          <td className="py-3.5 px-5 font-bold text-white">#{order.id}</td>
+                        <tr key={order.id} className={`transition-colors duration-150 ${theme === 'dark' ? 'hover:bg-slate-900/40 text-slate-300' : 'hover:bg-slate-50 text-slate-700'}`}>
+                          <td className={`py-3.5 px-5 font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>#{order.id}</td>
                           <td className="py-3.5 px-4">
-                            <span className="font-semibold text-slate-200 block">{order.machine_id}</span>
+                            <span className={`font-semibold block ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{order.machine_id}</span>
                             <span className="text-[10px] text-slate-500">Autonomous PdM</span>
                           </td>
                           <td className="py-3.5 px-4">
@@ -1113,7 +1210,7 @@ export default function Home() {
                               {order.status.toUpperCase()}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-slate-400">{order.assigned_technician}</td>
+                          <td className={`py-3.5 px-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>{order.assigned_technician}</td>
                           <td className="py-3.5 px-4 text-right">
                             {email ? (
                               <button
@@ -1153,7 +1250,7 @@ export default function Home() {
         }`}>
           <div 
             style={tutorialSteps[tutorialStep].style}
-            className={`bg-[#0c0f17]/95 border border-[#182030] rounded-2xl overflow-hidden shadow-2xl relative p-6 space-y-6 animate-fadeIn font-sans text-slate-300 transition-all duration-500 ease-in-out pointer-events-auto ${
+            className={`${theme === 'dark' ? 'bg-[#0c0f17]/95 border-[#182030] text-slate-300 shadow-2xl' : 'bg-white/95 border-slate-200 text-slate-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)]'} rounded-2xl overflow-hidden relative p-6 space-y-6 animate-fadeIn font-sans transition-all duration-500 ease-in-out pointer-events-auto ${
               tutorialSteps[tutorialStep].selector 
                 ? tutorialSteps[tutorialStep].positionClass 
                 : "w-full max-w-lg"
@@ -1167,7 +1264,7 @@ export default function Home() {
               </span>
               <button 
                 onClick={closeTutorial}
-                className="text-slate-500 hover:text-white font-mono text-xs hover:bg-slate-800/60 px-2.5 py-1 rounded transition-colors"
+                className={`font-mono text-xs px-2.5 py-1 rounded transition-colors ${theme === 'dark' ? 'text-slate-505 hover:text-white hover:bg-slate-800/60' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
               >
                 Skip Tour ✕
               </button>
@@ -1175,13 +1272,13 @@ export default function Home() {
 
             {/* Icon & Title */}
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="p-4 bg-slate-900/60 rounded-full border border-[#182030] shadow-inner">
+              <div className={`p-4 rounded-full border shadow-inner ${theme === 'dark' ? 'bg-slate-900/60 border-[#182030]' : 'bg-slate-50 border-slate-100'}`}>
                 {tutorialSteps[tutorialStep].icon}
               </div>
-              <h3 className="text-lg font-bold text-white tracking-wide">
+              <h3 className={`text-lg font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                 {tutorialSteps[tutorialStep].title}
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-normal max-w-sm">
+              <p className={`text-xs leading-relaxed font-normal max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                 {tutorialSteps[tutorialStep].description}
               </p>
             </div>
@@ -1199,14 +1296,14 @@ export default function Home() {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between items-center pt-2 border-t border-[#182030]/50 font-mono text-xs">
+            <div className={`flex justify-between items-center pt-2 border-t font-mono text-xs ${theme === 'dark' ? 'border-[#182030]/50' : 'border-slate-100'}`}>
               <button
                 disabled={tutorialStep === 0}
                 onClick={() => setTutorialStep(prev => prev - 1)}
                 className={`px-4 py-2 rounded border transition-colors ${
                   tutorialStep === 0 
-                    ? "text-slate-600 border-slate-900 cursor-not-allowed" 
-                    : "text-slate-300 border-slate-800 hover:bg-slate-800"
+                    ? (theme === 'dark' ? "text-slate-600 border-slate-900 cursor-not-allowed" : "text-slate-400 border-slate-200 cursor-not-allowed") 
+                    : (theme === 'dark' ? "text-slate-300 border-slate-800 hover:bg-slate-800" : "text-slate-700 border-slate-250 hover:bg-slate-50")
                 }`}
               >
                 ◀ Back
@@ -1236,37 +1333,37 @@ export default function Home() {
       {/* Slide-over / Modal Inspector */}
       {selectedEmail && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0c0f17] border border-[#182030] rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl relative">
-            <div className="border-b border-[#182030] bg-[#0c0f17] px-6 py-4 flex justify-between items-center">
-              <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+          <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-300' : 'bg-white border-slate-200 text-slate-700 shadow-2xl'} border rounded-xl w-full max-w-2xl overflow-hidden relative`}>
+            <div className={`border-b px-6 py-4 flex justify-between items-center ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-100 bg-slate-50'}`}>
+              <h3 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                 <Mail className="w-4 h-4 text-blue-400" />
                 <span>Autonomous Procurement Agent Draft</span>
               </h3>
               <button 
                 onClick={() => setSelectedEmail(null)}
-                className="text-slate-500 hover:text-white transition-colors duration-150"
+                className={`text-slate-500 transition-colors duration-150 ${theme === 'dark' ? 'hover:text-white' : 'hover:text-slate-800'}`}
               >
                 ✕
               </button>
             </div>
             
             <div className="p-6 space-y-4">
-              <div className="bg-[#06080c] rounded-lg p-4 font-mono text-xs space-y-1.5 border border-[#182030]/80">
+              <div className={`rounded-lg p-4 font-mono text-xs space-y-1.5 border ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
                 <div><span className="text-slate-500">From:</span> <span className="text-emerald-400">{selectedEmail.from}</span></div>
                 <div><span className="text-slate-500">To:</span> <span className="text-blue-400">{selectedEmail.to}</span></div>
-                <div><span className="text-slate-500">Subject:</span> <span className="text-white font-bold">{selectedEmail.subject}</span></div>
+                <div><span className="text-slate-500">Subject:</span> <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedEmail.subject}</span></div>
                 <div><span className="text-slate-500">Date:</span> <span className="text-slate-400">{selectedEmail.date}</span></div>
               </div>
               
-              <div className="bg-[#06080c] rounded-lg p-4 font-mono text-[11px] max-h-80 overflow-y-auto border border-[#182030]/80 leading-relaxed text-slate-300 whitespace-pre-wrap">
+              <div className={`rounded-lg p-4 font-mono text-[11px] max-h-80 overflow-y-auto border leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
                 {selectedEmail.body}
               </div>
             </div>
 
-            <div className="border-t border-[#182030] px-6 py-4 bg-[#0c0f17] flex justify-end space-x-3 font-mono text-xs">
+            <div className={`border-t px-6 py-4 flex justify-end space-x-3 font-mono text-xs ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-100 bg-slate-50'}`}>
               <button 
                 onClick={() => setSelectedEmail(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors duration-150"
+                className={`px-4 py-2 rounded transition-colors duration-150 ${theme === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/50'}`}
               >
                 Dismiss
               </button>
