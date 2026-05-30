@@ -31,9 +31,10 @@ if (!databaseUrl) {
 }
 
 // Create connection pool
+const cleanDatabaseUrl = databaseUrl ? databaseUrl.split("?")[0] : databaseUrl;
 const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: databaseUrl && databaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
+  connectionString: cleanDatabaseUrl,
+  ssl: cleanDatabaseUrl && cleanDatabaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
 });
 
 export async function GET() {

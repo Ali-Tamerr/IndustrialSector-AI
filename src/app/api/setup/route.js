@@ -29,21 +29,23 @@ if (!databaseUrl) {
   }
 }
 
+const cleanDatabaseUrl = databaseUrl ? databaseUrl.split("?")[0] : databaseUrl;
 const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: databaseUrl && databaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
+  connectionString: cleanDatabaseUrl,
+  ssl: cleanDatabaseUrl && cleanDatabaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
 });
 
 export async function POST(req) {
-  if (!databaseUrl) {
+  if (!cleanDatabaseUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
     );
   }
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     const body = await req.json();
     const { type, templateId, customMachines } = body;
 
@@ -410,10 +412,10 @@ export async function POST(req) {
     return NextResponse.json({ success: true, seededCount: machinesToSeed.length });
 
   } catch (err) {
-    await client.query("ROLLBACK;");
+    if (client) await client.query("ROLLBACK;");
     console.error("[API] Setup configuration failed:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
