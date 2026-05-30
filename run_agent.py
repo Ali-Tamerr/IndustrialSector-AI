@@ -23,7 +23,7 @@ def run_fleet_demo():
         return
         
     try:
-        # Step 1: Ensure database is populated. Check if MCH-001 has telemetry.
+        # Step 1: Ensure database is populated.
         with conn.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) FROM machines;")
             machine_count = cursor.fetchone()[0]
@@ -41,7 +41,8 @@ def run_fleet_demo():
         print("\n--- Current Machine Fleet Statuses ---")
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT id, name, status FROM machines ORDER BY id;")
-            for m in cursor.fetchall():
+            machines = cursor.fetchall()
+            for m in machines:
                 print(f" - {m['id']}: {m['name']} | Status: {m['status']}")
                 
         print("\n--- Current Spare Parts Inventory ---")
@@ -51,36 +52,50 @@ def run_fleet_demo():
                 status = "LOW STOCK (Reorder Triggered)" if inv['stock_level'] <= inv['reorder_point'] else "OK"
                 print(f" - {inv['part_id']}: {inv['part_name']} | Stock: {inv['stock_level']} (Reorder Point: {inv['reorder_point']}) | [{status}]")
                 
+        # Determine if we are in standard template demo mode or custom fleet mode
+        is_template_demo = any(m['id'] == 'MCH-002' for m in machines)
+        
         # Close connection so the Orchestrator can take over cleanly
         conn.close()
         
-        # Step 2: Initialize Orchestrator and run the first scan
-        # This will process MCH-001 (Rotary Gear Pump A) which is already Degraded and requires PART-001.
-        # Since PART-001 (Heavy-Duty Bearing Assembly) has 15 in stock (Reorder Point: 5), it will be IN STOCK.
-        # This demonstrates the 'Approved' / Immediate Dispatch workflow!
-        print("\n" + "="*60)
-        print(" PHASE 1: EVALUATING ACTIVE ANOMALY ON PUMP A (MCH-001)")
-        print(" Expected Outcome: PART-001 is IN STOCK -> Auto-Approve & Dispatch")
-        print("="*60)
-        
         orchestrator = PredictiveMaintenanceOrchestrator()
-        phase1_results = orchestrator.run_pipeline()
         
-        # Step 3: Inject a dynamic anomaly on Machine MCH-002 (High-Speed Industrial Fan B)
-        # Fan B requires PART-004 (3-Phase Electric Motor Winding). 
-        # PART-004 is OUT OF STOCK (Stock Level: 1, Reorder Point: 3).
-        # This will demonstrate the 'Pending_Sourcing' & supply chain rerouting workflow!
-        print("\n" + "="*60)
-        print(" PHASE 2: INJECTING Telemetry Anomaly on Fan B (MCH-002)")
-        print(" Expected Outcome: PART-004 is OUT OF STOCK -> Trigger Chroma RAG Reroute")
-        print("="*60)
-        
-        inject_fan_anomaly()
-        
-        # Run the pipeline again to detect, diagnose, and execute on the new anomaly
-        print("\n[System] Re-running Multi-Agent Orchestrator Pipeline...")
-        phase2_results = orchestrator.run_pipeline()
-        
+        if is_template_demo:
+            # Step 2: Initialize Orchestrator and run the first scan for presets
+            print("\n" + "="*60)
+            print(" PHASE 1: EVALUATING ACTIVE ANOMALY ON PUMP A (MCH-001)")
+            print(" Expected Outcome: PART-001 is IN STOCK -> Auto-Approve & Dispatch")
+            print("="*60)
+            
+            phase1_results = orchestrator.run_pipeline()
+            
+            # Step 3: Inject a dynamic anomaly on Machine MCH-002 (High-Speed Industrial Fan B)
+            print("\n" + "="*60)
+            print(" PHASE 2: INJECTING Telemetry Anomaly on Fan B (MCH-002)")
+            print(" Expected Outcome: PART-004 is OUT OF STOCK -> Trigger Chroma RAG Reroute")
+            print("="*60)
+            
+            inject_fan_anomaly()
+            
+            # Run the pipeline again to detect, diagnose, and execute on the new anomaly
+            print("\n[System] Re-running Multi-Agent Orchestrator Pipeline...")
+            phase2_results = orchestrator.run_pipeline()
+        else:
+            # Custom Fleet mode
+            if len(machines) > 0:
+                target_machine = machines[0]
+                print("\n" + "="*60)
+                print(f" PHASE 1: INJECTING CUSTOM TELEMETRY ANOMALY ON {target_machine['name']} ({target_machine['id']})")
+                print(" Expected Outcome: Detect custom thresholds breach and execute sourcing route")
+                print("="*60)
+                
+                inject_custom_anomaly(target_machine['id'])
+                
+                print("\n[System] Running Multi-Agent Orchestrator Pipeline on Custom Fleet...")
+                pipeline_results = orchestrator.run_pipeline()
+            else:
+                print("[System] No machines found in custom fleet to execute simulation.")
+                
         # Step 4: Display Final SQL Database Records
         display_final_database_state()
         
@@ -136,7 +151,7 @@ def inject_fan_anomaly():
             # Fan pressure stays relatively stable but fluctuates slightly
             pres = base_pres + random.uniform(-0.08, 0.08)
             
-            # Current spikes from 11.0A to 25.8A (Threshold is 20.0A, indicating electrical motor winding short/load strain)
+            # Current spikes from 11.0A to 25.8A (Threshold is 20.0A)
             cur = base_cur + (14.8 * deg_factor) + random.uniform(-0.2, 0.2)
             
             telemetry_records.append(("MCH-002", timestamp, temp, vib, pres, cur))
@@ -159,6 +174,71 @@ def inject_fan_anomaly():
         
     except Exception as e:
         print(f"[Simulator] Failed to inject anomaly: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def inject_custom_anomaly(machine_id):
+    """Simulates a dynamic telemetry failure on any custom machine based on its specific thresholds."""
+    print(f"[Simulator] Analyzing thresholds and preparing failure telemetry for {machine_id}...")
+    
+    conn = get_postgres_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT name, critical_thresholds FROM machines WHERE id = %s;", (machine_id,))
+            res = cursor.fetchone()
+            if not res:
+                print(f"[Simulator] Machine {machine_id} not found!")
+                return
+            name, thresholds = res
+            
+        if isinstance(thresholds, str):
+            thresholds = json.loads(thresholds)
+            
+        # Clean previous telemetry
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM sensor_telemetry WHERE machine_id = %s;", (machine_id,))
+            
+        now = datetime.datetime.now(datetime.timezone.utc)
+        points = 144
+        
+        # Nominal baselines
+        base_temp = thresholds.get("temperature", 90.0) * 0.65
+        base_vib = thresholds.get("vibration", 8.0) * 0.35
+        base_pres = thresholds.get("pressure", 6.5) * 0.95
+        base_cur = thresholds.get("current", 15.0) * 0.75
+        
+        telemetry_records = []
+        
+        for i in range(points):
+            timestamp = now - datetime.timedelta(minutes=10 * (points - i))
+            progress = i / float(points - 1)
+            deg_factor = progress ** 2.5
+            
+            # Ramps past threshold at the end of progress
+            temp = base_temp + ((thresholds.get("temperature", 90.0) * 1.15 - base_temp) * deg_factor) + random.uniform(-0.5, 0.5)
+            vib = base_vib + ((thresholds.get("vibration", 8.0) * 1.30 - base_vib) * deg_factor) + random.uniform(-0.1, 0.1)
+            # Custom drop pressure if pressure exists
+            pres = base_pres - ((base_pres - thresholds.get("pressure", 6.5) * 0.40) * deg_factor) + random.uniform(-0.05, 0.05)
+            cur = base_cur + ((thresholds.get("current", 15.0) * 1.35 - base_cur) * deg_factor) + random.uniform(-0.2, 0.2)
+            
+            telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur))
+            
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                telemetry_records
+            )
+            cursor.execute("UPDATE machines SET status = 'Operational' WHERE id = %s;", (machine_id,))
+            
+        conn.commit()
+        print(f"[Simulator] Seeded {len(telemetry_records)} progressive custom failure telemetry records for {machine_id}.")
+    except Exception as e:
+        print(f"[Simulator] Failed to inject custom anomaly: {e}")
         conn.rollback()
     finally:
         conn.close()

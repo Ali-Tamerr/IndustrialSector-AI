@@ -267,40 +267,16 @@ export async function POST(req) {
           temperature: parseFloat(m.thresholds?.temperature) || 90.0,
           vibration: parseFloat(m.thresholds?.vibration) || 8.0,
           pressure: parseFloat(m.thresholds?.pressure) || 6.5,
-          current: parseFloat(m.thresholds?.current) || 15.0
+          current: parseFloat(m.thresholds?.current) || 15.0,
+          required_part_id: m.thresholds?.required_part_id || "PART-001"
         }
       }));
 
-      // Default inventory setup so RAG and sourcing algorithms have fallback structures
-      inventoryToSeed = [
-        ["PART-001", "Heavy-Duty Bearing Assembly", 15, 5, 120.50, "Warehouse A - Aisle 4"],
-        ["PART-002", "High-Pressure Hydraulic Seal", 3, 10, 45.00, "Warehouse A - Aisle 6"],
-        ["PART-003", "Centrifugal Pump Impeller", 8, 2, 350.00, "Warehouse B - Aisle 2"],
-        ["PART-004", "3-Phase Electric Motor Winding", 1, 3, 850.00, "Warehouse B - Aisle 5"]
-      ];
-
-      supplierNodesToSeed = [
-        ["SUP-001", "Siemens Shanghai", "Supplier", 0.70, "procurement@siemens.cn"],
-        ["SUP-002", "SKF Munich", "Supplier", 0.15, "logistics@skf.de"],
-        ["SUP-003", "CopperWorks Ohio", "Supplier", 0.10, "orders@copperworksohio.com"],
-        ["SUP-004", "VarnishTech Graz", "Supplier", 0.20, "sales@varnishwtech.at"],
-        ["SUP-005", "Parker Hannifin Cleveland", "Supplier", 0.05, "orders@parkerhannifin.com"],
-        ["SUP-006", "Sulzer Gothenburg", "Supplier", 0.12, "procurement@sulzer.se"],
-        ["PART-001", "Heavy-Duty Bearing Assembly", "Part", null, null],
-        ["PART-002", "High-Pressure Hydraulic Seal", "Part", null, null],
-        ["PART-003", "Centrifugal Pump Impeller", "Part", null, null],
-        ["PART-004", "3-Phase Electric Motor Winding", "Part", null, null]
-      ];
-
-      supplierEdgesToSeed = [
-        ["SUP-002", "PART-001", "SUPPLIES", 5, 450.00],
-        ["SUP-005", "PART-002", "SUPPLIES", 2, 35.00],
-        ["SUP-006", "PART-003", "SUPPLIES", 14, 250.00],
-        ["SUP-001", "PART-004", "SUPPLIES", 28, 850.00],
-        ["SUP-002", "PART-004", "SUPPLIES", 5, 1200.00]
-      ];
-
-      anomalyMachineId = machinesToSeed[0]?.id; // Degrade the first machine manually
+      // Start custom projects completely empty and operational
+      inventoryToSeed = [];
+      supplierNodesToSeed = [];
+      supplierEdgesToSeed = [];
+      anomalyMachineId = null;
     }
 
     // 1. Seed Machines

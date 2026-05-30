@@ -436,11 +436,30 @@ class DiagnosticAgent:
         # 2. Diagnosing root cause
         logger.info(f"[{self.agent_name}] Analyzing telemetry alongside operational manuals to isolate root cause...")
         
+        # Query PG database to check if a custom required_part_id is mapped in machine thresholds
+        custom_part_id = None
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT critical_thresholds FROM machines WHERE id = %s;", (machine_id,))
+                row = cursor.fetchone()
+                if row:
+                    thresh = row[0]
+                    if isinstance(thresh, str):
+                        thresh = json.loads(thresh)
+                    if isinstance(thresh, dict) and "required_part_id" in thresh:
+                        custom_part_id = thresh["required_part_id"]
+        except Exception as e:
+            logger.error(f"Error querying custom required_part_id for machine {machine_id}: {e}")
+
         diagnosis = None
         if self.use_llm:
             diagnosis = self._diagnose_with_llm(machine_id, machine_name, telemetry, explanation, rag_context)
+            if custom_part_id:
+                diagnosis['required_replacement_part'] = custom_part_id
         else:
             diagnosis = SmartLLMEmulator.diagnose_fault(machine_id, telemetry, rag_context)
+            if custom_part_id:
+                diagnosis['required_replacement_part'] = custom_part_id
             
         logger.info(f"[{self.agent_name}] Diagnostic Completed: Fault='{diagnosis['detected_fault']}', "
                     f"RUL={diagnosis['remaining_useful_life_hours']}h, Part Needed={diagnosis['required_replacement_part']}")
