@@ -762,12 +762,12 @@ export default function Home() {
               
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-[10px] font-bold tracking-widest uppercase font-mono text-slate-400 flex items-center space-x-2">
-                    <Database className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  <h2 className={`text-[10px] font-bold tracking-widest uppercase font-mono ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} flex items-center space-x-2`}>
+                    <Database className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'} animate-pulse`} />
                     <span>Saved Workspaces</span>
                   </h2>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                    theme === 'dark' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-cyan-50 text-cyan-600 border-cyan-200'
+                    theme === 'dark' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-cyan-100 text-cyan-800 border-cyan-300'
                   } border`}>
                     {projects.length} Total
                   </span>
@@ -782,7 +782,7 @@ export default function Home() {
                   className={`w-full py-3 px-4 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
                     theme === 'dark'
                       ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-                      : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100 shadow-sm'
+                      : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-md shadow-cyan-100/50'
                   }`}
                 >
                   <Plus className="w-4 h-4" />
@@ -902,37 +902,37 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 <div className={`relative backdrop-blur-md ${
-                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-cyan-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-cyan-500/25'
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-cyan-500/20' : 'bg-white/50 border-slate-250 shadow-md hover:border-cyan-500/50'
                 } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
+                    <Activity className={`w-4 h-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'} animate-pulse`} />
                     <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>IoT Sensor Fusion</h3>
                   </div>
-                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-650'} leading-relaxed font-sans font-normal`}>
                     Correlates winding temp, vibration, discharge pressure, and coil current to detect machinery degradation early.
                   </p>
                 </div>
 
                 <div className={`relative backdrop-blur-md ${
-                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-blue-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-blue-500/25'
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-blue-500/20' : 'bg-white/50 border-slate-250 shadow-md hover:border-blue-500/50'
                 } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Cpu className="w-4 h-4 text-blue-400" />
+                    <Cpu className={`w-4 h-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
                     <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Autonomous Diagnostics</h3>
                   </div>
-                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-650'} leading-relaxed font-sans font-normal`}>
                     Specialized AI agents instantly isolate mechanical faults and calculate RUL by cross-referencing manuals via RAG.
                   </p>
                 </div>
 
                 <div className={`relative backdrop-blur-md ${
-                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-emerald-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-emerald-500/25'
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-emerald-500/20' : 'bg-white/50 border-slate-250 shadow-md hover:border-emerald-500/50'
                 } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <Layers className={`w-4 h-4 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`} />
                     <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Graph-Based Sourcing</h3>
                   </div>
-                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-605'} leading-relaxed font-sans font-normal`}>
+                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-650'} leading-relaxed font-sans font-normal`}>
                     Traverses recursive material supply-chain graphs to bypass logistics bottlenecks and optimize procurement.
                   </p>
                 </div>
@@ -963,7 +963,7 @@ export default function Home() {
                       className={`px-4 py-3 rounded-xl border font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
                         theme === 'dark'
                           ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]'
-                          : 'bg-cyan-55 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                          : 'bg-cyan-100 border-cyan-300 text-cyan-800 hover:bg-cyan-200/80 shadow-sm'
                       }`}
                     >
                       <Sparkles className="w-4 h-4 animate-pulse" />
@@ -973,15 +973,15 @@ export default function Home() {
                 </div>
 
                 {/* Tabs */}
-                <div className={`flex border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-55'} font-mono text-[10px] md:text-xs p-1 gap-1`}>
+                <div className={`flex border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]' : 'border-slate-250 bg-slate-100/60'} font-mono text-[10px] md:text-xs p-1 gap-1`}>
                   <button 
                     onClick={() => setActiveSetupTab("presets")}
                     className={`flex-1 py-3 px-2 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
                       activeSetupTab === "presets" 
                         ? (theme === 'dark' 
                             ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                            : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
-                        : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
+                            : "text-cyan-800 bg-cyan-200/80 border border-cyan-400/60 shadow-sm") 
+                        : "text-slate-600 hover:text-slate-800 hover:bg-slate-200/50 rounded-xl"
                     }`}
                   >
                     <LayoutGrid className="w-3.5 h-3.5" />
@@ -993,8 +993,8 @@ export default function Home() {
                       activeSetupTab === "custom" 
                         ? (theme === 'dark' 
                             ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                            : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
-                        : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
+                            : "text-cyan-800 bg-cyan-200/80 border border-cyan-400/60 shadow-sm") 
+                        : "text-slate-600 hover:text-slate-800 hover:bg-slate-200/50 rounded-xl"
                     }`}
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -1214,7 +1214,7 @@ export default function Home() {
                                     type="number" 
                                     value={machine.thresholds.temperature} 
                                     onChange={(e) => {
-                                      const val = parseFloat(e.target.value) || 0;
+                                      const val = e.target.value === "" ? "" : (parseFloat(e.target.value) ?? 0);
                                       setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, temperature: val } } : m));
                                     }}
                                     className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
@@ -1226,7 +1226,7 @@ export default function Home() {
                                     type="number" 
                                     value={machine.thresholds.vibration} 
                                     onChange={(e) => {
-                                      const val = parseFloat(e.target.value) || 0;
+                                      const val = e.target.value === "" ? "" : (parseFloat(e.target.value) ?? 0);
                                       setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, vibration: val } } : m));
                                     }}
                                     className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
@@ -1238,7 +1238,7 @@ export default function Home() {
                                     type="number" 
                                     value={machine.thresholds.pressure} 
                                     onChange={(e) => {
-                                      const val = parseFloat(e.target.value) || 0;
+                                      const val = e.target.value === "" ? "" : (parseFloat(e.target.value) ?? 0);
                                       setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, pressure: val } } : m));
                                     }}
                                     className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
@@ -1250,7 +1250,7 @@ export default function Home() {
                                     type="number" 
                                     value={machine.thresholds.current} 
                                     onChange={(e) => {
-                                      const val = parseFloat(e.target.value) || 0;
+                                      const val = e.target.value === "" ? "" : (parseFloat(e.target.value) ?? 0);
                                       setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, current: val } } : m));
                                     }}
                                     className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
@@ -1258,7 +1258,6 @@ export default function Home() {
                                 </div>
                               </div>
                             </div>
-
                           </div>
                         ))}
                       </div>
@@ -1270,7 +1269,7 @@ export default function Home() {
                             ...prev,
                             { id: `MCH-10${prev.length + 1}`, name: "", location: "", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
                           ])}
-                          className={`px-4 py-2.5 ${theme === 'dark' ? 'bg-[#090e18] border-[#1b2336] text-white hover:bg-slate-900/60' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'} rounded-xl transition-all font-bold flex items-center gap-1.5`}
+                          className={`px-4 py-2.5 ${theme === 'dark' ? 'bg-[#090e18] border-[#1b2336] text-white hover:bg-slate-900/60' : 'bg-slate-200 border-slate-300 text-slate-800 hover:bg-slate-300 hover:text-slate-900'} rounded-xl transition-all font-bold flex items-center gap-1.5`}
                         >
                           <Plus className="w-4 h-4" /> Add Another Asset
                         </button>
@@ -1296,9 +1295,13 @@ export default function Home() {
         </div>
 
         {seeding && (
-          <div className="fixed inset-0 z-50 bg-[#030508]/95 backdrop-blur-md flex flex-col items-center justify-center text-cyan-400 font-mono">
-            <Activity className="h-10 w-10 animate-spin mb-4 text-cyan-400" />
-            <div className="animate-pulse tracking-[0.15em] text-xs uppercase">Hydrating PostgreSQL schemas & building Chroma Vector DB...</div>
+          <div className={`fixed inset-0 z-50 ${
+            theme === 'dark' ? 'bg-[#030508]/95 text-cyan-400' : 'bg-[#f8fafc]/95 text-cyan-600'
+          } backdrop-blur-md flex flex-col items-center justify-center font-mono`}>
+            <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
+            <div className="animate-pulse tracking-[0.15em] text-xs uppercase text-center px-4 font-bold">
+              Hydrating PostgreSQL schemas & initializing workspace vector DB...
+            </div>
           </div>
         )}
       </div>
@@ -1307,9 +1310,9 @@ export default function Home() {
 
   if (loading && !data) {
     return (
-      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-blue-600'} font-mono`}>
-        <Activity className="h-10 w-10 animate-spin mb-4" />
-        <div className="animate-pulse tracking-widest text-xs">SYNCHRONIZING CONTROL TOWER METRICS...</div>
+      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'} font-mono`}>
+        <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
+        <div className="animate-pulse tracking-widest text-xs font-bold">SYNCHRONIZING WORKSPACE CONTROL METRICS...</div>
       </div>
     );
   }
@@ -1326,7 +1329,7 @@ export default function Home() {
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
 
       {/* Dynamic Header */}
-      <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300 relative z-10`}>
+      <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300`}>
         <div className="flex items-center space-x-3">
           <div className={`h-8.5 w-8.5 ${theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'} rounded border flex items-center justify-center`}>
             <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
@@ -1452,6 +1455,11 @@ export default function Home() {
               const health = getStatusBadges(machine.status);
               const tempHistory = data.telemetry[machine.id]?.map(p => p.temperature) || [];
               const vibHistory = data.telemetry[machine.id]?.map(p => p.vibration) || [];
+              
+              const hasTemp = (machine.critical_thresholds?.temperature ?? 0) > 0;
+              const hasVib = (machine.critical_thresholds?.vibration ?? 0) > 0;
+              const hasPres = (machine.critical_thresholds?.pressure ?? 0) > 0;
+              const hasCurr = (machine.critical_thresholds?.current ?? 0) > 0;
 
               return (
                 <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group`}>
@@ -1477,43 +1485,61 @@ export default function Home() {
 
                   {latest ? (
                     <div className="space-y-4 font-mono">
-                      <div className={`grid grid-cols-2 gap-4 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
-                        <div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Winding Temp</div>
-                          <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                            {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
-                          </div>
+                      {/* First Row: Temp & Vibration */}
+                      {(hasTemp || hasVib) && (
+                        <div className={`grid ${hasTemp && hasVib ? 'grid-cols-2' : 'grid-cols-1'} gap-4 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
+                          {hasTemp && (
+                            <div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Winding Temp</div>
+                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                                {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
+                              </div>
+                            </div>
+                          )}
+                          {hasVib && (
+                            <div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Radial Vibration</div>
+                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                                {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Radial Vibration</div>
-                          <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                            {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
-                          </div>
-                        </div>
-                      </div>
+                      )}
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Discharge Pressure</span>
-                          <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.pressure.toFixed(2)} Bar</span>
+                      {/* Second Row: Pressure & Current */}
+                      {(hasPres || hasCurr) && (
+                        <div className={`grid ${hasPres && hasCurr ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+                          {hasPres && (
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Discharge Pressure</span>
+                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.pressure.toFixed(2)} Bar</span>
+                            </div>
+                          )}
+                          {hasCurr && (
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Coil Amperage</span>
+                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Coil Amperage</span>
-                          <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
-                        </div>
-                      </div>
+                      )}
 
                       {/* Sparkline trends */}
-                      <div className={`mt-4 pt-4 border-t flex justify-between items-center ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
-                        <div className="text-[9px] text-slate-500 font-bold leading-tight">
-                          <div>24H REALTIME GRAPH</div>
-                          <div className={`mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>TEMP + VIB</div>
+                      {(hasTemp || hasVib) && (
+                        <div className={`mt-4 pt-4 border-t flex justify-between items-center ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
+                          <div className="text-[9px] text-slate-500 font-bold leading-tight">
+                            <div>24H REALTIME GRAPH</div>
+                            <div className={`mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {hasTemp && hasVib ? "TEMP + VIB" : hasTemp ? "TEMPERATURE" : "VIBRATION"}
+                            </div>
+                          </div>
+                          <div className="h-9 opacity-80 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
+                            {hasTemp && <Sparkline data={tempHistory} color={health.sparkColor} width={70} height={32} />}
+                            {hasVib && <Sparkline data={vibHistory} color="#2563eb" width={70} height={32} />}
+                          </div>
                         </div>
-                        <div className="h-9 opacity-80 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
-                          <Sparkline data={tempHistory} color={health.sparkColor} width={70} height={32} />
-                          <Sparkline data={vibHistory} color="#2563eb" width={70} height={32} />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   ) : (
                     <div className="py-8 text-center text-xs text-slate-500">No active telemetry signal.</div>

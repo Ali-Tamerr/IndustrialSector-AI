@@ -216,12 +216,18 @@ def inject_custom_anomaly(machine_id):
             progress = i / float(points - 1)
             deg_factor = progress ** 2.5
             
-            # Ramps past threshold at the end of progress
-            temp = base_temp + ((thresholds.get("temperature", 90.0) * 1.15 - base_temp) * deg_factor) + random.uniform(-0.5, 0.5)
-            vib = base_vib + ((thresholds.get("vibration", 8.0) * 1.30 - base_vib) * deg_factor) + random.uniform(-0.1, 0.1)
-            # Custom drop pressure if pressure exists
-            pres = base_pres - ((base_pres - thresholds.get("pressure", 6.5) * 0.40) * deg_factor) + random.uniform(-0.05, 0.05)
-            cur = base_cur + ((thresholds.get("current", 15.0) * 1.35 - base_cur) * deg_factor) + random.uniform(-0.2, 0.2)
+            # If a sensor limit is 0.0 (disabled), keep telemetry at 0.0
+            t_limit = thresholds.get("temperature", 90.0)
+            temp = (base_temp + ((t_limit * 1.15 - base_temp) * deg_factor) + random.uniform(-0.5, 0.5)) if t_limit > 0.0 else 0.0
+            
+            v_limit = thresholds.get("vibration", 8.0)
+            vib = (base_vib + ((v_limit * 1.30 - base_vib) * deg_factor) + random.uniform(-0.1, 0.1)) if v_limit > 0.0 else 0.0
+            
+            p_limit = thresholds.get("pressure", 6.5)
+            pres = (base_pres - ((base_pres - p_limit * 0.40) * deg_factor) + random.uniform(-0.05, 0.05)) if p_limit > 0.0 else 0.0
+            
+            c_limit = thresholds.get("current", 15.0)
+            cur = (base_cur + ((c_limit * 1.35 - base_cur) * deg_factor) + random.uniform(-0.2, 0.2)) if c_limit > 0.0 else 0.0
             
             telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur))
             

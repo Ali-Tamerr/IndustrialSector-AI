@@ -262,21 +262,27 @@ export async function POST(req) {
 
         anomalyMachineId = "MCH-001"; // Pump A critical winding degradation
       }
-    } else {
       // Custom Fleet from Scratch
-      machinesToSeed = customMachines.map((m, idx) => ({
-        id: m.id || `MCH-10${idx + 1}`,
-        name: m.name || `Asset ${idx + 1}`,
-        location: m.location || `Bay ${idx + 1} Assembly`,
-        status: "Operational",
-        thresholds: {
-          temperature: parseFloat(m.thresholds?.temperature) || 90.0,
-          vibration: parseFloat(m.thresholds?.vibration) || 8.0,
-          pressure: parseFloat(m.thresholds?.pressure) || 6.5,
-          current: parseFloat(m.thresholds?.current) || 15.0,
-          required_part_id: m.thresholds?.required_part_id || "PART-001"
-        }
-      }));
+      machinesToSeed = customMachines.map((m, idx) => {
+        const getVal = (v, fallback) => {
+          if (v === undefined || v === null || v === "") return 0.0;
+          const parsed = parseFloat(v);
+          return isNaN(parsed) ? 0.0 : parsed;
+        };
+        return {
+          id: m.id || `MCH-10${idx + 1}`,
+          name: m.name || `Asset ${idx + 1}`,
+          location: m.location || `Bay ${idx + 1} Assembly`,
+          status: "Operational",
+          thresholds: {
+            temperature: getVal(m.thresholds?.temperature, 90.0),
+            vibration: getVal(m.thresholds?.vibration, 8.0),
+            pressure: getVal(m.thresholds?.pressure, 6.5),
+            current: getVal(m.thresholds?.current, 15.0),
+            required_part_id: m.thresholds?.required_part_id || "PART-001"
+          }
+        };
+      });
 
       // Start custom projects completely empty and operational
       inventoryToSeed = [];
