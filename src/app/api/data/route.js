@@ -1,44 +1,10 @@
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
-import fs from "fs";
-import path from "path";
+import { pool, cleanDatabaseUrl } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
-
-// Manually load the root .env file to get DATABASE_URL
-let databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  try {
-    const envPath = path.resolve(process.cwd(), ".env");
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, "utf8");
-      envContent.split("\n").forEach((line) => {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) return;
-        const [key, ...valueParts] = trimmed.split("=");
-        if (key && valueParts.length > 0) {
-          const value = valueParts.join("=").trim().replace(/(^['"]|['"]$)/g, "");
-          process.env[key.trim()] = value;
-        }
-      });
-      databaseUrl = process.env.DATABASE_URL;
-    }
-  } catch (err) {
-    console.error("Failed to read root .env file:", err);
-  }
-}
-
-// Create connection pool
-const cleanDatabaseUrl = databaseUrl ? databaseUrl.split("?")[0] : databaseUrl;
-const pool = new Pool({
-  connectionString: cleanDatabaseUrl,
-  ssl: cleanDatabaseUrl && cleanDatabaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
-});
-
 export async function GET() {
-  if (!databaseUrl) {
+  if (!cleanDatabaseUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
@@ -59,29 +25,27 @@ export async function GET() {
       critical_thresholds: row.critical_thresholds,
     }));
 
-    // B. Fetch Telemetry History (Latest 15 points per machine)
-    const telemetry = {};
-    for (const m of machines) {
-      const telemetryRes = await client.query(
-        `SELECT timestamp, temperature, vibration, pressure, current
+    // B. Fetch Telemetry History (Latest 15 points per machine) — single windowed query
+    const telemetryRes = await client.query(
+      `SELECT machine_id, timestamp, temperature, vibration, pressure, current
+       FROM (
+         SELECT *, ROW_NUMBER() OVER (PARTITION BY machine_id ORDER BY timestamp DESC) AS rn
          FROM sensor_telemetry
-         WHERE machine_id = $1
-         ORDER BY timestamp DESC
-         LIMIT 15;`,
-        [m.id]
-      );
-      
-      const points = telemetryRes.rows.map((row) => ({
+       ) sub
+       WHERE rn <= 15
+       ORDER BY machine_id, timestamp ASC;`
+    );
+
+    const telemetry = {};
+    for (const row of telemetryRes.rows) {
+      if (!telemetry[row.machine_id]) telemetry[row.machine_id] = [];
+      telemetry[row.machine_id].push({
         timestamp: row.timestamp.toISOString(),
         temperature: row.temperature,
         vibration: row.vibration,
         pressure: row.pressure,
         current: row.current,
-      }));
-      
-      // Reverse to make chronological
-      points.reverse();
-      telemetry[m.id] = points;
+      });
     }
 
     // C. Fetch Spare Parts Inventory

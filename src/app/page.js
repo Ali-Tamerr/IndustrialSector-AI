@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { 
   Activity, 
   Cpu, 
@@ -93,6 +93,7 @@ export default function Home() {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
   const thoughtsContainerRef = useRef(null);
+  const pollIntervalRef = useRef(null);
 
   const [theme, setTheme] = useState("dark");
 
@@ -208,7 +209,7 @@ export default function Home() {
     return `${randomPrefix} #${randomNum}`;
   };
 
-  const handleSetup = async (type, templateId = null, customMchs = null, isNewProject = false) => {
+  const handleSetup = async (type, templateId = null, customMchs = null, isNewProject = false, projectId = null) => {
     setSeeding(true);
     try {
       const res = await fetch(`${API_BASE}/api/setup`, {
@@ -226,6 +227,7 @@ export default function Home() {
         if (window.location.hash !== "#dashboard") {
           window.history.pushState(null, "", "#dashboard");
         }
+        localStorage.setItem("lastSeededProjectId", projectId || "");
         await refreshData();
         // Trigger tour onboarding only on first creation
         if (isNewProject) {
@@ -264,13 +266,26 @@ export default function Home() {
     localStorage.setItem("activeProjectId", newProject.id);
     setProjectNameInput("");
 
-    await handleSetup(type, newProject.templateId, newProject.customMachines, true);
+    await handleSetup(type, newProject.templateId, newProject.customMachines, true, newProject.id);
   };
 
   const handleLaunchProject = async (proj) => {
     setActiveProjectId(proj.id);
     localStorage.setItem("activeProjectId", proj.id);
-    await handleSetup(proj.type, proj.templateId, proj.customMachines, false);
+
+    // Skip full DB re-seed if this project was already the last one loaded
+    const lastSeeded = localStorage.getItem("lastSeededProjectId");
+    if (lastSeeded === proj.id) {
+      localStorage.setItem("isSetupCompleted", "true");
+      setIsSetupCompleted(true);
+      if (window.location.hash !== "#dashboard") {
+        window.history.pushState(null, "", "#dashboard");
+      }
+      await refreshData();
+      return;
+    }
+
+    await handleSetup(proj.type, proj.templateId, proj.customMachines, false, proj.id);
   };
 
   const handleRenameProject = (projId, newName) => {
@@ -573,7 +588,7 @@ export default function Home() {
   }, [tutorialStep, showTutorial]);
 
   // Core API Poller
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/data`);
       if (res.ok) {
@@ -585,13 +600,41 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    refreshData();
-    const interval = setInterval(refreshData, 6000); // Poll every 6s for dynamic changes
-    return () => clearInterval(interval);
   }, []);
+
+  // Only poll when the dashboard is active and the tab is visible
+  useEffect(() => {
+    if (!isSetupCompleted) return;
+
+    const startPolling = () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      refreshData();
+      pollIntervalRef.current = setInterval(refreshData, 6000);
+    };
+
+    const stopPolling = () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [isSetupCompleted, refreshData]);
 
   // Auto scroll console terminal scroll container (non-intrusive)
   useEffect(() => {
