@@ -181,25 +181,28 @@ class SmartLLMEmulator:
         # Rule checks
         for metric, val in [('temperature', temps[-1]), ('vibration', vibs[-1]), ('current', currents[-1])]:
             limit = thresholds.get(metric, 999.0)
-            if val > limit:
+            if limit > 0.0 and val > limit:
                 is_anomaly = True
                 severity = "Critical" if val > limit * 1.15 else "Degraded"
                 reasons.append(f"Metric '{metric}' crossed critical limit: {val:.2f} > {limit:.2f}")
                 
         for metric, val in [('pressure', pressures[-1])]:
             limit = thresholds.get(metric, 0.0)
-            if val < limit:
+            if limit > 0.0 and val < limit:
                 is_anomaly = True
                 severity = "Critical" if val < limit * 0.7 else "Degraded"
                 reasons.append(f"Metric '{metric}' dropped below safety limit: {val:.2f} < {limit:.2f}")
                 
         # Statistical Trend analysis (statistical anomaly)
         if not is_anomaly:
-            if temp_delta > 15.0 and temps[-1] > thresholds.get('temperature', 90.0) * 0.8:
+            t_limit = thresholds.get('temperature', 0.0)
+            if t_limit > 0.0 and temp_delta > 15.0 and temps[-1] > t_limit * 0.8:
                 is_anomaly = True
                 severity = "Degraded"
                 reasons.append(f"Statistical Anomaly: High thermal ramp rate detected (+{temp_delta:.2f}°C over last 10 readings).")
-            if vib_delta > 3.0 and vibs[-1] > thresholds.get('vibration', 8.0) * 0.7:
+            
+            v_limit = thresholds.get('vibration', 0.0)
+            if v_limit > 0.0 and vib_delta > 3.0 and vibs[-1] > v_limit * 0.7:
                 is_anomaly = True
                 severity = "Degraded"
                 reasons.append(f"Statistical Anomaly: High vibration acceleration slope detected (+{vib_delta:.2f} mm/s trend).")
