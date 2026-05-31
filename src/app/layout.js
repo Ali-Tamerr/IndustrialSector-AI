@@ -1,5 +1,4 @@
 import "./globals.css";
-import AuthProvider from "./auth/provider";
 
 export const metadata = {
   title: "Autonomous Industrial Control Tower",
@@ -18,7 +17,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="font-sans antialiased text-slate-200 bg-[#06080c] min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );
