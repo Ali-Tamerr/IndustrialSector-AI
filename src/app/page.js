@@ -725,7 +725,7 @@ export default function Home() {
 
   if (!isSetupCompleted) {
     return (
-      <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} font-sans p-6 md:p-12 flex flex-col items-center justify-start relative overflow-hidden select-none selection:bg-cyan-500/30 transition-colors duration-300`}>
+      <div className={`h-screen overflow-hidden ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} font-sans p-4 md:p-6 lg:p-6 flex flex-col items-center justify-start relative select-none selection:bg-cyan-500/30 transition-colors duration-300`}>
         
         {/* Prismatic Digital Grid Background */}
         <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none animate-grid-move`}></div>
@@ -750,486 +750,523 @@ export default function Home() {
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
-
-        <div className="w-full max-w-5xl space-y-10 z-10 animate-fadeIn">
+        <div className="w-full flex-1 min-h-0 z-10 animate-fadeIn grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch p-2 pb-4">
           
-          <div className="text-center space-y-4">
-            <div className={`inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full ${theme === 'dark' ? 'bg-cyan-950/20 border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-600 shadow-sm'} text-[10px] font-mono tracking-[0.2em] font-bold`}>
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>ORCHESTRATOR INITIALIZATION CORE</span>
-            </div>
-            
-            <h1 className={`text-4xl md:text-5xl font-extrabold tracking-tight uppercase font-mono ${theme === 'dark' ? 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400' : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600'} bg-clip-text text-transparent filter drop-shadow-[0_2px_10px_rgba(6,182,212,0.1)]`}>
-              AUTONOMIC CONTROL TOWER
-            </h1>
-            
-            <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-655'} max-w-2xl mx-auto leading-relaxed`}>
-              Activate an autonomic, offline-first multi-agent predictive maintenance (PdM) fleet. Unify industrial telemetry, RAG diagnostics, and automated supply-chain graph routing.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <div className={`relative backdrop-blur-md ${theme === 'dark' ? 'bg-white/[0.01] border-[#1b2336]/60 hover:bg-white/[0.015] hover:border-red-500/25' : 'bg-white/60 border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:bg-white/80 hover:border-red-500/30'} rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(239,68,68,0.03)] hover:-translate-y-0.5 group overflow-hidden`}>
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500/10 via-red-500/40 to-red-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
+          {/* LEFT PANEL: Saved Fleets Sidebar (ChatGPT style) */}
+          <div className="lg:col-span-4 flex flex-col h-full min-h-0">
+            <div className={`border rounded-2xl p-5 flex flex-col h-full min-h-0 backdrop-blur-md transition-all duration-300 ${
+              theme === 'dark' 
+                ? 'bg-[#080b11]/50 border-[#1b2336]/60 text-slate-300 shadow-[0_0_30px_rgba(0,0,0,0.2)]' 
+                : 'bg-white/80 border-slate-200 text-slate-700 shadow-xl shadow-slate-100'
+            }`}>
               
-              <div className="flex justify-between items-start mb-5">
-                <div className={`h-10 w-10 ${theme === 'dark' ? 'bg-red-950/20 border-red-500/25' : 'bg-red-50 border-red-200'} rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(239,68,68,0.1)]`}>
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-[10px] font-bold tracking-widest uppercase font-mono text-slate-400 flex items-center space-x-2">
+                    <Database className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                    <span>Saved Workspaces</span>
+                  </h2>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                    theme === 'dark' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-cyan-50 text-cyan-600 border-cyan-200'
+                  } border`}>
+                    {projects.length} Total
+                  </span>
                 </div>
-                <span className={`text-[9px] font-mono tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase`}>01 // CRITICAL</span>
-              </div>
-
-              <h3 className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider mb-2`}>The Downtime Crisis</h3>
-              <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-650'} leading-relaxed font-sans font-normal`}>
-                Machinery breakdown is catastrophic. Industrial plants lose $22,000+ per minute when critical assets fail. Manual diagnostics, phone Tag, and surprise spare-stock deficits stall recovery for days or weeks.
-              </p>
-            </div>
-
-            <div className={`relative backdrop-blur-md ${theme === 'dark' ? 'bg-white/[0.01] border-[#1b2336]/60 hover:bg-white/[0.015] hover:border-blue-500/25' : 'bg-white/60 border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:bg-white/80 hover:border-blue-500/30'} rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.03)] hover:-translate-y-0.5 group overflow-hidden`}>
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/10 via-blue-500/40 to-blue-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
-              
-              <div className="flex justify-between items-start mb-5">
-                <div className={`h-10 w-10 ${theme === 'dark' ? 'bg-blue-950/20 border-blue-500/25' : 'bg-blue-50 border-blue-200'} rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(59,130,246,0.1)]`}>
-                  <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
-                </div>
-                <span className={`text-[9px] font-mono tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase`}>02 // COMPUTE</span>
-              </div>
-
-              <h3 className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider mb-2`}>Multi-Agent Diagnostics</h3>
-              <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-650'} leading-relaxed font-sans font-normal`}>
-                This system unifies monitoring. Upon sensor drift, specialized AI agents immediately diagnose failure modes, query machine manuals inside a vector database (RAG), and prepare targeted engineering repair tickets.
-              </p>
-            </div>
-
-            <div className={`relative backdrop-blur-md ${theme === 'dark' ? 'bg-white/[0.01] border-[#1b2336]/60 hover:bg-white/[0.015] hover:border-emerald-500/20' : 'bg-white/60 border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:bg-white/80 hover:border-emerald-500/30'} rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.03)] hover:-translate-y-0.5 group overflow-hidden`}>
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/10 via-emerald-500/40 to-emerald-500/10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
-              
-              <div className="flex justify-between items-start mb-5">
-                <div className={`h-10 w-10 ${theme === 'dark' ? 'bg-emerald-950/20 border-emerald-500/25' : 'bg-emerald-50 border-emerald-200'} rounded-xl flex items-center justify-center shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]`}>
-                  <Layers className="w-5 h-5 text-emerald-400" />
-                </div>
-                <span className={`text-[9px] font-mono tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase`}>03 // RESOLVE</span>
-              </div>
-
-              <h3 className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider mb-2`}>Optimal Sourcing bypass</h3>
-              <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-655'} leading-relaxed font-sans font-normal`}>
-                When a replacement part is out of stock, Sourcing agents automatically traverse the supply chain graph, choosing SKF Munich (5-day air-freight) over Siemens Shanghai (28-day maritime bottleneck) to bypass delays.
-              </p>
-            </div>
-
-          </div>
-
-          <div className={`${theme === 'dark' ? 'bg-[#080b11]/90 border-[#1b2336]/80' : 'bg-white/80 border-slate-200 shadow-xl'} border rounded-2xl overflow-hidden`}>
-            
-            {/* Project Naming Input Bar (PORTAL VIEW) */}
-            <div className={`p-6 border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]/50' : 'border-slate-200 bg-slate-50'} space-y-4`}>
-              <div className="flex flex-col md:flex-row md:items-end gap-4">
-                <div className="flex-1">
-                  <label className="block text-xs font-mono font-bold tracking-wider text-slate-400 mb-2 uppercase">
-                    Configure Fleet Project Name
-                  </label>
-                  <input
-                    type="text"
-                    value={projectNameInput}
-                    onChange={(e) => setProjectNameInput(e.target.value)}
-                    placeholder="Enter project name or leave blank for high-tech auto-naming..."
-                    className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-3 outline-none transition-all font-mono text-xs`}
-                  />
-                </div>
+                
                 <button
-                  type="button"
-                  onClick={() => setProjectNameInput(generateDefaultName(activeSetupTab === "presets" ? "template" : "custom", selectedTemplateId))}
-                  className={`px-4 py-3 rounded-xl border font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                  onClick={() => {
+                    setActiveProjectId(null);
+                    localStorage.removeItem("activeProjectId");
+                    setProjectNameInput("");
+                  }}
+                  className={`w-full py-3 px-4 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
                     theme === 'dark'
-                      ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]'
-                      : 'bg-cyan-55 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                      : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100 shadow-sm'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 animate-pulse" />
-                  Generate Tech Name
+                  <Plus className="w-4 h-4" />
+                  + NEW WORKSPACE
                 </button>
               </div>
-            </div>
-            
-            <div className={`flex border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-55'} font-mono text-xs p-1 gap-1`}>
-              <button 
-                onClick={() => setActiveSetupTab("presets")}
-                className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
-                  activeSetupTab === "presets" 
-                    ? (theme === 'dark' 
-                        ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                        : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
-                    : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-                Select Ready-to-Run Factory Template
-              </button>
-              <button 
-                onClick={() => setActiveSetupTab("custom")}
-                className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
-                  activeSetupTab === "custom" 
-                    ? (theme === 'dark' 
-                        ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                        : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
-                    : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                Build Custom Fleet from Scratch
-              </button>
-            </div>
 
-            <div className="p-6 md:p-8">
-              {activeSetupTab === "presets" ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    
-                    <div 
-                      onClick={() => setSelectedTemplateId("steel")}
-                      className={`border ${
-                        selectedTemplateId === "steel"
-                          ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
-                          : (theme === 'dark' 
-                              ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-blue-500/50 hover:bg-blue-950/[0.04]' 
-                              : 'border-slate-200 bg-slate-50/50 hover:border-blue-500 hover:bg-blue-50/20 shadow-sm')
-                      } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(59,130,246,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
-                    >
-                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Building className="w-20 h-20 text-blue-400" />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-blue-400 bg-blue-500/10 border-blue-500/25' : 'text-blue-600 bg-blue-50 border-blue-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>STEEL_MILL</span>
-                          <span className="h-1.5 w-1.5 rounded-full bg-blue-400 group-hover:animate-ping"></span>
-                        </div>
-                        <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-blue-500 transition-colors`}>Heavy Steel Rolling Mill</h4>
-                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
-                          Baseline fleet consisting of Rotary Gear Pumps, Industrial Exhaust Fans, and Pneumatic Compressors. Optimized for testing ball-bearing degradation.
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
-                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
-                        <span className="text-blue-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
-                      </div>
-                    </div>
-
-                    <div 
-                      onClick={() => setSelectedTemplateId("petrochemical")}
-                      className={`border ${
-                        selectedTemplateId === "petrochemical"
-                          ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
-                          : (theme === 'dark' 
-                              ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-emerald-500/50 hover:bg-emerald-950/[0.04]' 
-                              : 'border-slate-200 bg-slate-50/50 hover:border-emerald-500 hover:bg-emerald-50/20 shadow-sm')
-                      } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
-                    >
-                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Activity className="w-20 h-20 text-emerald-400" />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-emerald-600 bg-emerald-50 border-emerald-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>HYDROCRACKER</span>
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 group-hover:animate-ping"></span>
-                        </div>
-                        <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-emerald-500 transition-colors`}>Petrochemical Refinery</h4>
-                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
-                          Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals and Houston fast seal logistics routing.
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
-                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
-                        <span className="text-emerald-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
-                      </div>
-                    </div>
-
-                    <div 
-                      onClick={() => setSelectedTemplateId("automotive")}
-                      className={`border ${
-                        selectedTemplateId === "automotive"
-                          ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
-                          : (theme === 'dark' 
-                              ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-purple-500/50 hover:bg-purple-950/[0.04]' 
-                              : 'border-slate-200 bg-slate-50/50 hover:border-purple-500 hover:bg-purple-50/20 shadow-sm')
-                      } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
-                    >
-                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Cpu className="w-20 h-20 text-purple-400" />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-purple-400 bg-purple-500/10 border-purple-500/25' : 'text-purple-600 bg-purple-50 border-purple-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>ROBOTICS</span>
-                          <span className="h-1.5 w-1.5 rounded-full bg-purple-400 group-hover:animate-ping"></span>
-                        </div>
-                        <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-purple-500 transition-colors`}>6-Axis Assembly Robotics</h4>
-                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
-                          Robot joint gearboxes, painting line drives, and assembly cells. Optimized for testing high-precision harmonic gear fault diagnostic routines.
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-500">
-                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
-                        <span className="text-purple-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
-                      </div>
-                    </div>
-
+              <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+                {projects.length === 0 ? (
+                  <div className="text-center py-16 opacity-60 space-y-3">
+                    <LayoutGrid className="w-10 h-10 mx-auto text-cyan-400/40 animate-pulse" />
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-wider">No Saved Workspaces</p>
+                    <p className="text-[11px] font-sans font-normal leading-relaxed">
+                      Select a preset template or configure a custom fleet on the right to spin up your control tower.
+                    </p>
                   </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {projects.map((proj) => {
+                      const isProjActive = activeProjectId === proj.id;
+                      let details = "";
+                      if (proj.type === "template") {
+                        if (proj.templateId === "steel") details = "Steel Complex • 3 pdm assets";
+                        else if (proj.templateId === "petrochemical") details = "Refinery • 3 pdm assets";
+                        else if (proj.templateId === "automotive") details = "Robotics • joint torque";
+                      } else {
+                        details = `Custom Fleet • ${proj.customMachines?.length || 0} pdm asset(s)`;
+                      }
 
-                  {/* Provision Preset Action Button */}
-                  <div className="flex justify-end pt-4 border-t border-[#1b2336]/60">
-                    <button
-                      onClick={() => handleCreateProject("template")}
-                      className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
-                    >
-                      <span>Create & Launch Preset Project</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                    {customMachines.map((machine, index) => (
-                      <div key={index} className={`border ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#05070a]/50' : 'border-slate-200 bg-slate-50'} p-5 rounded-2xl relative space-y-4 font-mono text-xs`}>
-                        <div className="flex justify-between items-center border-b border-[#1b2336]/60 pb-3">
-                          <span className="text-cyan-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse"></span>
-                            Asset #{index + 1} System Profile
-                          </span>
-                          
-                          {customMachines.length > 1 && (
-                            <button 
-                              onClick={() => setCustomMachines(prev => prev.filter((_, i) => i !== index))}
-                              className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors"
+                      return (
+                        <div 
+                          key={proj.id}
+                          onClick={() => handleLaunchProject(proj)}
+                          className={`border cursor-pointer transition-all duration-300 p-4 rounded-xl relative group overflow-hidden flex flex-col justify-between hover:scale-[1.015] ${
+                            isProjActive
+                              ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/20 shadow-[0_0_20px_rgba(6,182,212,0.15)]' : 'border-cyan-500 bg-cyan-50/30 shadow-md')
+                              : (theme === 'dark' ? 'border-[#1b2336]/60 bg-[#0c0f17]/30 hover:border-slate-600 hover:bg-[#0c0f17]/55' : 'bg-slate-50 border-slate-200 hover:border-slate-305 hover:bg-slate-100')
+                          }`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                proj.type === "template"
+                                  ? (theme === 'dark' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-600 bg-blue-50 border-blue-200')
+                                  : (theme === 'dark' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-purple-600 bg-purple-50 border-purple-200')
+                              } border`}>
+                                {proj.type === "template" ? `${proj.templateId}` : "CUSTOM"}
+                              </span>
+                              <span className="text-[9px] text-slate-500 font-mono">
+                                {new Date(proj.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+
+                            <h3 className={`text-xs font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-805'} group-hover:text-cyan-400 transition-colors truncate`}>
+                              {proj.name}
+                            </h3>
+
+                            <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} truncate font-sans font-normal`}>
+                              {details}
+                            </p>
+                          </div>
+
+                          <div className={`mt-3 pt-3 border-t flex justify-between items-center font-mono text-[10px] ${theme === 'dark' ? 'border-[#1b2336]/40' : 'border-slate-150'}`}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleLaunchProject(proj); }}
+                              className={`font-bold flex items-center gap-1 transition-all ${
+                                isProjActive
+                                  ? 'text-emerald-400'
+                                  : 'text-cyan-400 group-hover:text-cyan-300'
+                              }`}
                             >
-                              <Trash className="w-3.5 h-3.5" /> Remove
+                              <Play className="w-3 h-3" />
+                              <span>{isProjActive ? "LAUNCHED" : "LAUNCH"}</span>
                             </button>
-                          )}
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Asset ID Tag</label>
-                            <input 
-                              type="text" 
-                              value={machine.id} 
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, id: val } : m));
-                              }}
-                              className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-mono`}
-                              placeholder="e.g. MCH-101"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-slate-505 mb-1.5 uppercase font-bold tracking-wider">Equipment Name</label>
-                            <input 
-                              type="text" 
-                              value={machine.name} 
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, name: val } : m));
-                              }}
-                              className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-sans`}
-                              placeholder="e.g. Conveyor Belt Motor A"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-slate-505 mb-1.5 uppercase font-bold tracking-wider">Bay Location</label>
-                            <input 
-                              type="text" 
-                              value={machine.location} 
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, location: val } : m));
-                              }}
-                              className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-sans`}
-                              placeholder="e.g. Bay 4 - Extraction Line"
-                            />
+                            <button
+                              onClick={(e) => handleDeleteProject(proj.id, e)}
+                              className="text-red-400/70 hover:text-red-455 p-1 rounded hover:bg-red-500/10 transition-all"
+                              title="Delete Environment"
+                            >
+                              <Trash className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
-
-                        <div className="pt-2">
-                          <span className="block text-[10px] text-slate-550 mb-2 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block text-[9px] text-slate-505 mb-1 font-bold">Winding Temp (°C)</label>
-                              <input 
-                                type="number" 
-                                value={machine.thresholds.temperature} 
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, temperature: val } } : m));
-                                }}
-                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] text-slate-550 mb-1 font-bold">Vibration (mm/s)</label>
-                              <input 
-                                type="number" 
-                                value={machine.thresholds.vibration} 
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, vibration: val } } : m));
-                                }}
-                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] text-slate-550 mb-1 font-bold">Discharge Pres (Bar)</label>
-                              <input 
-                                type="number" 
-                                value={machine.thresholds.pressure} 
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, pressure: val } } : m));
-                                }}
-                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] text-slate-550 mb-1 font-bold">Coil Current (Amps)</label>
-                              <input 
-                                type="number" 
-                                value={machine.thresholds.current} 
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, current: val } } : m));
-                                }}
-                                className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-
-                  <div className="flex justify-between items-center font-mono text-xs pt-4 border-t border-[#1b2336]/60">
-                    <button
-                      disabled={customMachines.length >= 3}
-                      onClick={() => setCustomMachines(prev => [
-                        ...prev,
-                        { id: `MCH-10${prev.length + 1}`, name: "", location: "", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
-                      ])}
-                      className={`px-4 py-2.5 ${theme === 'dark' ? 'bg-[#090e18] border-[#1b2336] text-white hover:bg-slate-900/60' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'} rounded-xl transition-all font-bold flex items-center gap-1.5`}
-                    >
-                      <Plus className="w-4 h-4" /> Add Another Asset
-                    </button>
-                    
-                    <button
-                      disabled={seeding || customMachines.some(m => !m.name.trim() || !m.location.trim())}
-                      onClick={() => handleCreateProject("custom")}
-                      className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
-                    >
-                      <span>Initialize & Launch Custom Fleet</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Saved Projects Directory */}
-          <div className="space-y-4">
-            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
-              <Database className="w-3.5 h-3.5 text-cyan-455" />
-              <span>SAVED FACTORY FLEET CONTEXTS DIRECTORY</span>
-            </h2>
+          {/* RIGHT PANEL: Workspace Area */}
+          <div className="lg:col-span-8 flex flex-col h-full min-h-0">
+            <div className={`border rounded-2xl p-5 md:p-8 flex flex-col space-y-6 h-full min-h-0 backdrop-blur-md transition-all duration-300 overflow-y-auto custom-scrollbar ${
+              theme === 'dark' 
+                ? 'bg-[#080b11]/30 border-[#1b2336]/40 text-slate-300' 
+                : 'bg-white/60 border-slate-200 text-slate-700 shadow-xl shadow-slate-100'
+            }`}>
+              
+              {/* Header and Welcome */}
+              <div className="text-center space-y-3 pb-4 border-b border-[#1b2336]/10">
+                <div className={`inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full ${
+                  theme === 'dark' ? 'bg-cyan-950/20 border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-600 shadow-sm'
+                } text-[9px] font-mono tracking-[0.2em] font-bold`}>
+                  <Sparkles className="w-3 h-3 animate-pulse" />
+                  <span>ORCHESTRATOR INITIALIZATION CORE</span>
+                </div>
+                
+                <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight uppercase font-mono ${
+                  theme === 'dark' ? 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400' : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600'
+                } bg-clip-text text-transparent filter drop-shadow-[0_2px_10px_rgba(6,182,212,0.1)]`}>
+                  AUTONOMIC CONTROL TOWER
+                </h1>
+                
+                <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-xl mx-auto leading-relaxed`}>
+                  Activate an autonomic, offline-first multi-agent predictive maintenance (PdM) fleet. Unify telemetry, RAG diagnostics, and supply-chain routing.
+                </p>
+              </div>
 
-            {projects.length === 0 ? (
-              <div className={`border rounded-2xl p-10 text-center relative overflow-hidden ${
-                theme === 'dark' ? 'bg-[#080b11]/50 border-[#1b2336]/60 text-slate-500' : 'bg-slate-55/50 border-slate-200 text-slate-500'
-              }`}>
-                <div className="max-w-md mx-auto space-y-3">
-                  <LayoutGrid className="w-10 h-10 mx-auto opacity-30 text-cyan-400 animate-pulse" />
-                  <p className="font-mono text-xs font-bold uppercase tracking-wider">No Saved Fleet Environments Found</p>
-                  <p className="text-xs font-sans font-normal leading-relaxed">
-                    Create your first factory workspace by selecting a preset template above or building a custom configuration from scratch. Your saved configurations will sync locally here.
+              {/* Guide/Info Cards (AI Prompts style) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <div className={`relative backdrop-blur-md ${
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-red-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-red-500/25'
+                } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>The Downtime Crisis</h3>
+                  </div>
+                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                    Plant downtime costs $22,000+ per minute. Surprise parts deficits stall recovery for weeks.
                   </p>
                 </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {projects.map((proj) => {
-                  const isProjActive = activeProjectId === proj.id;
-                  let details = "";
-                  if (proj.type === "template") {
-                    if (proj.templateId === "steel") details = "Heavy Steel rolling complex, 3 assets, bearing wear profile.";
-                    else if (proj.templateId === "petrochemical") details = "Refinery transfer complex, 3 assets, high pressure profile.";
-                    else if (proj.templateId === "automotive") details = "6-Axis welder robot joint assembly, 3 assets, torque profile.";
-                  } else {
-                    details = `Custom fleet, ${proj.customMachines?.length || 0} configured asset(s), user-defined thresholds.`;
-                  }
 
-                  return (
-                    <div 
-                      key={proj.id}
-                      onClick={() => handleLaunchProject(proj)}
-                      className={`border cursor-pointer transition-all duration-300 p-5 rounded-2xl relative group overflow-hidden flex flex-col justify-between min-h-[160px] hover:-translate-y-0.5 ${
-                        isProjActive
-                          ? (theme === 'dark' ? 'border-cyan-500/80 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
-                          : (theme === 'dark' ? 'border-[#1b2336]/60 bg-[#0c0f17]/40 hover:border-slate-600 hover:bg-[#0c0f17]/60' : 'bg-white border-slate-200 shadow-sm hover:border-slate-400 hover:bg-slate-50/20')
+                <div className={`relative backdrop-blur-md ${
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-blue-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-blue-500/25'
+                } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Cpu className="w-4 h-4 text-blue-400 animate-pulse" />
+                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Agent Diagnostics</h3>
+                  </div>
+                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                    Specialized AI agents instantly diagnose breakdowns, querying manuals via RAG.
+                  </p>
+                </div>
+
+                <div className={`relative backdrop-blur-md ${
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-emerald-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-emerald-500/25'
+                } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Sourcing Bypass</h3>
+                  </div>
+                  <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-605'} leading-relaxed font-sans font-normal`}>
+                    Traverses the supply-chain graph to bypass maritime bottlenecks and speed parts shipping.
+                  </p>
+                </div>
+
+              </div>
+
+              {/* Project Configurator Section */}
+              <div className={`${theme === 'dark' ? 'bg-[#080b11]/90 border-[#1b2336]/85' : 'bg-white/80 border-slate-200 shadow-lg'} border rounded-2xl overflow-hidden`}>
+                
+                {/* Project Naming Input Bar */}
+                <div className={`p-4 md:p-6 border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]/50' : 'border-slate-200 bg-slate-50'} space-y-4`}>
+                  <div className="flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-mono font-bold tracking-wider text-slate-400 mb-2 uppercase">
+                        Configure Fleet Project Name
+                      </label>
+                      <input
+                        type="text"
+                        value={projectNameInput}
+                        onChange={(e) => setProjectNameInput(e.target.value)}
+                        placeholder="Enter project name or leave blank for high-tech auto-naming..."
+                        className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-3 outline-none transition-all font-mono text-xs`}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProjectNameInput(generateDefaultName(activeSetupTab === "presets" ? "template" : "custom", selectedTemplateId))}
+                      className={`px-4 py-3 rounded-xl border font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                        theme === 'dark'
+                          ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]'
+                          : 'bg-cyan-55 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
                       }`}
                     >
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                            proj.type === "template"
-                              ? (theme === 'dark' ? 'text-blue-400 bg-blue-500/10 border-blue-500/25' : 'text-blue-600 bg-blue-50 border-blue-200')
-                              : (theme === 'dark' ? 'text-purple-400 bg-purple-500/10 border-purple-500/25' : 'text-purple-600 bg-purple-50 border-purple-200')
-                          } border`}>
-                            {proj.type === "template" ? `${proj.templateId?.toUpperCase()}` : "CUSTOM_FLEET"}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            {new Date(proj.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                      <Sparkles className="w-4 h-4 animate-pulse" />
+                      Generate Name
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <div className={`flex border-b ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-55'} font-mono text-[10px] md:text-xs p-1 gap-1`}>
+                  <button 
+                    onClick={() => setActiveSetupTab("presets")}
+                    className={`flex-1 py-3 px-2 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
+                      activeSetupTab === "presets" 
+                        ? (theme === 'dark' 
+                            ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
+                            : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
+                        : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    Select Factory Template
+                  </button>
+                  <button 
+                    onClick={() => setActiveSetupTab("custom")}
+                    className={`flex-1 py-3 px-2 rounded-xl font-bold uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
+                      activeSetupTab === "custom" 
+                        ? (theme === 'dark' 
+                            ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
+                            : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
+                        : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl"
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Build Custom Fleet
+                  </button>
+                </div>
+
+                <div className="p-4 md:p-6">
+                  {activeSetupTab === "presets" ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        
+                        <div 
+                          onClick={() => setSelectedTemplateId("steel")}
+                          className={`border ${
+                            selectedTemplateId === "steel"
+                              ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
+                              : (theme === 'dark' 
+                                  ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-blue-500/50 hover:bg-blue-950/[0.04]' 
+                                  : 'border-slate-200 bg-slate-50/50 hover:border-blue-500 hover:bg-blue-50/20 shadow-sm')
+                          } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(59,130,246,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
+                        >
+                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Building className="w-20 h-20 text-blue-400" />
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-blue-400 bg-blue-500/10 border-blue-500/25' : 'text-blue-600 bg-blue-50 border-blue-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>STEEL_MILL</span>
+                              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 group-hover:animate-ping"></span>
+                            </div>
+                            <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-805'} group-hover:text-blue-500 transition-colors`}>Heavy Steel Rolling Mill</h4>
+                            <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                              Baseline fleet consisting of Rotary Gear Pumps, Industrial Exhaust Fans, and Pneumatic Compressors. Optimized for testing ball-bearing degradation.
+                            </p>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-505">
+                            <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
+                            <span className="text-blue-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
+                          </div>
                         </div>
 
-                        <h3 className={`text-base font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-cyan-405 transition-colors`}>
-                          {proj.name}
-                        </h3>
+                        <div 
+                          onClick={() => setSelectedTemplateId("petrochemical")}
+                          className={`border ${
+                            selectedTemplateId === "petrochemical"
+                              ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
+                              : (theme === 'dark' 
+                                  ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-emerald-500/50 hover:bg-emerald-950/[0.04]' 
+                                  : 'border-slate-200 bg-slate-50/50 hover:border-emerald-500 hover:bg-emerald-50/20 shadow-sm')
+                          } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
+                        >
+                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Activity className="w-20 h-20 text-emerald-400" />
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-emerald-600 bg-emerald-50 border-emerald-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>HYDROCRACKER</span>
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 group-hover:animate-ping"></span>
+                            </div>
+                            <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-805'} group-hover:text-emerald-500 transition-colors`}>Petrochemical Refinery</h4>
+                            <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                              Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals and Houston fast seal logistics routing.
+                            </p>
+                          </div>
 
-                        <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
-                          {details}
-                        </p>
+                          <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-505">
+                            <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
+                          </div>
+                        </div>
+
+                        <div 
+                          onClick={() => setSelectedTemplateId("automotive")}
+                          className={`border ${
+                            selectedTemplateId === "automotive"
+                              ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
+                              : (theme === 'dark' 
+                                  ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-purple-500/50 hover:bg-purple-950/[0.04]' 
+                                  : 'border-slate-200 bg-slate-50/50 hover:border-purple-500 hover:bg-purple-50/20 shadow-sm')
+                          } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
+                        >
+                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Cpu className="w-20 h-20 text-purple-400" />
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-purple-400 bg-purple-500/10 border-purple-500/25' : 'text-purple-600 bg-purple-50 border-purple-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>ROBOTICS</span>
+                              <span className="h-1.5 w-1.5 rounded-full bg-purple-400 group-hover:animate-ping"></span>
+                            </div>
+                            <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-850'} group-hover:text-purple-500 transition-colors`}>6-Axis Assembly Robotics</h4>
+                            <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                              Robot joint gearboxes, painting line drives, and assembly cells. Optimized for testing high-precision harmonic gear fault diagnostic routines.
+                            </p>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-505">
+                            <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 3 pdm assets</span>
+                            <span className="text-purple-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
+                          </div>
+                        </div>
+
                       </div>
 
-                      <div className={`mt-4 pt-4 border-t flex justify-between items-center font-mono text-xs ${theme === 'dark' ? 'border-[#1b2336]/60' : 'border-slate-100'}`}>
+                      {/* Provision Preset Action Button */}
+                      <div className="flex justify-end pt-4 border-t border-[#1b2336]/60">
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleLaunchProject(proj); }}
-                          className={`font-bold flex items-center gap-1.5 transition-all ${
-                            isProjActive
-                              ? 'text-emerald-400'
-                              : 'text-cyan-400 group-hover:text-cyan-300'
-                          }`}
+                          onClick={() => handleCreateProject("template")}
+                          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
                         >
-                          <Play className="w-3.5 h-3.5" />
-                          <span>{isProjActive ? "ACTIVE ENVIRONMENT" : "LAUNCH CONTROL TOWER"}</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => handleDeleteProject(proj.id, e)}
-                          className="text-red-400/70 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all"
-                          title="Delete Project Config"
-                        >
-                          <Trash className="w-3.5 h-3.5" />
+                          <span>Create & Launch Preset Project</span>
+                          <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
-                  );
-                })}
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                        {customMachines.map((machine, index) => (
+                          <div key={index} className={`border ${theme === 'dark' ? 'border-[#1b2336]/80 bg-[#05070a]/50' : 'border-slate-200 bg-slate-50'} p-5 rounded-2xl relative space-y-4 font-mono text-xs`}>
+                            <div className="flex justify-between items-center border-b border-[#1b2336]/60 pb-3">
+                              <span className="text-cyan-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                                Asset #{index + 1} System Profile
+                              </span>
+                              
+                              {customMachines.length > 1 && (
+                                <button 
+                                  onClick={() => setCustomMachines(prev => prev.filter((_, i) => i !== index))}
+                                  className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors"
+                                >
+                                  <Trash className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Asset ID Tag</label>
+                                <input 
+                                  type="text" 
+                                  value={machine.id} 
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, id: val } : m));
+                                  }}
+                                  className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-mono`}
+                                  placeholder="e.g. MCH-101"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-505 mb-1.5 uppercase font-bold tracking-wider">Equipment Name</label>
+                                <input 
+                                  type="text" 
+                                  value={machine.name} 
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, name: val } : m));
+                                  }}
+                                  className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-sans`}
+                                  placeholder="e.g. Conveyor Belt Motor A"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-550 mb-1.5 uppercase font-bold tracking-wider">Bay Location</label>
+                                <input 
+                                  type="text" 
+                                  value={machine.location} 
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, location: val } : m));
+                                  }}
+                                  className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-xl p-2.5 outline-none transition-all font-sans`}
+                                  placeholder="e.g. Bay 4 - Extraction Line"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="pt-2">
+                              <span className="block text-[10px] text-slate-550 mb-2 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div>
+                                  <label className="block text-[9px] text-slate-550 mb-1 font-bold">Winding Temp (°C)</label>
+                                  <input 
+                                    type="number" 
+                                    value={machine.thresholds.temperature} 
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, temperature: val } } : m));
+                                    }}
+                                    className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] text-slate-550 mb-1 font-bold">Vibration (mm/s)</label>
+                                  <input 
+                                    type="number" 
+                                    value={machine.thresholds.vibration} 
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, vibration: val } } : m));
+                                    }}
+                                    className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] text-slate-550 mb-1 font-bold">Discharge Pres (Bar)</label>
+                                  <input 
+                                    type="number" 
+                                    value={machine.thresholds.pressure} 
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, pressure: val } } : m));
+                                    }}
+                                    className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] text-slate-550 mb-1 font-bold">Coil Current (Amps)</label>
+                                  <input 
+                                    type="number" 
+                                    value={machine.thresholds.current} 
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      setCustomMachines(prev => prev.map((m, i) => i === index ? { ...m, thresholds: { ...m.thresholds, current: val } } : m));
+                                    }}
+                                    className={`w-full ${theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'} rounded-lg p-2 outline-none focus:border-cyan-550`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between items-center font-mono text-xs pt-4 border-t border-[#1b2336]/60">
+                        <button
+                          disabled={customMachines.length >= 3}
+                          onClick={() => setCustomMachines(prev => [
+                            ...prev,
+                            { id: `MCH-10${prev.length + 1}`, name: "", location: "", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15 } }
+                          ])}
+                          className={`px-4 py-2.5 ${theme === 'dark' ? 'bg-[#090e18] border-[#1b2336] text-white hover:bg-slate-900/60' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'} rounded-xl transition-all font-bold flex items-center gap-1.5`}
+                        >
+                          <Plus className="w-4 h-4" /> Add Another Asset
+                        </button>
+                        
+                        <button
+                          disabled={seeding || customMachines.some(m => !m.name.trim() || !m.location.trim())}
+                          onClick={() => handleCreateProject("custom")}
+                          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
+                        >
+                          <span>Initialize & Launch Custom Fleet</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
               </div>
-            )}
+
+            </div>
           </div>
 
         </div>
