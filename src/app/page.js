@@ -92,7 +92,7 @@ export default function Home() {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
-  const thoughtsEndRef = useRef(null);
+  const thoughtsContainerRef = useRef(null);
 
   const [theme, setTheme] = useState("dark");
 
@@ -600,10 +600,14 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto scroll console terminal
+  // Auto scroll console terminal scroll container (non-intrusive)
   useEffect(() => {
-    if (thoughtsEndRef.current) {
-      thoughtsEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (thoughtsContainerRef.current) {
+      const container = thoughtsContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth"
+      });
     }
   }, [thoughts]);
 
@@ -1574,7 +1578,7 @@ export default function Home() {
               </div>
 
               {/* Terminal Body */}
-              <div className="p-4 flex-1 overflow-y-auto font-mono text-[11px] space-y-3 scroll-smooth leading-relaxed">
+              <div ref={thoughtsContainerRef} className="p-4 flex-1 overflow-y-auto font-mono text-[11px] space-y-3 scroll-smooth leading-relaxed">
                 {thoughts.map((log) => {
                   let tagColor = "text-slate-400 bg-slate-500/10 border-slate-500/20";
                   if (log.agent.includes("Anomaly")) tagColor = "text-amber-400 bg-amber-400/10 border-amber-400/20";
@@ -1592,7 +1596,6 @@ export default function Home() {
                     </div>
                   );
                 })}
-                <div ref={thoughtsEndRef} />
               </div>
             </div>
           </section>
