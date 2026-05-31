@@ -208,7 +208,7 @@ export default function Home() {
     return `${randomPrefix} #${randomNum}`;
   };
 
-  const handleSetup = async (type, templateId = null, customMchs = null) => {
+  const handleSetup = async (type, templateId = null, customMchs = null, isNewProject = false) => {
     setSeeding(true);
     try {
       const res = await fetch(`${API_BASE}/api/setup`, {
@@ -227,10 +227,12 @@ export default function Home() {
           window.history.pushState(null, "", "#dashboard");
         }
         await refreshData();
-        // Trigger tour onboarding dynamically on startup
-        localStorage.removeItem("hasSeenTutorial");
-        setShowTutorial(true);
-        setTutorialStep(0);
+        // Trigger tour onboarding only on first creation
+        if (isNewProject) {
+          localStorage.removeItem("hasSeenTutorial");
+          setShowTutorial(true);
+          setTutorialStep(0);
+        }
       } else {
         const errData = await res.json();
         alert("Setup failed: " + errData.error);
@@ -262,13 +264,13 @@ export default function Home() {
     localStorage.setItem("activeProjectId", newProject.id);
     setProjectNameInput("");
 
-    await handleSetup(type, newProject.templateId, newProject.customMachines);
+    await handleSetup(type, newProject.templateId, newProject.customMachines, true);
   };
 
   const handleLaunchProject = async (proj) => {
     setActiveProjectId(proj.id);
     localStorage.setItem("activeProjectId", proj.id);
-    await handleSetup(proj.type, proj.templateId, proj.customMachines);
+    await handleSetup(proj.type, proj.templateId, proj.customMachines, false);
   };
 
   const handleRenameProject = (projId, newName) => {
@@ -551,16 +553,7 @@ export default function Home() {
     setShowTutorial(false);
   };
 
-  // Auto trigger tutorial on first visit
-  useEffect(() => {
-    const hasSeen = localStorage.getItem("hasSeenTutorial");
-    if (!hasSeen) {
-      const timer = setTimeout(() => {
-        setShowTutorial(true);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+
 
   // Scroll and highlight selector element during step changes
   useEffect(() => {
