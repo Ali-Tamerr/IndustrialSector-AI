@@ -890,11 +890,11 @@ export default function Home() {
                 <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight uppercase font-mono ${
                   theme === 'dark' ? 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400' : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600'
                 } bg-clip-text text-transparent filter drop-shadow-[0_2px_10px_rgba(6,182,212,0.1)]`}>
-                  AUTONOMIC CONTROL TOWER
+                  INDUSTRIAL SECTOR AI
                 </h1>
                 
                 <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-xl mx-auto leading-relaxed`}>
-                  Activate an autonomic, offline-first multi-agent predictive maintenance (PdM) fleet. Unify telemetry, RAG diagnostics, and supply-chain routing.
+                  An autonomic multi-agent orchestration portal for predictive maintenance. Stream live multi-sensor IoT telemetry, run autonomous RAG diagnostics, and optimize supply-chain parts routing in real time.
                 </p>
               </div>
 
