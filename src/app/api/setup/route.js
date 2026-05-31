@@ -187,7 +187,13 @@ export async function POST(req) {
           ["MAT-302", "PART-301", "USED_IN", 3, 1200.00]
         ];
 
-        anomalyMachineId = "MCH-301"; // Welding joint anomaly on startup!
+      } else if (templateId === "blank") {
+        // Truly Blank template: no seeded machines, inventory, nodes, or edges
+        machinesToSeed = [];
+        inventoryToSeed = [];
+        supplierNodesToSeed = [];
+        supplierEdgesToSeed = [];
+        anomalyMachineId = null;
       } else {
         // Default Steel Mill Template (matches init_db.py)
         machinesToSeed = [

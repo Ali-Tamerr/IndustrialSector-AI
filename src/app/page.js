@@ -786,7 +786,7 @@ export default function Home() {
                   }`}
                 >
                   <Plus className="w-4 h-4" />
-                  + NEW WORKSPACE
+                  NEW WORKSPACE
                 </button>
               </div>
 
@@ -885,12 +885,7 @@ export default function Home() {
               
               {/* Header and Welcome */}
               <div className="text-center space-y-3 pb-4 border-b border-[#1b2336]/10">
-                <div className={`inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full ${
-                  theme === 'dark' ? 'bg-cyan-950/20 border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-600 shadow-sm'
-                } text-[9px] font-mono tracking-[0.2em] font-bold`}>
-                  <Sparkles className="w-3 h-3 animate-pulse" />
-                  <span>ORCHESTRATOR INITIALIZATION CORE</span>
-                </div>
+                
                 
                 <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight uppercase font-mono ${
                   theme === 'dark' ? 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400' : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600'
@@ -1006,11 +1001,10 @@ export default function Home() {
                     Build Custom Fleet
                   </button>
                 </div>
-
                 <div className="p-4 md:p-6">
                   {activeSetupTab === "presets" ? (
                     <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                         
                         <div 
                           onClick={() => setSelectedTemplateId("steel")}
@@ -1105,6 +1099,36 @@ export default function Home() {
                           </div>
                         </div>
 
+                        <div 
+                          onClick={() => setSelectedTemplateId("blank")}
+                          className={`border ${
+                            selectedTemplateId === "blank"
+                              ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/15 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-cyan-500 bg-cyan-50/20 shadow-md')
+                              : (theme === 'dark' 
+                                  ? 'border-[#1b2336]/70 bg-[#05070a]/40 hover:border-slate-500/50 hover:bg-slate-950/[0.04]' 
+                                  : 'border-slate-200 bg-slate-50/50 hover:border-slate-400 hover:bg-slate-50/20 shadow-sm')
+                          } p-5 rounded-2xl hover:shadow-[0_0_30px_rgba(100,116,139,0.05)] cursor-pointer group transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]`}
+                        >
+                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Settings className="w-20 h-20 text-slate-400" />
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className={`text-[9px] font-mono font-bold ${theme === 'dark' ? 'text-slate-400 bg-slate-500/10 border-slate-500/25' : 'text-slate-650 bg-slate-50 border-slate-200'} px-2 py-0.5 rounded uppercase tracking-wider`}>BLANK_SPACE</span>
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-400 group-hover:animate-ping"></span>
+                            </div>
+                            <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-805'} group-hover:text-slate-400 transition-colors`}>Truly Empty Workspace</h4>
+                            <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
+                              Initialize a completely blank dashboard. No pre-seeded machinery, telemetry streams, or graphs. Build your entire fleet from scratch.
+                            </p>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-[#1b2336]/60 flex justify-between items-center font-mono text-[9px] text-slate-505">
+                            <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 0 pdm assets</span>
+                            <span className="text-slate-500 group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">SELECT MODULE <ArrowRight className="w-3 h-3" /></span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Provision Preset Action Button */}
@@ -1340,7 +1364,8 @@ export default function Home() {
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Dashboard Tour</span>
-          </button>          <button
+          </button>
+          <button
             onClick={() => {
               if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
                 setIsSetupCompleted(false);
