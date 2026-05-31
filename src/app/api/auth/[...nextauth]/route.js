@@ -1,6 +1,9 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
+// ---------------------------------------------------------------------------
+// Auth configuration – values are read from .env (Next.js loads .env automatically)
+// ---------------------------------------------------------------------------
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -11,25 +14,20 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async session({ session, token }) {
-      // Attach user id (or email) to session for later use
-      if (token.sub) {
-        session.user.id = token.sub;
-      }
+      // Attach the user id (or email) to the session for later use
+      if (token.sub) session.user.id = token.sub;
       return session;
     },
     async jwt({ token, account }) {
-      if (account) {
-        token.accessToken = account.access_token;
-      }
+      if (account) token.accessToken = account.access_token;
       return token;
     },
   },
 };
 
-export const GET = async (req) => {
-  return await NextAuth(req, authOptions);
-};
+// NextAuth returns a request handler. We reuse it for both GET and POST.
+const handler = NextAuth(authOptions);
 
-export const POST = async (req) => {
-  return await NextAuth(req, authOptions);
-};
+export const GET = handler;
+export const POST = handler;
+
