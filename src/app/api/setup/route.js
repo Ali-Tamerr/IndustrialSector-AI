@@ -262,6 +262,7 @@ export async function POST(req) {
 
         anomalyMachineId = "MCH-001"; // Pump A critical winding degradation
       }
+    } else {
       // Custom Fleet from Scratch
       machinesToSeed = customMachines.map((m, idx) => {
         const getVal = (v, fallback) => {
