@@ -902,14 +902,14 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 <div className={`relative backdrop-blur-md ${
-                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-red-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-red-500/25'
+                  theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-cyan-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-cyan-500/25'
                 } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
-                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>The Downtime Crisis</h3>
+                    <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
+                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>IoT Sensor Fusion</h3>
                   </div>
                   <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
-                    Plant downtime costs $22,000+ per minute. Surprise parts deficits stall recovery for weeks.
+                    Correlates winding temp, vibration, discharge pressure, and coil current to detect machinery degradation early.
                   </p>
                 </div>
 
@@ -917,11 +917,11 @@ export default function Home() {
                   theme === 'dark' ? 'bg-white/[0.005] border-[#1b2336]/50 hover:border-blue-500/20' : 'bg-white/50 border-slate-200 shadow-sm hover:border-blue-500/25'
                 } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Cpu className="w-4 h-4 text-blue-400 animate-pulse" />
-                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Agent Diagnostics</h3>
+                    <Cpu className="w-4 h-4 text-blue-400" />
+                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Autonomous Diagnostics</h3>
                   </div>
                   <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-sans font-normal`}>
-                    Specialized AI agents instantly diagnose breakdowns, querying manuals via RAG.
+                    Specialized AI agents instantly isolate mechanical faults and calculate RUL by cross-referencing manuals via RAG.
                   </p>
                 </div>
 
@@ -930,10 +930,10 @@ export default function Home() {
                 } rounded-xl p-4 transition-all duration-300 group overflow-hidden`}>
                   <div className="flex items-center gap-2 mb-2">
                     <Layers className="w-4 h-4 text-emerald-400" />
-                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Sourcing Bypass</h3>
+                    <h3 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'} uppercase tracking-wider`}>Graph-Based Sourcing</h3>
                   </div>
                   <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-605'} leading-relaxed font-sans font-normal`}>
-                    Traverses the supply-chain graph to bypass maritime bottlenecks and speed parts shipping.
+                    Traverses recursive material supply-chain graphs to bypass logistics bottlenecks and optimize procurement.
                   </p>
                 </div>
 
@@ -947,7 +947,7 @@ export default function Home() {
                   <div className="flex flex-col md:flex-row md:items-end gap-4">
                     <div className="flex-1">
                       <label className="block text-[10px] font-mono font-bold tracking-wider text-slate-400 mb-2 uppercase">
-                        Configure Fleet Project Name
+                        Configure Workspace Name
                       </label>
                       <input
                         type="text"
@@ -998,7 +998,7 @@ export default function Home() {
                     }`}
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Build Custom Fleet
+                    Build Custom Workspace
                   </button>
                 </div>
                 <div className="p-4 md:p-6">
@@ -1137,7 +1137,7 @@ export default function Home() {
                           onClick={() => handleCreateProject("template")}
                           className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
                         >
-                          <span>Create & Launch Preset Project</span>
+                          <span>Create & Launch Preset Workspace</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -1280,7 +1280,7 @@ export default function Home() {
                           onClick={() => handleCreateProject("custom")}
                           className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
                         >
-                          <span>Initialize & Launch Custom Fleet</span>
+                          <span>Initialize & Launch Custom Workspace</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
