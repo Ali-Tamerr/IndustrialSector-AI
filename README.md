@@ -12,6 +12,53 @@ pinned: false
 
 This document details the Multi-Agent Orchestration Layer built to connect real-time Predictive Maintenance (PdM) with semantic Supply Chain Knowledge Graphs.
 
+---
+
+## ⚙️ Operational Telemetry & IoT Sensor Fusion Core
+
+To understand how the **Industrial Sector AI** orchestrator predicts failures and automates maintenance, it is crucial to understand the **Sensor Fusion** engine. Rather than analyzing single isolated metrics, the control tower correlates multiple physical parameters from **coupled machine trains** (single logical assets).
+
+Almost every heavy industrial asset consists of a **Driver** (the electric motor), a **Coupling/Transmission** (shaft & bearings), and the **Driven Component** (the pump impeller, fan blade, or compressor screw). Since these components are mechanically coupled, a defect in one instantly propagates to the others.
+
+### 1. The 4 Core Telemetry Sensors
+
+| Telemetry Metric | Physical Sensor Type & Placement | Failure Modes Detected |
+| :--- | :--- | :--- |
+| **Winding Temp (°C)** | **Pt100 RTDs or Thermocouples** embedded inside the stator slots of the electric motor housing. | Winding insulation breakdown, stator short-circuits, and severe motor ventilation cooling blockages. |
+| **Vibration (mm/s)** | **Industrial IEPE Accelerometers** bolted axially and radially directly onto the bearing housings. | Rotational unbalance (dust/blade wear), shaft misalignment, structural looseness, and high-frequency bearing fatigue. |
+| **Discharge Pres (Bar)**| **Ceramic/Piezo-resistive Transducers** threaded into the outlet pipe manifold of the fluid/air system. | Cavitation, closed downstream gate-valves (blockages), piping ruptures (pressure loss), and impeller degradation. |
+| **Coil Current (Amps)** | **Split-Core Current Transformers (CTs)** clamped around power phases in the Motor Control Center (MCC). | Mechanical overload (fighting resistance), dry running/loss-of-load (spinning in vacuum), and startup inrush peaks. |
+
+### 2. Coupled Machine Train Sensor Topology
+
+The diagram below illustrates how these four sensors are physically distributed across a single unified asset (e.g., a coupled pump station):
+
+```mermaid
+graph TD
+    subgraph Electrical Panel
+        CT[Split-Core CT Sensor] -->|Coil Current - Amps| Motor
+    end
+
+    subgraph Coupled Machine Train
+        direction LR
+        Motor[Electric Motor<br>+ Winding Temp RTD] ====|Shaft & Bearings| Bearing[Bearing Housing<br>+ IEPE Accelerometer]
+        Bearing ====|Coupling| Driven[Driven Fluid Impeller / Screw<br>+ Discharge Pres Transducer]
+    end
+
+    classDef sensor fill:#0e7490,stroke:#06b6d4,stroke-width:2px,color:#fff;
+    class CT,Motor,Bearing,Driven sensor;
+```
+
+### 3. Pre-Seeded Real-World Assets Analysed by the AI
+
+This web application simulates and analyzes three primary coupled machine templates in real-time:
+
+* **High-Speed Industrial Fan (`MCH-002`)**: Used for fume and toxic dust extraction. Common failure: dust deposits on the fan blade trigger rotational unbalance, causing high vibration velocity at the bearings, which the AI agent diagnoses as bearing wear.
+* **Rotary Gear/Chemical Pump (`MCH-001`)**: Used to transport high-pressure fluids. Common failure: dry running (fluid loss), causing discharge pressure to fall to zero and motor coil current to drop significantly as the impeller spins without load.
+* **Heavy-Duty Compressor (`MCH-003`)**: Supplies pneumatic power to the assembly line. Common failure: system leakage, forcing the compressor to stay loaded continuously, driving winding temperatures past the critical threshold.
+
+---
+
 ```mermaid
 sequenceDiagram
     autonumber
