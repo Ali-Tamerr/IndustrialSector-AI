@@ -432,6 +432,7 @@ export default function Home() {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
+  const [showGraphLegendPopup, setShowGraphLegendPopup] = useState(false);
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -2295,12 +2296,76 @@ Industrial Sector AI Automation Network`;
 
           {/* Zone 3: Knowledge Graph */}
           <section id="zone-3" className="lg:col-span-7 space-y-3 flex flex-col transition-all duration-500">
-            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
+            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center relative">
               <div className="flex items-center space-x-2">
                 <Settings className="w-3.5 h-3.5 text-blue-400" />
                 <span>Zone 3: Supply Chain Knowledge Graph</span>
               </div>
-              <span className="text-[9px] text-slate-500 normal-case tracking-normal">Click nodes to query relation pathways</span>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setShowGraphLegendPopup(!showGraphLegendPopup)}
+                  className={`p-1.5 rounded-lg border transition-all duration-200 flex items-center justify-center hover:scale-105 ${
+                    showGraphLegendPopup 
+                      ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
+                      : (theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-400 hover:text-slate-200 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-750 hover:border-slate-300')
+                  }`}
+                  title="Show Reference Info & Legend"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </button>
+
+                {showGraphLegendPopup && (
+                  <div className={`absolute right-0 top-7 z-50 w-64 border rounded-xl p-4 shadow-2xl backdrop-blur-md animate-fadeIn font-mono text-[10px] tracking-normal normal-case ${
+                    theme === 'dark' 
+                      ? 'bg-[#0c0f17]/95 border-[#182030] text-slate-300 shadow-[0_10px_30px_rgba(0,0,0,0.5)]' 
+                      : 'bg-white/95 border-slate-200 text-slate-600 shadow-[0_10px_30px_rgba(0,0,0,0.15)]'
+                  }`}>
+                    <div className="flex justify-between items-center border-b pb-2 mb-3 border-slate-850/10">
+                      <span className="font-bold tracking-wider text-blue-400 uppercase text-[9px]">Graph Reference</span>
+                      <button 
+                        onClick={() => setShowGraphLegendPopup(false)}
+                        className="text-slate-500 hover:text-slate-300 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <span className="font-bold block text-slate-400 uppercase text-[8px] tracking-wider mb-1">Interaction</span>
+                        <p className="leading-relaxed">Click nodes to query relation pathways.</p>
+                      </div>
+                      
+                      <div className="border-t pt-2 border-slate-850/10">
+                        <span className="font-bold block text-slate-400 uppercase text-[8px] tracking-wider mb-1.5">Legend Reference</span>
+                        <div className="space-y-2">
+                          <span className="flex items-center space-x-2">
+                            <span className={`h-2.5 w-4 border border-blue-500 rounded-sm ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
+                            <span>Fleet Node</span>
+                          </span>
+                          <span className="flex items-center space-x-2">
+                            <span className={`h-3.5 w-3.5 rounded-full border border-slate-500 flex items-center justify-center text-[7px] ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}>ID</span>
+                            <span>Part Node</span>
+                          </span>
+                          <span className="flex items-center space-x-2">
+                            <span className="h-0 w-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-slate-400 bg-transparent"></span>
+                            <span>Direct Supplier</span>
+                          </span>
+                          <span className="flex items-center space-x-2">
+                            <span className="h-3 w-5 border border-slate-400 bg-transparent rounded-xs flex items-center justify-center text-[6px]">MAT</span>
+                            <span>Raw Material</span>
+                          </span>
+                          <span className="flex items-center space-x-2 text-amber-500 font-bold">
+                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+                            <span>Active Sourcing</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </h2>
 
             <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-5 flex-1 flex flex-col justify-between relative overflow-hidden min-h-[460px] max-h-[460px]`}>
@@ -2515,28 +2580,6 @@ Industrial Sector AI Automation Network`;
                   </button>
                 </div>
               )}
-            </div>
-
-            {/* Legend */}
-            <div className={`border-t pt-4 flex flex-wrap gap-4 justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
-              <div className="flex space-x-3">
-                <span className="flex items-center space-x-1">
-                  <span className={`h-2 w-3 border border-blue-500 rounded-sm ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
-                  <span>Fleet Node</span>
-                </span>
-                <span className="flex items-center space-x-1">
-                  <span className={`h-2.5 w-2.5 rounded-full border border-slate-500 ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
-                  <span>Part ID</span>
-                </span>
-                <span className="flex items-center space-x-1">
-                  <span className="h-0 w-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[9px] border-b-slate-400 bg-transparent"></span>
-                  <span>Direct Supp.</span>
-                </span>
-              </div>
-              <div className="flex items-center space-x-2 text-amber-500">
-                <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-                <span className="font-bold">Active Sourcing Bottleneck Highlighted</span>
-              </div>
             </div>
           </section>
 
