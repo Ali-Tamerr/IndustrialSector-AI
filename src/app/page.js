@@ -2413,11 +2413,13 @@ Industrial Sector AI Automation Network`;
                                   key={`ping-${node.id}`}
                                   cx={node.x}
                                   cy={node.y}
-                                  r="14"
+                                  r="12"
                                   fill="#f59e0b"
-                                  opacity="0.15"
-                                  className="animate-ping"
-                                />
+                                  opacity="0.25"
+                                >
+                                  <animate attributeName="r" values="12;26;12" dur="2.4s" repeatCount="indefinite" />
+                                  <animate attributeName="opacity" values="0.35;0.02;0.35" dur="2.4s" repeatCount="indefinite" />
+                                </circle>
                               );
                             }
                             return null;
