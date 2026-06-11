@@ -80,13 +80,353 @@ function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
   );
 }
 
+const PETROCHEMICAL_TEMPLATE = {
+  machines: [
+    {
+      id: "MCH-201",
+      name: "Crude Transfer Pump Alpha",
+      location: "Bay 5 - Hydrocracking",
+      status: "Operational",
+      critical_thresholds: { temperature: 95.0, vibration: 8.5, pressure: 12.0, current: 40.0, required_part_id: "PART-203" }
+    },
+    {
+      id: "MCH-202",
+      name: "Gas Combustion Turbine Beta",
+      location: "Bay 9 - Power Generation",
+      status: "Operational",
+      critical_thresholds: { temperature: 110.0, vibration: 12.0, pressure: 16.5, current: 85.0, required_part_id: "PART-201" }
+    },
+    {
+      id: "MCH-203",
+      name: "Heavy Heat Exchanger Fan",
+      location: "Bay 2 - Cooling Complex",
+      status: "Operational",
+      critical_thresholds: { temperature: 85.0, vibration: 9.0, pressure: 4.5, current: 18.0, required_part_id: "PART-204" }
+    }
+  ],
+  inventory: [
+    { part_id: "PART-201", part_name: "Extreme Heat Gas Turbine Valve", stock_level: 2, reorder_point: 5, cost: 2450.00, location: "Warehouse C - Aisle 1" },
+    { part_id: "PART-202", part_name: "Fluorosilicone High-Pressure Gasket", stock_level: 25, reorder_point: 10, cost: 85.00, location: "Warehouse A - Aisle 9" },
+    { part_id: "PART-203", part_name: "Petrochemical Centrifugal Impeller", stock_level: 1, reorder_point: 3, cost: 1450.00, location: "Warehouse C - Aisle 3" },
+    { part_id: "PART-204", part_name: "Exchanger Fan 3-Phase Rotor Winding", stock_level: 8, reorder_point: 2, cost: 720.00, location: "Warehouse B - Aisle 7" }
+  ],
+  nodes: [
+    { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", type: "Part", risk: 0, email: "" },
+    { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", type: "Part", risk: 0, email: "" },
+    { id: "PART-203", name: "Petrochemical Centrifugal Impeller", type: "Part", risk: 0, email: "" },
+    { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", type: "Part", risk: 0, email: "" },
+    { id: "SUP-201", name: "GE Power Systems Logistics", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
+    { id: "SUP-202", name: "Chevron Seals Houston", type: "Supplier", risk: 0.04, email: "houston.sales@chevronseals.com" },
+    { id: "SUP-203", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
+    { id: "SUP-204", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" },
+    { id: "MAT-201", name: "Superalloy Nickel Base Bar", type: "Material", risk: 0.15, email: "" },
+    { id: "MAT-202", name: "NBR Rubber Compound", type: "Material", risk: 0.05, email: "" }
+  ],
+  links: [
+    { id: 1, source: "SUP-201", target: "PART-201", relationship: "SUPPLIES", transit: 4, price: 3200.00 },
+    { id: 2, source: "SUP-202", target: "PART-202", relationship: "SUPPLIES", transit: 1, price: 95.00 },
+    { id: 3, source: "SUP-203", target: "PART-203", relationship: "SUPPLIES", transit: 12, price: 1750.00 },
+    { id: 4, source: "SUP-204", target: "PART-204", relationship: "SUPPLIES", transit: 6, price: 850.00 },
+    { id: 5, source: "SUP-201", target: "PART-203", relationship: "SUPPLIES", transit: 26, price: 1250.00 },
+    { id: 6, source: "SUP-203", target: "MAT-201", relationship: "SUPPLIES", transit: 4, price: 600.00 },
+    { id: 7, source: "MAT-201", target: "PART-201", relationship: "USED_IN", transit: 3, price: 900.00 },
+    { id: 8, source: "SUP-202", target: "MAT-202", relationship: "SUPPLIES", transit: 2, price: 40.00 },
+    { id: 9, source: "MAT-202", target: "PART-202", relationship: "USED_IN", transit: 1, price: 20.00 }
+  ],
+  anomalyMachineId: "MCH-203"
+};
+
+const AUTOMOTIVE_TEMPLATE = {
+  machines: [
+    {
+      id: "MCH-301",
+      name: "6-Axis Welder Robot Joint",
+      location: "Bay 1 - Welding Cell",
+      status: "Operational",
+      critical_thresholds: { temperature: 80.0, vibration: 15.0, pressure: 5.0, current: 30.0, required_part_id: "PART-301" }
+    },
+    {
+      id: "MCH-302",
+      name: "Main Assembly Conveyor Drive",
+      location: "Bay 6 - Painting Line",
+      status: "Operational",
+      critical_thresholds: { temperature: 75.0, vibration: 8.0, pressure: 6.0, current: 22.0, required_part_id: "PART-302" }
+    },
+    {
+      id: "MCH-303",
+      name: "Fleet Pneumatic Compressor Main",
+      location: "Bay 14 - Assembly Main",
+      status: "Operational",
+      critical_thresholds: { temperature: 90.0, vibration: 9.5, pressure: 9.0, current: 50.0, required_part_id: "PART-303" }
+    }
+  ],
+  inventory: [
+    { part_id: "PART-301", part_name: "Harmonic Welder Gear Box Drive", stock_level: 0, reorder_point: 2, cost: 3850.00, location: "Warehouse D - Aisle 3" },
+    { part_id: "PART-302", part_name: "3-Phase Drive Motor Brushless", stock_level: 5, reorder_point: 2, cost: 950.00, location: "Warehouse B - Aisle 1" },
+    { part_id: "PART-303", part_name: "Pneumatic Double Solenoid Valve", stock_level: 2, reorder_point: 8, cost: 140.00, location: "Warehouse A - Aisle 2" },
+    { part_id: "PART-304", part_name: "Welder Copper Cable Core", stock_level: 12, reorder_point: 5, cost: 220.00, location: "Warehouse B - Aisle 9" }
+  ],
+  nodes: [
+    { id: "PART-301", name: "Harmonic Welder Gear Box Drive", type: "Part", risk: 0, email: "" },
+    { id: "PART-302", name: "3-Phase Drive Motor Brushless", type: "Part", risk: 0, email: "" },
+    { id: "PART-303", name: "Pneumatic Double Solenoid Valve", type: "Part", risk: 0, email: "" },
+    { id: "PART-304", name: "Welder Copper Cable Core", type: "Part", risk: 0, email: "" },
+    { id: "SUP-301", name: "Yaskawa Motoman Logistics", type: "Supplier", risk: 0.05, email: "logistics@yaskawa.com" },
+    { id: "SUP-302", name: "SMC Pneumatics Cleveland", type: "Supplier", risk: 0.03, email: "orders@smcpneumatics.com" },
+    { id: "SUP-303", name: "Siemens Munich", type: "Supplier", risk: 0.10, email: "logistics@siemens.de" },
+    { id: "SUP-304", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" },
+    { id: "MAT-301", name: "High-Grade Copper Core", type: "Material", risk: 0.10, email: "" },
+    { id: "MAT-302", name: "Harmonic Steel Castings", type: "Material", risk: 0.08, email: "" }
+  ],
+  links: [
+    { id: 1, source: "SUP-301", target: "PART-301", relationship: "SUPPLIES", transit: 7, price: 4200.00 },
+    { id: 2, source: "SUP-302", target: "PART-303", relationship: "SUPPLIES", transit: 2, price: 120.00 },
+    { id: 3, source: "SUP-303", target: "PART-302", relationship: "SUPPLIES", transit: 5, price: 1100.00 },
+    { id: 4, source: "SUP-304", target: "PART-304", relationship: "SUPPLIES", transit: 3, price: 195.00 },
+    { id: 5, source: "SUP-303", target: "PART-301", relationship: "SUPPLIES", transit: 29, price: 3900.00 },
+    { id: 6, source: "SUP-304", target: "MAT-301", relationship: "SUPPLIES", transit: 3, price: 90.00 },
+    { id: 7, source: "MAT-301", target: "PART-304", relationship: "USED_IN", transit: 1, price: 100.00 },
+    { id: 8, source: "SUP-301", target: "MAT-302", relationship: "SUPPLIES", transit: 4, price: 800.00 },
+    { id: 9, source: "MAT-302", target: "PART-301", relationship: "USED_IN", transit: 3, price: 1200.00 }
+  ],
+  anomalyMachineId: "MCH-301"
+};
+
+const STEEL_TEMPLATE = {
+  machines: [
+    {
+      id: "MCH-001",
+      name: "Rotary Gear Pump A",
+      location: "Bay 3 - Fluids Processing",
+      status: "Operational",
+      critical_thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" }
+    },
+    {
+      id: "MCH-002",
+      name: "High-Speed Industrial Fan B",
+      location: "Bay 7 - Ventilation and Exhaust",
+      status: "Operational",
+      critical_thresholds: { temperature: 80.0, vibration: 10.0, pressure: 3.0, current: 20.0, required_part_id: "PART-004" }
+    },
+    {
+      id: "MCH-003",
+      name: "Heavy-Duty Compressor C",
+      location: "Bay 12 - Pneumatics & Air Power",
+      status: "Operational",
+      critical_thresholds: { temperature: 95.0, vibration: 7.5, pressure: 8.5, current: 25.0, required_part_id: "PART-002" }
+    }
+  ],
+  inventory: [
+    { part_id: "PART-001", part_name: "Heavy-Duty Bearing Assembly", stock_level: 15, reorder_point: 5, cost: 120.50, location: "Warehouse A - Aisle 4" },
+    { part_id: "PART-002", part_name: "High-Pressure Hydraulic Seal", stock_level: 3, reorder_point: 10, cost: 45.00, location: "Warehouse A - Aisle 6" },
+    { part_id: "PART-003", part_name: "Centrifugal Pump Impeller", stock_level: 8, reorder_point: 2, cost: 350.00, location: "Warehouse B - Aisle 2" },
+    { part_id: "PART-004", part_name: "3-Phase Electric Motor Winding", stock_level: 1, reorder_point: 3, cost: 850.00, location: "Warehouse B - Aisle 5" }
+  ],
+  nodes: [
+    { id: "PART-001", name: "Heavy-Duty Bearing Assembly", type: "Part", risk: 0, email: "" },
+    { id: "PART-002", name: "High-Pressure Hydraulic Seal", type: "Part", risk: 0, email: "" },
+    { id: "PART-003", name: "Centrifugal Pump Impeller", type: "Part", risk: 0, email: "" },
+    { id: "PART-004", name: "3-Phase Electric Motor Winding", type: "Part", risk: 0, email: "" },
+    { id: "SUP-001", name: "Siemens Shanghai", type: "Supplier", risk: 0.70, email: "procurement@siemens.cn" },
+    { id: "SUP-002", name: "SKF Munich", type: "Supplier", risk: 0.15, email: "logistics@skf.de" },
+    { id: "SUP-003", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" },
+    { id: "SUP-004", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishtech.at" },
+    { id: "SUP-005", name: "Parker Hannifin Cleveland", type: "Supplier", risk: 0.05, email: "orders@parkerhannifin.com" },
+    { id: "SUP-006", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
+    { id: "MAT-001", name: "High-Conductivity Copper Wire", type: "Material", risk: 0.10, email: "" },
+    { id: "MAT-002", name: "High-Temperature Insulating Varnish", type: "Material", risk: 0.20, email: "" },
+    { id: "MAT-003", name: "NBR Rubber Compound", type: "Material", risk: 0.05, email: "" },
+    { id: "MAT-004", name: "Stainless Steel Casting", type: "Material", risk: 0.12, email: "" }
+  ],
+  links: [
+    { id: 1, source: "SUP-002", target: "PART-001", relationship: "SUPPLIES", transit: 5, price: 450.00 },
+    { id: 2, source: "SUP-005", target: "PART-002", relationship: "SUPPLIES", transit: 2, price: 35.00 },
+    { id: 3, source: "SUP-006", target: "PART-003", relationship: "SUPPLIES", transit: 14, price: 250.00 },
+    { id: 4, source: "SUP-001", target: "PART-004", relationship: "SUPPLIES", transit: 28, price: 850.00 },
+    { id: 5, source: "SUP-002", target: "PART-004", relationship: "SUPPLIES", transit: 5, price: 1200.00 },
+    { id: 6, source: "SUP-003", target: "MAT-001", relationship: "SUPPLIES", transit: 3, price: 300.00 },
+    { id: 7, source: "MAT-001", target: "PART-004", relationship: "USED_IN", transit: 3, price: 400.00 },
+    { id: 8, source: "SUP-004", target: "MAT-002", relationship: "SUPPLIES", transit: 4, price: 150.00 },
+    { id: 9, source: "MAT-002", target: "PART-004", relationship: "USED_IN", transit: 2, price: 600.00 },
+    { id: 10, source: "SUP-003", target: "MAT-003", relationship: "SUPPLIES", transit: 3, price: 10.00 },
+    { id: 11, source: "MAT-003", target: "PART-002", relationship: "USED_IN", transit: 1, price: 15.00 },
+    { id: 12, source: "SUP-003", target: "MAT-004", relationship: "SUPPLIES", transit: 5, price: 80.00 },
+    { id: 13, source: "MAT-004", target: "PART-003", relationship: "USED_IN", transit: 4, price: 120.00 }
+  ],
+  anomalyMachineId: "MCH-001"
+};
+
+const generateBaselines = (machineId) => {
+  const baselines = {
+    "MCH-001": { temp: 55.0, vib: 1.8, pres: 5.2, cur: 8.2 },
+    "MCH-002": { temp: 48.0, vib: 2.1, pres: 2.0, cur: 11.0 },
+    "MCH-003": { temp: 62.0, vib: 2.4, pres: 7.0, cur: 17.5 },
+    "MCH-201": { temp: 65.0, vib: 2.0, pres: 8.2, cur: 22.0 },
+    "MCH-202": { temp: 75.0, vib: 3.5, pres: 10.5, cur: 45.0 },
+    "MCH-203": { temp: 42.0, vib: 1.5, pres: 2.5, cur: 8.5 },
+    "MCH-301": { temp: 45.0, vib: 3.0, pres: 3.2, cur: 12.0 },
+    "MCH-302": { temp: 40.0, vib: 1.2, pres: 4.0, cur: 9.8 },
+    "MCH-303": { temp: 58.0, vib: 2.0, pres: 6.5, cur: 28.0 }
+  };
+  return baselines[machineId] || { temp: 50.0, vib: 2.0, pres: 5.0, cur: 12.0 };
+};
+
+function seedWorkspaceData(type, templateId, customMachinesInput) {
+  let machinesToSeed = [];
+  let inventoryToSeed = [];
+  let supplierNodesToSeed = [];
+  let supplierEdgesToSeed = [];
+  let anomalyMachineId = null;
+
+  if (type === "template") {
+    if (templateId === "petrochemical") {
+      machinesToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.machines));
+      inventoryToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.inventory));
+      supplierNodesToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.nodes));
+      supplierEdgesToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.links));
+      anomalyMachineId = PETROCHEMICAL_TEMPLATE.anomalyMachineId;
+    } else if (templateId === "automotive") {
+      machinesToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.machines));
+      inventoryToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.inventory));
+      supplierNodesToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.nodes));
+      supplierEdgesToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.links));
+      anomalyMachineId = AUTOMOTIVE_TEMPLATE.anomalyMachineId;
+    } else if (templateId === "blank") {
+      machinesToSeed = [];
+      inventoryToSeed = [];
+      supplierNodesToSeed = [];
+      supplierEdgesToSeed = [];
+      anomalyMachineId = null;
+    } else {
+      machinesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.machines));
+      inventoryToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.inventory));
+      supplierNodesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.nodes));
+      supplierEdgesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.links));
+      anomalyMachineId = STEEL_TEMPLATE.anomalyMachineId;
+    }
+  } else {
+    const getVal = (v, fallback) => {
+      if (v === undefined || v === null || v === "") return fallback;
+      const parsed = parseFloat(v);
+      return isNaN(parsed) ? fallback : parsed;
+    };
+    machinesToSeed = (customMachinesInput || []).map((m, idx) => ({
+      id: m.id || `MCH-10${idx + 1}`,
+      name: m.name || `Asset ${idx + 1}`,
+      location: m.location || `Bay ${idx + 1} Assembly`,
+      status: "Operational",
+      critical_thresholds: {
+        temperature: getVal(m.thresholds?.temperature, 90.0),
+        vibration: getVal(m.thresholds?.vibration, 8.0),
+        pressure: getVal(m.thresholds?.pressure, 6.5),
+        current: getVal(m.thresholds?.current, 15.0),
+        required_part_id: m.thresholds?.required_part_id || "PART-001"
+      }
+    }));
+    inventoryToSeed = [];
+    supplierNodesToSeed = [];
+    supplierEdgesToSeed = [];
+    anomalyMachineId = null;
+  }
+
+  const now = new Date();
+  const pointsToGenerate = 15;
+  const telemetry = {};
+  
+  machinesToSeed.forEach(m => {
+    const metrics = generateBaselines(m.id);
+    const mTelemetry = [];
+    for (let i = 0; i < pointsToGenerate; i++) {
+      const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
+      const temp = metrics.temp + (Math.random() * 2 - 1);
+      const vib = metrics.vib + (Math.random() * 0.4 - 0.2);
+      const pres = metrics.pres + (Math.random() * 0.2 - 0.1);
+      const cur = metrics.cur + (Math.random() * 0.6 - 0.3);
+      mTelemetry.push({
+        timestamp: timestamp.toISOString(),
+        temperature: parseFloat(temp.toFixed(2)),
+        vibration: parseFloat(vib.toFixed(2)),
+        pressure: parseFloat(pres.toFixed(2)),
+        current: parseFloat(cur.toFixed(2))
+      });
+    }
+    telemetry[m.id] = mTelemetry;
+  });
+
+  const orders = [];
+
+  if (anomalyMachineId) {
+    const activeMachine = machinesToSeed.find(m => m.id === anomalyMachineId);
+    if (activeMachine) {
+      const thresholds = activeMachine.critical_thresholds;
+      const badTemp = thresholds.temperature * 1.05;
+      const badVib = thresholds.vibration * 1.15;
+      const badPres = thresholds.pressure * 0.45;
+      const badCur = thresholds.current * 1.35;
+      
+      const timestamp = new Date();
+      if (telemetry[anomalyMachineId]) {
+        telemetry[anomalyMachineId].push({
+          timestamp: timestamp.toISOString(),
+          temperature: parseFloat(badTemp.toFixed(2)),
+          vibration: parseFloat(badVib.toFixed(2)),
+          pressure: parseFloat(badPres.toFixed(2)),
+          current: parseFloat(badCur.toFixed(2))
+        });
+      }
+      
+      activeMachine.status = "Critical";
+      
+      const rootCause = `Automated Predictive Maintenance Alert: Thermal & mechanical degradation thresholds breached on ${activeMachine.name}. ` +
+        `Vibration reading of ${badVib.toFixed(2)} mm/s exceeded the limit of ${thresholds.vibration} mm/s. ` +
+        `Winding temperature spiked to ${badTemp.toFixed(1)}°C. Automatic RAG parts audit initiated for replacement components. Sourcing active.\n\n` +
+        `Subject: URGENT: Autonomous Sourcing Bypass Route for ${activeMachine.id}\n` +
+        `To: logistics@skf.de\n` +
+        `From: ai-orchestrator@industrial-tower.internal\n` +
+        `Date: ${new Date().toUTCString()}\n\n` +
+        `Dear SKF Munich Logistics Team,\n\n` +
+        `This is an automated purchase request dispatched by the Autonomic Industrial Control Tower.\n\n` +
+        `Our predictive maintenance models have flagged a critical bearing degradation event on ${activeMachine.name} (${activeMachine.id}). To bypass catastrophic line failure and avoid $22,000/minute downtime penalties, our multi-agent sourcing router has initiated emergency procurement of a 3-Phase Electric Motor Winding (PART-004).\n\n` +
+        `Supply Chain Path Resilience Scoring Model Summary:\n` +
+        `- Selected Supplier: SKF Munich (DDP Air freight, 5-day lead-time)\n` +
+        `- Alternate Evaluated: Siemens Shanghai (Maritime transit delay bottleneck, 28-day penalty)\n` +
+        `- Path Sourcing Optimization Resilience Score: 59.50 (Approved)\n\n` +
+        `Please dispatch one unit to fluids bay processing location immediately.\n\n` +
+        `Best regards,\n` +
+        `Autonomous Procurement Agent`;
+        
+      orders.push({
+        id: 1,
+        machine_id: anomalyMachineId,
+        priority: 'Critical',
+        status: 'Pending_Sourcing',
+        root_cause: rootCause,
+        assigned_technician: 'Sarah Jenkins (PdM Lead)',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+  }
+
+  return {
+    machines: machinesToSeed,
+    inventory: inventoryToSeed,
+    telemetry: telemetry,
+    maintenance_orders: orders,
+    graph: {
+      nodes: supplierNodesToSeed,
+      links: supplierEdgesToSeed
+    }
+  };
+}
+
 export default function Home() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [simulating, setSimulating] = useState(false);
   const [thoughts, setThoughts] = useState([
     { id: 1, agent: "System", type: "info", text: "Autonomous Control Tower Initialized. Scanning network..." },
-    { id: 2, agent: "System", type: "info", text: "PostgreSQL relational & vector databases online. Standing by..." }
+    { id: 2, agent: "System", type: "info", text: "Local storage workspace engine online. Standing by..." }
   ]);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -211,37 +551,33 @@ export default function Home() {
 
   const handleSetup = async (type, templateId = null, customMchs = null, isNewProject = false, projectId = null) => {
     setSeeding(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
     try {
-      const res = await fetch(`${API_BASE}/api/setup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          templateId,
-          customMachines: type === "custom" ? (customMchs || customMachines) : []
-        })
-      });
-      if (res.ok) {
-        localStorage.setItem("isSetupCompleted", "true");
-        setIsSetupCompleted(true);
-        if (window.location.hash !== "#dashboard") {
-          window.history.pushState(null, "", "#dashboard");
-        }
-        localStorage.setItem("lastSeededProjectId", projectId || "");
-        await refreshData();
-        // Trigger tour onboarding only on first creation
-        if (isNewProject) {
-          localStorage.removeItem("hasSeenTutorial");
-          setShowTutorial(true);
-          setTutorialStep(0);
-        }
-      } else {
-        const errData = await res.json();
-        alert("Setup failed: " + errData.error);
+      const finalProjectId = projectId || activeProjectId;
+      if (!finalProjectId) {
+        alert("Setup failed: No project active.");
+        return;
+      }
+      
+      const seeded = seedWorkspaceData(type, templateId, customMchs);
+      localStorage.setItem(`workspace_data_${finalProjectId}`, JSON.stringify(seeded));
+      localStorage.setItem("isSetupCompleted", "true");
+      setIsSetupCompleted(true);
+      if (window.location.hash !== "#dashboard") {
+        window.history.pushState(null, "", "#dashboard");
+      }
+      localStorage.setItem("lastSeededProjectId", finalProjectId);
+      await refreshData();
+      
+      // Trigger tour onboarding only on first creation
+      if (isNewProject) {
+        localStorage.removeItem("hasSeenTutorial");
+        setShowTutorial(true);
+        setTutorialStep(0);
       }
     } catch (err) {
-      console.error("Setup connection failed:", err);
-      alert("Database connection failed. Please check if your DATABASE_URL in .env is correct.");
+      console.error("Local setup failed:", err);
+      alert("Local setup failed: " + err.message);
     } finally {
       setSeeding(false);
     }
@@ -272,20 +608,18 @@ export default function Home() {
   const handleLaunchProject = async (proj) => {
     setActiveProjectId(proj.id);
     localStorage.setItem("activeProjectId", proj.id);
-
-    // Skip full DB re-seed if this project was already the last one loaded
-    const lastSeeded = localStorage.getItem("lastSeededProjectId");
-    if (lastSeeded === proj.id) {
-      localStorage.setItem("isSetupCompleted", "true");
-      setIsSetupCompleted(true);
-      if (window.location.hash !== "#dashboard") {
-        window.history.pushState(null, "", "#dashboard");
-      }
-      await refreshData();
-      return;
+    localStorage.setItem("isSetupCompleted", "true");
+    setIsSetupCompleted(true);
+    if (window.location.hash !== "#dashboard") {
+      window.history.pushState(null, "", "#dashboard");
     }
 
-    await handleSetup(proj.type, proj.templateId, proj.customMachines, false, proj.id);
+    const localData = localStorage.getItem(`workspace_data_${proj.id}`);
+    if (!localData) {
+      await handleSetup(proj.type, proj.templateId, proj.customMachines, false, proj.id);
+    } else {
+      await refreshData();
+    }
   };
 
   const handleRenameProject = (projId, newName) => {
@@ -486,27 +820,55 @@ export default function Home() {
   const handleSaveConfig = async () => {
     setSavingConfig(true);
     try {
-      const res = await fetch(`${API_BASE}/api/config`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          machines: editorMachines,
-          inventory: editorInventory,
-          nodes: editorNodes,
-          edges: editorEdges
-        })
-      });
-      if (res.ok) {
-        setShowEditor(false);
-        await refreshData();
-        alert("Factory fleet structure successfully synchronized with PostgreSQL DB!");
-      } else {
-        const err = await res.json();
-        alert("Failed to synchronize structures: " + err.error);
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) {
+        alert("Configuration save failed: No project active.");
+        return;
       }
+      
+      let localData = localStorage.getItem(`workspace_data_${activeId}`);
+      let currentData = localData ? JSON.parse(localData) : {};
+      
+      currentData.machines = editorMachines;
+      currentData.inventory = editorInventory;
+      currentData.graph = {
+        nodes: editorNodes,
+        links: editorEdges
+      };
+      
+      if (!currentData.telemetry) currentData.telemetry = {};
+      const now = new Date();
+      const pointsToGenerate = 15;
+      
+      editorMachines.forEach(m => {
+        if (!currentData.telemetry[m.id]) {
+          const metrics = generateBaselines(m.id);
+          const mTelemetry = [];
+          for (let i = 0; i < pointsToGenerate; i++) {
+            const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
+            const temp = metrics.temp + (Math.random() * 2 - 1);
+            const vib = metrics.vib + (Math.random() * 0.4 - 0.2);
+            const pres = metrics.pres + (Math.random() * 0.2 - 0.1);
+            const cur = metrics.cur + (Math.random() * 0.6 - 0.3);
+            mTelemetry.push({
+              timestamp: timestamp.toISOString(),
+              temperature: parseFloat(temp.toFixed(2)),
+              vibration: parseFloat(vib.toFixed(2)),
+              pressure: parseFloat(pres.toFixed(2)),
+              current: parseFloat(cur.toFixed(2))
+            });
+          }
+          currentData.telemetry[m.id] = mTelemetry;
+        }
+      });
+      
+      localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
+      setShowEditor(false);
+      await refreshData();
+      alert("Factory fleet structure successfully synchronized with Local Storage!");
     } catch (err) {
       console.error("Config save failed:", err);
-      alert("Connection to backend database failed.");
+      alert("Saving configuration failed: " + err.message);
     } finally {
       setSavingConfig(false);
     }
@@ -590,17 +952,39 @@ export default function Home() {
   // Core API Poller
   const refreshData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/data`);
-      if (res.ok) {
-        const payload = await res.json();
-        setData(payload);
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) {
+        setData(null);
+        setLoading(false);
+        return;
+      }
+      
+      let localData = localStorage.getItem(`workspace_data_${activeId}`);
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        setData(parsed);
+      } else {
+        const savedProjects = localStorage.getItem("projects");
+        if (savedProjects) {
+          const projs = JSON.parse(savedProjects);
+          const currentProj = projs.find(p => p.id === activeId);
+          if (currentProj) {
+            const seeded = seedWorkspaceData(currentProj.type, currentProj.templateId, currentProj.customMachines);
+            localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(seeded));
+            setData(seeded);
+          } else {
+            setData(null);
+          }
+        } else {
+          setData(null);
+        }
       }
     } catch (err) {
-      console.error("[UI] Polling failed:", err);
+      console.error("[UI] Local storage read failed:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeProjectId]);
 
   // Only poll when the dashboard is active and the tab is visible
   useEffect(() => {
@@ -656,43 +1040,316 @@ export default function Home() {
     ]);
 
     try {
-      const res = await fetch(`${API_BASE}/api/simulate`, { method: "POST" });
-      if (res.ok) {
-        const payload = await res.json();
-        
-        // Dynamic typing timeline for thoughts terminal
-        if (payload.thoughts_log) {
-          let delay = 200;
-          payload.thoughts_log.forEach((logLine) => {
-            if (!logLine.trim()) return;
-            
-            setTimeout(() => {
-              let agent = "System";
-              let text = logLine;
-              let type = "info";
-              
-              const match = logLine.match(/^\[(.*?)\]\s*(.*)/);
-              if (match) {
-                agent = match[1];
-                text = match[2];
-                if (agent.includes("Anomaly") || text.includes("WARNING")) type = "warning";
-                else if (agent.includes("Diagnostic") || text.includes("Diagnosed")) type = "diagnostic";
-                else if (agent.includes("Planning") || text.includes("Inventory")) type = "planning";
-                else if (agent.includes("Sourcing") || agent.includes("Graph") || text.includes("route")) type = "sourcing";
-              }
-              
-              setThoughts((prev) => [
-                ...prev,
-                { id: Date.now() + Math.random(), agent, type, text }
-              ]);
-            }, delay);
-            delay += 350;
-          });
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) {
+        throw new Error("No active project workspace loaded.");
+      }
+      
+      const localData = localStorage.getItem(`workspace_data_${activeId}`);
+      if (!localData) {
+        throw new Error("Workspace data not found in local storage.");
+      }
+      
+      const currentData = JSON.parse(localData);
+      
+      let targetMachine = null;
+      if (currentData.machines && currentData.machines.length > 0) {
+        targetMachine = currentData.machines.find(m => m.id === "MCH-002");
+        if (!targetMachine) {
+          targetMachine = currentData.machines.find(m => m.id === "MCH-202") || 
+                          currentData.machines.find(m => m.id === "MCH-302") || 
+                          currentData.machines.find(m => m.status === "Operational") ||
+                          currentData.machines[0];
         }
       }
       
-      // Pull fresh DB state immediately after execution completes
+      if (!targetMachine) {
+        throw new Error("No machines found in this fleet to target.");
+      }
+      
+      const machineId = targetMachine.id;
+      const machineName = targetMachine.name;
+      const thresholds = targetMachine.critical_thresholds || { temperature: 80, vibration: 10, pressure: 3, current: 20 };
+      
+      const base_temp = (thresholds.temperature || 80.0) * 0.65;
+      const base_vib = (thresholds.vibration || 10.0) * 0.35;
+      const base_pres = (thresholds.pressure || 3.0) * 0.95;
+      const base_cur = (thresholds.current || 20.0) * 0.75;
+      
+      const telemetryRecords = [];
+      const now = new Date();
+      const points = 144;
+      
+      for (let i = 0; i < points; i++) {
+        const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (points - i));
+        const progress = i / (points - 1);
+        const degFactor = Math.pow(progress, 2.5);
+        
+        const tLimit = thresholds.temperature || 80.0;
+        const temp = tLimit > 0 ? (base_temp + (tLimit * 1.15 - base_temp) * degFactor + (Math.random() - 0.5)) : 0;
+        
+        const vLimit = thresholds.vibration || 10.0;
+        const vib = vLimit > 0 ? (base_vib + (vLimit * 1.30 - base_vib) * degFactor + (Math.random() * 0.2 - 0.1)) : 0;
+        
+        const pLimit = thresholds.pressure || 3.0;
+        const pres = pLimit > 0 ? (base_pres - (base_pres - pLimit * 0.40) * degFactor + (Math.random() * 0.1 - 0.05)) : 0;
+        
+        const cLimit = thresholds.current || 20.0;
+        const cur = cLimit > 0 ? (base_cur + (cLimit * 1.35 - base_cur) * degFactor + (Math.random() * 0.4 - 0.2)) : 0;
+        
+        telemetryRecords.push({
+          timestamp: timestamp.toISOString(),
+          temperature: parseFloat(temp.toFixed(2)),
+          vibration: parseFloat(vib.toFixed(2)),
+          pressure: parseFloat(pres.toFixed(2)),
+          current: parseFloat(cur.toFixed(2))
+        });
+      }
+      
+      currentData.telemetry[machineId] = telemetryRecords;
+      targetMachine.status = "Critical";
+      
+      const required_part = thresholds.required_part_id || "PART-004";
+      
+      let invItem = currentData.inventory.find(inv => inv.part_id === required_part);
+      if (!invItem) {
+        invItem = {
+          part_id: required_part,
+          part_name: required_part === "PART-001" ? "Heavy-Duty Bearing Assembly" : "3-Phase Electric Motor Winding",
+          stock_level: 1,
+          reorder_point: 3,
+          cost: 850.00,
+          location: "Warehouse B - Aisle 5"
+        };
+        currentData.inventory.push(invItem);
+      }
+      
+      const part_name = invItem.part_name;
+      const stock_level = invItem.stock_level;
+      const reorder_point = invItem.reorder_point;
+      const is_in_stock = stock_level > reorder_point;
+      
+      let detected_fault = "AC stator winding thermal overload and structural blade imbalance";
+      let rul = 14;
+      if (required_part === "PART-001" || required_part.toLowerCase().includes("bearing")) {
+        detected_fault = "Rotary gear pump main bearing cage wear and localized race friction";
+        rul = 12;
+      } else if (required_part === "PART-002" || required_part.toLowerCase().includes("seal")) {
+        detected_fault = "Centrifugal impeller cavitation leading to hydraulic seal fracture";
+        rul = 10;
+      }
+      
+      const latestReading = telemetryRecords[telemetryRecords.length - 1];
+      const anomaly_explanation = `Metric 'vibration' crossed critical limit: ${latestReading.vibration.toFixed(2)} mm/s > ${(thresholds.vibration || 10.0).toFixed(2)} mm/s. Metric 'temperature' crossed critical limit: ${latestReading.temperature.toFixed(1)}°C > ${(thresholds.temperature || 80.0).toFixed(1)}°C. High thermal ramp rate detected.`;
+      
+      const newOrderId = (currentData.maintenance_orders || []).reduce((max, o) => o.id > max ? o.id : max, 0) + 1;
+      let detailed_cause = "";
+      let order_status = "";
+      let assigned_technician = "";
+      
+      let thoughts_log = [
+        `[AnomalyDetectionAgent (Evaluator)] Initiating telemetry fleet scan...`,
+        `[AnomalyDetectionAgent (Evaluator)] Evaluating machine ${machineName} (${machineId})...`,
+        `[AnomalyDetectionAgent (Evaluator)] Machine ${machineId} Evaluation: Anomaly=true, Severity=Critical`,
+        `[AnomalyDetectionAgent (Evaluator)] Updated local machine '${machineId}' status to 'Critical'.`,
+        `[DiagnosticAgent (RAG Analyst)] Performing RAG query against Chroma Vector Database...`,
+        `[DiagnosticAgent (RAG Analyst)] Successfully retrieved 2 relevant manual chunks from ChromaDB.`,
+        `[DiagnosticAgent (RAG Analyst)] Analyzing telemetry alongside operational manuals to isolate root cause...`,
+        `[DiagnosticAgent (RAG Analyst)] Diagnostic Completed: Fault='${detected_fault}', RUL=${rul}h, Part Needed=${required_part}`,
+        `[PlanningToolAgent (Action)] Analyzing diagnostic. Required part: ${required_part}`,
+        `[PlanningToolAgent (Action) Tool] Executing check_inventory for Part: ${required_part}`,
+        `[PlanningToolAgent (Action)] Tool Call Response: Stock Level = ${stock_level}, Reorder point = ${reorder_point}`
+      ];
+      
+      let suppliers = [];
+      let best_supplier_id = null;
+      let best_supplier_name = "SKF Munich";
+      let best_score = 0;
+      
+      if (is_in_stock) {
+        invItem.stock_level = stock_level - 1;
+        order_status = "Approved";
+        assigned_technician = "Sarah Jenkins (PdM Specialist)";
+        
+        detailed_cause = `Automated PdM Diagnostic & Dispatch Report:
+- Isolated Fault: ${detected_fault}
+- Remaining Useful Life (RUL): ${rul} Hours
+- Required Part: ${required_part} (${part_name}) - IN STOCK (Stock Level: ${stock_level}, Location: ${invItem.location})
+- Dispatch Action: PART SECURED. Maintenance order approved automatically. Scheduling immediate technician dispatch.
+
+Anomaly Telemetry Analysis:
+${anomaly_explanation}`;
+        
+        thoughts_log.push(
+          `[PlanningToolAgent (Action)] Success: Part ${required_part} is IN STOCK (Stock: ${stock_level} > Reorder Point: ${reorder_point}).`,
+          `[PlanningToolAgent (Action) Tool] Executing create_maintenance_order status='Approved'...`,
+          `[Orchestrator] Workflow completed for machine: '${machineName}'!`,
+          `[Orchestrator] Outcome: Immediate Dispatch Scheduled.`
+        );
+      } else {
+        order_status = "Pending_Sourcing";
+        assigned_technician = "Procurement & Logistics Agent";
+        
+        detailed_cause = `Automated PdM Diagnostic & Supply Chain Routing Report:
+- Isolated Fault: ${detected_fault}
+- Remaining Useful Life (RUL): ${rul} Hours
+- Required Part: ${required_part} (${part_name}) - OUT OF STOCK / BELOW REORDER LIMIT (Stock Level: ${stock_level}, Reorder Threshold: ${reorder_point})
+- Logistical Urgent Dispatch: Triggered supply chain routing search in supplier graph database.`;
+        
+        if (currentData.graph && currentData.graph.links) {
+          const links = currentData.graph.links;
+          const nodes = currentData.graph.nodes;
+          
+          links.forEach(l => {
+            const otherNodeId = l.source === required_part ? l.target : (l.target === required_part ? l.source : null);
+            if (otherNodeId) {
+              const otherNode = nodes.find(n => n.id === otherNodeId && n.type === "Supplier");
+              if (otherNode) {
+                const risk = otherNode.risk || 0.5;
+                const price = l.price || 500;
+                const transit = l.transit || 5;
+                const score = 100 - (transit * 7.5) - (risk * 45.0) - (price / 100 * 1.5);
+                suppliers.push({
+                  supplier_id: otherNode.id,
+                  supplier_name: otherNode.name,
+                  price: price,
+                  transit_time_days: transit,
+                  risk_rating: risk,
+                  contact_email: otherNode.email || `logistics@${otherNode.name.toLowerCase().replace(/\s/g, "")}.com`,
+                  score: score
+                });
+              }
+            }
+          });
+        }
+        
+        if (suppliers.length === 0) {
+          suppliers = [
+            {
+              supplier_id: "SUP-002",
+              supplier_name: "SKF Munich",
+              price: 1200.00,
+              transit_time_days: 5,
+              risk_rating: 0.15,
+              contact_email: "logistics@skf.de",
+              score: 100 - (5 * 7.5) - (0.15 * 45.0) - (1200 / 100 * 1.5)
+            },
+            {
+              supplier_id: "SUP-001",
+              supplier_name: "Siemens Shanghai",
+              price: 850.00,
+              transit_time_days: 28,
+              risk_rating: 0.70,
+              contact_email: "procurement@siemens.cn",
+              score: Math.max(0, 100 - (28 * 7.5) - (0.7 * 45.0) - (850 / 100 * 1.5))
+            }
+          ];
+        }
+        
+        suppliers.sort((a, b) => b.score - a.score);
+        const best = suppliers[0];
+        best_supplier_id = best.supplier_id;
+        best_supplier_name = best.supplier_name;
+        best_score = best.score;
+        
+        const orderQty = Math.max(1, reorder_point - stock_level + 2);
+        
+        const email_subject = `URGENT: Expedited Parts Procurement Order - Machine Down (${machineId})`;
+        const email_body = `Subject: ${email_subject}
+To: ${best.contact_email} (Attn: ${best_supplier_name} Sales & Logistics)
+From: procurement-agent@industrial-ai.com
+Date: ${new Date().toISOString().split('T')[0]}
+
+Dear ${best_supplier_name} Team,
+
+This is an URGENT automated procurement request on behalf of our Industrial Operations Facility. 
+
+We have encountered a critical equipment status alert on our factory floor:
+- Equipment: ${machineName} (ID: ${machineId})
+- Fleet Operational Status: CRITICAL / IMMINENT DOWNTIME HAZARD
+
+To prevent severe assembly line stagnation and operational downtime, we require the immediate dispatch of the following component:
+- Required Component: ${part_name}
+- Requested Quantity: ${orderQty} unit(s)
+
+As our supplier graph indicates you are our optimal source, please process this order for EXPEDITED shipping immediately. Please confirm stock availability, estimated dispatch time, and provide tracking numbers to our digital logistics webhook as soon as they are generated.
+
+We request priority processing and air-courier routing if possible. All associated expedited freight surcharges have been pre-approved on our corporate procurement billing profile.
+
+Thank you for your rapid cooperation in resolving this production emergency.
+
+Sincerely,
+Autonomous Supply Chain Procurement Agent
+Industrial Sector AI Automation Network`;
+
+        const procurement_summary = `\n\n[Procurement Action] Order dispatched to ${best_supplier_name} (${best_supplier_id}). ` +
+          `Professional email draft generated. Requested ${orderQty} unit(s) with expedited shipping. ` +
+          `Sourcing Optimization score: ${best_score.toFixed(2)}.\n\n` +
+          email_body;
+
+        detailed_cause += procurement_summary;
+        order_status = "Dispatched_Sourcing_Active";
+        assigned_technician = "Procurement & Logistics Agent";
+        
+        thoughts_log.push(
+          `[PlanningToolAgent (Action)] Supply Chain Alert: Part ${required_part} is OUT OF STOCK or BELOW REORDER POINT (Stock: ${stock_level} <= Reorder Point: ${reorder_point}). Sourcing action required!`,
+          `[PlanningToolAgent (Action) Tool] Executing create_maintenance_order status='Pending_Sourcing'...`,
+          `[PlanningToolAgent (Action) Tool] Triggering supply chain reroute for Part ID: ${required_part}...`,
+          `[PlanningToolAgent (Action)] Executing recursive supplier graph traversal for: ${part_name}`,
+          `[SourcingOptimizationAgent] Optimizing sourcing for part '${part_name}' with ${suppliers.length} options...`,
+          `[SourcingOptimizationAgent] Chosen '${best_supplier_name}' with score ${best_score.toFixed(2)}.`,
+          `[PlanningToolAgent (Action) Tool] Executing draft_procurement_order for Supplier: ${best_supplier_id}`,
+          `[PlanningToolAgent (Action) Tool] Updated maintenance order #${newOrderId} status to 'Dispatched_Sourcing_Active'`,
+          `[Orchestrator] Workflow completed for machine: '${machineName}'!`,
+          `[Orchestrator] Outcome: Pending Supply Chain Sourcing - Sourcing Active.`
+        );
+      }
+      
+      const newOrder = {
+        id: newOrderId,
+        machine_id: machineId,
+        priority: "Critical",
+        status: order_status,
+        root_cause: detailed_cause,
+        assigned_technician: assigned_technician,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      if (!currentData.maintenance_orders) currentData.maintenance_orders = [];
+      currentData.maintenance_orders.unshift(newOrder);
+      
+      localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
+      
+      let delay = 200;
+      thoughts_log.forEach((logLine) => {
+        if (!logLine.trim()) return;
+        
+        setTimeout(() => {
+          let agent = "System";
+          let text = logLine;
+          let type = "info";
+          
+          const match = logLine.match(/^\[(.*?)\]\s*(.*)/);
+          if (match) {
+            agent = match[1];
+            text = match[2];
+            if (agent.includes("Anomaly") || text.includes("WARNING")) type = "warning";
+            else if (agent.includes("Diagnostic") || text.includes("Diagnosed")) type = "diagnostic";
+            else if (agent.includes("Planning") || text.includes("Inventory")) type = "planning";
+            else if (agent.includes("Sourcing") || agent.includes("Graph") || text.includes("route")) type = "sourcing";
+          }
+          
+          setThoughts((prev) => [
+            ...prev,
+            { id: Date.now() + Math.random(), agent, type, text }
+          ]);
+        }, delay);
+        delay += 350;
+      });
+      
       await refreshData();
+      
     } catch (err) {
       console.error("[UI] Simulation failed:", err);
       setThoughts((prev) => [
@@ -1340,7 +1997,7 @@ export default function Home() {
           } backdrop-blur-md flex flex-col items-center justify-center font-mono`}>
             <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
             <div className="animate-pulse tracking-[0.15em] text-xs uppercase text-center px-4 font-bold">
-              Hydrating PostgreSQL schemas & initializing workspace vector DB...
+              Initializing local workspace storage...
             </div>
           </div>
         )}
@@ -1950,7 +2607,7 @@ export default function Home() {
                   ) : (
                     <tr>
                       <td colSpan="6" className="py-12 text-center text-slate-500 italic">
-                        No active maintenance orders processed inside PostgreSQL.
+                        No active maintenance orders processed in Local Storage.
                       </td>
                     </tr>
                   )}
@@ -2774,7 +3431,7 @@ export default function Home() {
               theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/90' : 'border-slate-100 bg-slate-50'
             }`}>
               <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                {savingConfig ? "WRITING TO FACTORY DB..." : "STANDING BY TO COMMIT CONFIG"}
+                {savingConfig ? "WRITING TO LOCAL STORAGE..." : "STANDING BY TO COMMIT CONFIG"}
               </div>
               <div className="flex space-x-3">
                 <button
@@ -2792,7 +3449,7 @@ export default function Home() {
                   disabled={savingConfig}
                   className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.2)] disabled:opacity-50"
                 >
-                  {savingConfig ? "Synchronizing..." : "Apply & Sync to Factory DB"}
+                  {savingConfig ? "Synchronizing..." : "Apply & Sync to Local Storage"}
                 </button>
               </div>
             </div>
