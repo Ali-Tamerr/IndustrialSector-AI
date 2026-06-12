@@ -8,13 +8,95 @@ export default function SourcingTestPage() {
   const [theme, setTheme] = useState("dark");
   const [workflowsData, setWorkflowsData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stageOverrides, setStageOverrides] = useState({});
 
-  const handleStageClick = (orderId, targetIndex) => {
-    setStageOverrides(prev => ({
-      ...prev,
-      [orderId]: targetIndex
-    }));
+  const handleStageClick = (projectId, orderId, targetIndex) => {
+    // 1. Persist to localStorage
+    try {
+      const localDataRaw = localStorage.getItem(`workspace_data_${projectId}`);
+      if (localDataRaw) {
+        const data = JSON.parse(localDataRaw);
+        
+        const updatedOrders = data.maintenance_orders?.map(order => {
+          if (order.id === orderId) {
+            let nextStatus = order.status;
+            if (targetIndex === 0) {
+              nextStatus = "Pending_Sourcing";
+            } else if (targetIndex === 1) {
+              nextStatus = "Dispatched_Sourcing_Active";
+            } else if (targetIndex >= 2) {
+              nextStatus = "Approved";
+            }
+            return { ...order, status: nextStatus };
+          }
+          return order;
+        }) || [];
+        
+        const targetOrder = data.maintenance_orders?.find(o => o.id === orderId);
+        let updatedMachines = data.machines || [];
+        if (targetOrder) {
+          updatedMachines = data.machines?.map(m => {
+            if (m.id === targetOrder.machine_id) {
+              let nextMachineStatus = m.status;
+              if (targetIndex === 3) {
+                nextMachineStatus = "Operational";
+              } else {
+                nextMachineStatus = m.status === "Operational" ? "Critical" : m.status;
+              }
+              return { ...m, status: nextMachineStatus };
+            }
+            return m;
+          }) || [];
+        }
+
+        const updatedData = {
+          ...data,
+          maintenance_orders: updatedOrders,
+          machines: updatedMachines
+        };
+
+        localStorage.setItem(`workspace_data_${projectId}`, JSON.stringify(updatedData));
+      }
+    } catch (e) {
+      console.error("Failed to persist stage override", e);
+    }
+
+    // 2. Update state to reflect changes instantly in UI
+    setWorkflowsData(prevWorkflows => {
+      return prevWorkflows.map(wf => {
+        if (wf.id !== projectId) return wf;
+        
+        const updatedOrders = wf.orders.map(order => {
+          if (order.id !== orderId) return order;
+          
+          let nextStatus = order.status;
+          if (targetIndex === 0) {
+            nextStatus = "Pending_Sourcing";
+          } else if (targetIndex === 1) {
+            nextStatus = "Dispatched_Sourcing_Active";
+          } else if (targetIndex >= 2) {
+            nextStatus = "Approved";
+          }
+
+          let nextMachineStatus = order.machineStatus;
+          if (targetIndex === 3) {
+            nextMachineStatus = "Operational";
+          } else {
+            nextMachineStatus = order.machineStatus === "Operational" ? "Critical" : order.machineStatus;
+          }
+
+          return {
+            ...order,
+            status: nextStatus,
+            machineStatus: nextMachineStatus
+          };
+        });
+
+        return {
+          ...wf,
+          orders: updatedOrders
+        };
+      });
+    });
   };
 
   useEffect(() => {
@@ -185,28 +267,14 @@ export default function SourcingTestPage() {
                         approvalState = "Rejected";
                       }
 
-                      // Adjust approvalState based on override
-                      if (stageOverrides[order.id] !== undefined) {
-                        const idx = stageOverrides[order.id];
-                        if (idx >= 1) {
-                          approvalState = "Approved";
-                        } else {
-                          approvalState = "Pending";
-                        }
-                      }
-
                       // Stages index
                       let activeStageIndex = 0;
-                      if (stageOverrides[order.id] !== undefined) {
-                        activeStageIndex = stageOverrides[order.id];
-                      } else {
-                        if (approvalState === "Approved") {
+                      if (approvalState === "Approved") {
+                        activeStageIndex = 1;
+                        if (order.status === "Dispatched_Sourcing_Active") {
                           activeStageIndex = 1;
-                          if (order.status === "Dispatched_Sourcing_Active") {
-                            activeStageIndex = 1;
-                          } else if (order.status === "Approved") {
-                            activeStageIndex = order.machineStatus === "Operational" ? 3 : 2;
-                          }
+                        } else if (order.status === "Approved") {
+                          activeStageIndex = order.machineStatus === "Operational" ? 3 : 2;
                         }
                       }
 
@@ -320,7 +388,7 @@ export default function SourcingTestPage() {
                                   <div 
                                     key={stage.id} 
                                     className="flex flex-col items-center text-center cursor-pointer group/node"
-                                    onClick={() => handleStageClick(order.id, stage.step - 1)}
+                                    onClick={() => handleStageClick(workflow.id, order.id, stage.step - 1)}
                                     title={`Simulate Stage ${stage.step}: ${stage.title}`}
                                   >
                                     <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-[10px] select-none transition-all duration-300 group-hover/node:scale-115 group-hover/node:shadow-[0_0_8px_rgba(59,130,246,0.4)] ${nodeStyles}`}>
