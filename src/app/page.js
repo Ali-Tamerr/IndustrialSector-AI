@@ -468,6 +468,7 @@ export default function Home() {
   const [showGraphLegendPopup, setShowGraphLegendPopup] = useState(false);
   const [selectedRoadmapOrderId, setSelectedRoadmapOrderId] = useState(null);
   const [simulatorDropdownOpen, setSimulatorDropdownOpen] = useState(false);
+  const [componentsPopupMachineId, setComponentsPopupMachineId] = useState(null);
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -2317,6 +2318,53 @@ Industrial Sector AI Automation Network`;
                     </div>
                   ) : (
                     <div className="py-8 text-center text-xs text-slate-500">No active telemetry signal.</div>
+                  )}
+
+                  {/* Components Indicator */}
+                  <button 
+                    onClick={() => setComponentsPopupMachineId(componentsPopupMachineId === machine.id ? null : machine.id)}
+                    className={`absolute bottom-3 right-3 p-1.5 rounded-full transition-colors z-10 ${componentsPopupMachineId === machine.id ? 'bg-cyan-500 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' : (theme === 'dark' ? 'text-slate-500 hover:text-cyan-400 hover:bg-[#182030]' : 'text-slate-400 hover:text-cyan-600 hover:bg-slate-100')}`}
+                    title="View Components"
+                  >
+                    <Cpu className="w-4 h-4" />
+                  </button>
+
+                  {/* Components Popup Overlay */}
+                  {componentsPopupMachineId === machine.id && (
+                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          Machine Components
+                        </h4>
+                        <button 
+                          onClick={() => setComponentsPopupMachineId(null)}
+                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                        {machine.components && machine.components.length > 0 ? (
+                          machine.components.map((comp, idx) => (
+                            <div key={idx} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                              <div className="flex justify-between items-start mb-2">
+                                <div className={`font-semibold text-xs truncate max-w-[80%] ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`} title={comp.name}>{comp.name}</div>
+                                <div className={`text-[10px] font-mono font-bold ${comp.health >= 90 ? 'text-emerald-500' : comp.health >= 75 ? 'text-amber-500' : 'text-red-500'}`}>
+                                  {comp.health}%
+                                </div>
+                              </div>
+                              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2">
+                                <div className={`h-1.5 rounded-full ${comp.health >= 90 ? 'bg-emerald-500' : comp.health >= 75 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${comp.health}%` }}></div>
+                              </div>
+                              <div className={`text-[9px] mt-1.5 text-slate-500 font-mono tracking-wider`}>ID: {comp.id}</div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-slate-500 text-center mt-10">No components data available.</div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               );
