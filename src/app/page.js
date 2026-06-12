@@ -25,7 +25,8 @@ import {
   Database,
   LayoutGrid,
   Sun,
-  Moon
+  Moon,
+  ChevronDown
 } from "lucide-react";
 
 const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
@@ -434,6 +435,7 @@ export default function Home() {
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
   const [showGraphLegendPopup, setShowGraphLegendPopup] = useState(false);
   const [selectedRoadmapOrderId, setSelectedRoadmapOrderId] = useState(null);
+  const [simulatorDropdownOpen, setSimulatorDropdownOpen] = useState(false);
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -1034,11 +1036,11 @@ export default function Home() {
   }, [thoughts]);
 
   // Trigger Anomaly simulation
-  const handleSimulation = async () => {
+  const handleSimulation = async (machineIdToSimulate = null) => {
     setSimulating(true);
     setThoughts((prev) => [
       ...prev,
-      { id: Date.now(), agent: "Simulator", type: "warning", text: "Simulating stator coil winding overload on Machine 2..." }
+      { id: Date.now(), agent: "Simulator", type: "warning", text: `Simulating stator coil winding overload on ${machineIdToSimulate || "Machine 2"}...` }
     ]);
 
     try {
@@ -1056,12 +1058,16 @@ export default function Home() {
       
       let targetMachine = null;
       if (currentData.machines && currentData.machines.length > 0) {
-        targetMachine = currentData.machines.find(m => m.id === "MCH-002");
-        if (!targetMachine) {
-          targetMachine = currentData.machines.find(m => m.id === "MCH-202") || 
-                          currentData.machines.find(m => m.id === "MCH-302") || 
-                          currentData.machines.find(m => m.status === "Operational") ||
-                          currentData.machines[0];
+        if (typeof machineIdToSimulate === 'string') {
+          targetMachine = currentData.machines.find(m => m.id === machineIdToSimulate);
+        } else {
+          targetMachine = currentData.machines.find(m => m.id === "MCH-002");
+          if (!targetMachine) {
+            targetMachine = currentData.machines.find(m => m.id === "MCH-202") || 
+                            currentData.machines.find(m => m.id === "MCH-302") || 
+                            currentData.machines.find(m => m.status === "Operational") ||
+                            currentData.machines[0];
+          }
         }
       }
       
@@ -2107,21 +2113,58 @@ Industrial Sector AI Automation Network`;
             <span>Configure Fleet & Graph</span>
           </button>
 
-          <button
-            id="simulator-btn"
-            onClick={handleSimulation}
-            disabled={simulating}
-            className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-2 ${
-              simulating
-                ? "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed"
-                : (theme === 'dark'
-                    ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
-                    : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
-            }`}
-          >
-            <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
-            <span>{simulating ? "PROCESSING AGENTS..." : `Simulate Failure on ${firstMachine.id}`}</span>
-          </button>
+          <div className="relative">
+            <button
+              id="simulator-btn"
+              onClick={() => {
+                if (!simulating) setSimulatorDropdownOpen(!simulatorDropdownOpen);
+              }}
+              disabled={simulating}
+              className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-2 ${
+                simulating
+                  ? "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed"
+                  : (theme === 'dark'
+                      ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
+                      : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
+              }`}
+            >
+              <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
+              <span>{simulating ? "PROCESSING AGENTS..." : "Simulate Failure"}</span>
+              {!simulating && <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+            </button>
+            
+            {simulatorDropdownOpen && (
+              <div className={`absolute right-0 mt-2 w-[340px] rounded-xl shadow-xl z-50 overflow-hidden border ${theme === 'dark' ? 'bg-[#182030] border-[#2b3548] shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)]'}`}>
+                <div className={`text-[10px] font-mono tracking-widest uppercase px-4 py-3 border-b ${theme === 'dark' ? 'text-slate-500 border-[#2b3548]' : 'text-slate-500 border-slate-200'}`}>
+                  On:
+                </div>
+                <ul className="max-h-72 overflow-y-auto">
+                  {data?.machines?.map(machine => (
+                    <li 
+                      key={machine.id}
+                      onClick={() => {
+                        setSimulatorDropdownOpen(false);
+                        handleSimulation(machine.id);
+                      }}
+                      className={`flex justify-between items-center px-4 py-3 cursor-pointer text-xs transition-colors border-b last:border-b-0 ${
+                        theme === 'dark' 
+                          ? 'border-[#2b3548]/50 hover:bg-[#202a3d]' 
+                          : 'border-slate-100 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className={theme === 'dark' ? 'text-red-400/90 font-medium' : 'text-red-600/90 font-medium'}>{machine.name}</span>
+                      <span className={`font-mono text-[10px] ml-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{machine.id}</span>
+                    </li>
+                  ))}
+                  {(!data?.machines || data.machines.length === 0) && (
+                    <li className={`px-4 py-4 text-center text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                      No machines available
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
 
           {/* Theme Toggle Button positioned at the far right of the sticky header */}
           <button
