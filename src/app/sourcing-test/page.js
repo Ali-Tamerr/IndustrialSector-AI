@@ -8,6 +8,14 @@ export default function SourcingTestPage() {
   const [theme, setTheme] = useState("dark");
   const [workflowsData, setWorkflowsData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stageOverrides, setStageOverrides] = useState({});
+
+  const handleStageClick = (orderId, targetIndex) => {
+    setStageOverrides(prev => ({
+      ...prev,
+      [orderId]: targetIndex
+    }));
+  };
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("appTheme") || "dark";
@@ -177,14 +185,28 @@ export default function SourcingTestPage() {
                         approvalState = "Rejected";
                       }
 
+                      // Adjust approvalState based on override
+                      if (stageOverrides[order.id] !== undefined) {
+                        const idx = stageOverrides[order.id];
+                        if (idx >= 1) {
+                          approvalState = "Approved";
+                        } else {
+                          approvalState = "Pending";
+                        }
+                      }
+
                       // Stages index
                       let activeStageIndex = 0;
-                      if (approvalState === "Approved") {
-                        activeStageIndex = 1;
-                        if (order.status === "Dispatched_Sourcing_Active") {
+                      if (stageOverrides[order.id] !== undefined) {
+                        activeStageIndex = stageOverrides[order.id];
+                      } else {
+                        if (approvalState === "Approved") {
                           activeStageIndex = 1;
-                        } else if (order.status === "Approved") {
-                          activeStageIndex = order.machineStatus === "Operational" ? 3 : 2;
+                          if (order.status === "Dispatched_Sourcing_Active") {
+                            activeStageIndex = 1;
+                          } else if (order.status === "Approved") {
+                            activeStageIndex = order.machineStatus === "Operational" ? 3 : 2;
+                          }
                         }
                       }
 
@@ -295,19 +317,24 @@ export default function SourcingTestPage() {
                                 }
 
                                 return (
-                                  <div key={stage.id} className="flex flex-col items-center text-center">
-                                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-[10px] select-none transition-colors duration-300 ${nodeStyles}`}>
+                                  <div 
+                                    key={stage.id} 
+                                    className="flex flex-col items-center text-center cursor-pointer group/node"
+                                    onClick={() => handleStageClick(order.id, stage.step - 1)}
+                                    title={`Simulate Stage ${stage.step}: ${stage.title}`}
+                                  >
+                                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-[10px] select-none transition-all duration-300 group-hover/node:scale-115 group-hover/node:shadow-[0_0_8px_rgba(59,130,246,0.4)] ${nodeStyles}`}>
                                       {stage.state === "completed" ? "✓" : stage.step}
                                     </div>
-                                    <div className="mt-2 max-w-[110px] min-w-0">
+                                    <div className="mt-2 max-w-[110px] min-w-0 transition-colors duration-200 group-hover/node:text-blue-400">
                                       <div className="text-[7px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Stage {stage.step}</div>
-                                      <div className={`text-[9px] font-bold leading-tight truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`} title={stage.title}>
+                                      <div className={`text-[9px] font-bold leading-tight truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} group-hover/node:text-blue-300`} title={stage.title}>
                                         {stage.title}
                                       </div>
                                       <div className={`text-[8px] font-semibold mt-0.5 ${labelColor}`}>
                                         {stage.subtitle}
                                       </div>
-                                      <div className="text-[7.5px] text-slate-550 leading-snug mt-1 max-h-[28px] overflow-hidden">
+                                      <div className="text-[7.5px] text-slate-550 leading-snug mt-1 max-h-[28px] overflow-hidden opacity-80 group-hover/node:opacity-100">
                                         {stage.details}
                                       </div>
                                     </div>
