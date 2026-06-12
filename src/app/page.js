@@ -469,6 +469,7 @@ export default function Home() {
   const [selectedRoadmapOrderId, setSelectedRoadmapOrderId] = useState(null);
   const [simulatorDropdownOpen, setSimulatorDropdownOpen] = useState(false);
   const [componentsPopupMachineId, setComponentsPopupMachineId] = useState(null);
+  const [graphsPopupMachineId, setGraphsPopupMachineId] = useState(null);
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -2255,7 +2256,7 @@ Industrial Sector AI Automation Network`;
               const hasCurr = (machine.critical_thresholds?.current ?? 0) > 0;
 
               return (
-                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group`}>
+                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group flex flex-col`}>
                   <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden pointer-events-none">
                     <div className={`absolute top-2.5 right-[-26px] transform rotate-45 text-center text-[9px] font-mono font-bold uppercase py-0.5 w-[90px] ${
                       machine.status === "Operational" ? "bg-emerald-500/10 text-emerald-400" :
@@ -2318,41 +2319,44 @@ Industrial Sector AI Automation Network`;
                         </div>
                       )}
 
-                      {/* Sparkline trends */}
-                      {(hasTemp || hasVib) && (
-                        <div className={`mt-4 pt-4 border-t flex justify-between items-center ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
-                          <div className="text-[9px] text-slate-500 font-bold leading-tight">
-                            <div>24H REALTIME GRAPH</div>
-                            <div className={`mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {hasTemp && hasVib ? "TEMP + VIB" : hasTemp ? "TEMPERATURE" : "VIBRATION"}
-                            </div>
-                          </div>
-                          <div className="h-9 opacity-80 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
-                            {hasTemp && <Sparkline data={tempHistory} color={health.sparkColor} width={70} height={32} />}
-                            {hasVib && <Sparkline data={vibHistory} color="#2563eb" width={70} height={32} />}
-                          </div>
-                        </div>
-                      )}
+                      {/* Sparkline trends removed to be in a popup */}
                     </div>
                   ) : (
                     <div className="py-8 text-center text-xs text-slate-500">No active telemetry signal.</div>
                   )}
 
-                  {/* Components Indicator */}
-                  <button 
-                    onClick={() => setComponentsPopupMachineId(componentsPopupMachineId === machine.id ? null : machine.id)}
-                    className={`absolute bottom-3 right-3 flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 z-10 ${
-                      componentsPopupMachineId === machine.id 
-                        ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' 
-                        : (theme === 'dark' 
-                            ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-[#182030]' 
-                            : 'bg-white border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-300 hover:bg-slate-50 shadow-sm')
-                    }`}
-                    title="View Components"
-                  >
-                    <Cpu className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Parts</span>
-                  </button>
+                  {/* Action Buttons */}
+                  <div className={`mt-auto pt-4 border-t flex justify-end items-center space-x-2 z-10 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
+                    <button 
+                      onClick={() => setGraphsPopupMachineId(graphsPopupMachineId === machine.id ? null : machine.id)}
+                      className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${
+                        graphsPopupMachineId === machine.id 
+                          ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_8px_rgba(59,130,246,0.5)]' 
+                          : (theme === 'dark' 
+                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-[#182030]' 
+                              : 'bg-white border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-slate-50 shadow-sm')
+                      }`}
+                      title="View Graphs"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Graphs</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setComponentsPopupMachineId(componentsPopupMachineId === machine.id ? null : machine.id)}
+                      className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${
+                        componentsPopupMachineId === machine.id 
+                          ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' 
+                          : (theme === 'dark' 
+                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-[#182030]' 
+                              : 'bg-white border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-300 hover:bg-slate-50 shadow-sm')
+                      }`}
+                      title="View Components"
+                    >
+                      <Cpu className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Parts</span>
+                    </button>
+                  </div>
 
                   {/* Components Popup Overlay */}
                   {componentsPopupMachineId === machine.id && (
@@ -2392,6 +2396,56 @@ Industrial Sector AI Automation Network`;
                           )})
                         ) : (
                           <div className="text-xs text-slate-500 text-center mt-10">No components data available.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Graphs Popup Overlay */}
+                  {graphsPopupMachineId === machine.id && (
+                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
+                      <div className="flex justify-between items-center mb-6">
+                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          <Activity className="w-4 h-4 text-blue-500" />
+                          <span>24H Realtime Telemetry</span>
+                        </h4>
+                        <button 
+                          onClick={() => setGraphsPopupMachineId(null)}
+                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col justify-center space-y-8 pb-4">
+                        {(hasTemp || hasVib) ? (
+                          <>
+                            {hasTemp && (
+                              <div className="flex flex-col space-y-2">
+                                <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
+                                  <span>WINDING TEMPERATURE</span>
+                                  <span className={theme === 'dark' ? 'text-red-400' : 'text-red-600'}>{latest?.temperature?.toFixed(1)}°C</span>
+                                </div>
+                                <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                                  <Sparkline data={tempHistory} color={health.sparkColor} width={220} height={50} />
+                                </div>
+                              </div>
+                            )}
+                            
+                            {hasVib && (
+                              <div className="flex flex-col space-y-2">
+                                <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
+                                  <span>RADIAL VIBRATION</span>
+                                  <span className="text-blue-500">{latest?.vibration?.toFixed(2)}mm/s</span>
+                                </div>
+                                <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                                  <Sparkline data={vibHistory} color="#3b82f6" width={220} height={50} />
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-xs text-slate-500 text-center">No telemetry graphs available.</div>
                         )}
                       </div>
                     </div>
