@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
+        sans: ["var(--font-now)", "sans-serif"],
         mono: ["var(--font-jetbrains-mono)", "monospace"],
       },
       colors: {
