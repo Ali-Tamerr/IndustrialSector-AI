@@ -88,21 +88,33 @@ const PETROCHEMICAL_TEMPLATE = {
       name: "Crude Transfer Pump Alpha",
       location: "Bay 5 - Hydrocracking",
       status: "Operational",
-      critical_thresholds: { temperature: 95.0, vibration: 8.5, pressure: 12.0, current: 40.0, required_part_id: "PART-203" }
+      critical_thresholds: { temperature: 95.0, vibration: 8.5, pressure: 12.0, current: 40.0, required_part_id: "PART-203" },
+      components: [
+        { id: "PART-203", name: "Petrochemical Centrifugal Impeller", health: 85 },
+        { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", health: 92 }
+      ]
     },
     {
       id: "MCH-202",
       name: "Gas Combustion Turbine Beta",
       location: "Bay 9 - Power Generation",
       status: "Operational",
-      critical_thresholds: { temperature: 110.0, vibration: 12.0, pressure: 16.5, current: 85.0, required_part_id: "PART-201" }
+      critical_thresholds: { temperature: 110.0, vibration: 12.0, pressure: 16.5, current: 85.0, required_part_id: "PART-201" },
+      components: [
+        { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", health: 78 },
+        { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", health: 88 }
+      ]
     },
     {
       id: "MCH-203",
       name: "Heavy Heat Exchanger Fan",
       location: "Bay 2 - Cooling Complex",
       status: "Operational",
-      critical_thresholds: { temperature: 85.0, vibration: 9.0, pressure: 4.5, current: 18.0, required_part_id: "PART-204" }
+      critical_thresholds: { temperature: 85.0, vibration: 9.0, pressure: 4.5, current: 18.0, required_part_id: "PART-204" },
+      components: [
+        { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", health: 95 },
+        { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", health: 90 }
+      ]
     }
   ],
   inventory: [
@@ -144,21 +156,31 @@ const AUTOMOTIVE_TEMPLATE = {
       name: "6-Axis Welder Robot Joint",
       location: "Bay 1 - Welding Cell",
       status: "Operational",
-      critical_thresholds: { temperature: 80.0, vibration: 15.0, pressure: 5.0, current: 30.0, required_part_id: "PART-301" }
+      critical_thresholds: { temperature: 80.0, vibration: 15.0, pressure: 5.0, current: 30.0, required_part_id: "PART-301" },
+      components: [
+        { id: "PART-301", name: "Harmonic Welder Gear Box Drive", health: 80 },
+        { id: "PART-304", name: "Welder Copper Cable Core", health: 95 }
+      ]
     },
     {
       id: "MCH-302",
       name: "Main Assembly Conveyor Drive",
       location: "Bay 6 - Painting Line",
       status: "Operational",
-      critical_thresholds: { temperature: 75.0, vibration: 8.0, pressure: 6.0, current: 22.0, required_part_id: "PART-302" }
+      critical_thresholds: { temperature: 75.0, vibration: 8.0, pressure: 6.0, current: 22.0, required_part_id: "PART-302" },
+      components: [
+        { id: "PART-302", name: "3-Phase Drive Motor Brushless", health: 88 }
+      ]
     },
     {
       id: "MCH-303",
       name: "Fleet Pneumatic Compressor Main",
       location: "Bay 14 - Assembly Main",
       status: "Operational",
-      critical_thresholds: { temperature: 90.0, vibration: 9.5, pressure: 9.0, current: 50.0, required_part_id: "PART-303" }
+      critical_thresholds: { temperature: 90.0, vibration: 9.5, pressure: 9.0, current: 50.0, required_part_id: "PART-303" },
+      components: [
+        { id: "PART-303", name: "Pneumatic Double Solenoid Valve", health: 92 }
+      ]
     }
   ],
   inventory: [
@@ -200,21 +222,31 @@ const STEEL_TEMPLATE = {
       name: "Rotary Gear Pump A",
       location: "Bay 3 - Fluids Processing",
       status: "Operational",
-      critical_thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" }
+      critical_thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" },
+      components: [
+        { id: "PART-001", name: "Heavy-Duty Bearing Assembly", health: 85 },
+        { id: "PART-003", name: "Centrifugal Pump Impeller", health: 90 }
+      ]
     },
     {
       id: "MCH-002",
       name: "High-Speed Industrial Fan B",
       location: "Bay 7 - Ventilation and Exhaust",
       status: "Operational",
-      critical_thresholds: { temperature: 80.0, vibration: 10.0, pressure: 3.0, current: 20.0, required_part_id: "PART-004" }
+      critical_thresholds: { temperature: 80.0, vibration: 10.0, pressure: 3.0, current: 20.0, required_part_id: "PART-004" },
+      components: [
+        { id: "PART-004", name: "3-Phase Electric Motor Winding", health: 75 }
+      ]
     },
     {
       id: "MCH-003",
       name: "Heavy-Duty Compressor C",
       location: "Bay 12 - Pneumatics & Air Power",
       status: "Operational",
-      critical_thresholds: { temperature: 95.0, vibration: 7.5, pressure: 8.5, current: 25.0, required_part_id: "PART-002" }
+      critical_thresholds: { temperature: 95.0, vibration: 7.5, pressure: 8.5, current: 25.0, required_part_id: "PART-002" },
+      components: [
+        { id: "PART-002", name: "High-Pressure Hydraulic Seal", health: 82 }
+      ]
     }
   ],
   inventory: [
