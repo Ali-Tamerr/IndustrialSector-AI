@@ -2616,11 +2616,14 @@ Industrial Sector AI Automation Network`;
                           }`}
                         >
                           {/* Card Header */}
-                          <div className="flex justify-between items-center mb-2 min-w-0">
+                          <div className="flex justify-between items-start mb-3 min-w-0">
                             <div className="min-w-0 mr-4 flex-1">
                               <h3 className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`} title={componentName}>
                                 {componentName}
                               </h3>
+                              <p className={`text-[9px] font-mono tracking-widest mt-1 uppercase ${theme === 'dark' ? 'text-indigo-400/90' : 'text-indigo-600/90'}`} title={`${machine?.name || 'Machine'}, ${machineId}`}>
+                                FOR: {machine?.name || "Machine"}, {machineId}
+                              </p>
                             </div>
                           </div>
 
