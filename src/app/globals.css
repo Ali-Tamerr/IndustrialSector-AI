@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-inter: 'Inter', sans-serif;
+  --font-now: 'Now', sans-serif;
   --font-jetbrains-mono: 'JetBrains Mono', monospace;
 }
 

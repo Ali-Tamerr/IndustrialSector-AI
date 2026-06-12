@@ -1,4 +1,47 @@
+import localFont from "next/font/local";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+const nowFont = localFont({
+  src: [
+    {
+      path: "../../assets/fonts/Now-Thin.otf",
+      weight: "100",
+      style: "normal",
+    },
+    {
+      path: "../../assets/fonts/Now-Light.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../../assets/fonts/Now-Regular.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../assets/fonts/Now-Medium.otf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../assets/fonts/Now-Bold.otf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../../assets/fonts/Now-Black.otf",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-now",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+});
 
 export const metadata = {
   title: "Autonomous Industrial Control Tower",
@@ -7,15 +50,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`dark ${nowFont.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased text-slate-200 bg-[#06080c] min-h-screen">
         {children}
       </body>
