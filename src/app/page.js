@@ -433,6 +433,7 @@ export default function Home() {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
   const [showGraphLegendPopup, setShowGraphLegendPopup] = useState(false);
+  const [selectedRoadmapOrderId, setSelectedRoadmapOrderId] = useState(null);
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -2294,292 +2295,208 @@ Industrial Sector AI Automation Network`;
             </div>
           </section>
 
-          {/* Zone 3: Knowledge Graph */}
-          <section id="zone-3" className="lg:col-span-7 space-y-3 flex flex-col transition-all duration-500">
-            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center relative">
+          {/* Zone 3: Component Sourcing Roadmap */}
+          <section id="zone-3" className="lg:col-span-7 space-y-3 flex flex-col transition-all duration-500 relative">
+            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <Settings className="w-3.5 h-3.5 text-blue-400" />
-                <span>Zone 3: Supply Chain Knowledge Graph</span>
+                <span>Zone 3: Component Sourcing Roadmap</span>
               </div>
-              
-              <div className="relative">
-                <button
-                  onClick={() => setShowGraphLegendPopup(!showGraphLegendPopup)}
-                  className={`p-1.5 rounded-lg border transition-all duration-200 flex items-center justify-center hover:scale-105 ${
-                    showGraphLegendPopup 
-                      ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
-                      : (theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-400 hover:text-slate-200 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-750 hover:border-slate-300')
-                  }`}
-                  title="Show Reference Info & Legend"
-                >
-                  <HelpCircle className="w-3.5 h-3.5" />
-                </button>
-
-                {showGraphLegendPopup && (
-                  <div className={`absolute right-0 top-7 z-50 w-64 border rounded-xl p-4 shadow-2xl backdrop-blur-md animate-fadeIn font-mono text-[10px] tracking-normal normal-case ${
-                    theme === 'dark' 
-                      ? 'bg-[#0c0f17]/95 border-[#182030] text-slate-300 shadow-[0_10px_30px_rgba(0,0,0,0.5)]' 
-                      : 'bg-white/95 border-slate-200 text-slate-600 shadow-[0_10px_30px_rgba(0,0,0,0.15)]'
-                  }`}>
-                    <div className="flex justify-between items-center border-b pb-2 mb-3 border-slate-850/10">
-                      <span className="font-bold tracking-wider text-blue-400 uppercase text-[9px]">Graph Reference</span>
-                      <button 
-                        onClick={() => setShowGraphLegendPopup(false)}
-                        className="text-slate-500 hover:text-slate-300 font-bold"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <span className="font-bold block text-slate-400 uppercase text-[8px] tracking-wider mb-1">Interaction</span>
-                        <p className="leading-relaxed">Click nodes to query relation pathways.</p>
-                      </div>
-                      
-                      <div className="border-t pt-2 border-slate-850/10">
-                        <span className="font-bold block text-slate-400 uppercase text-[8px] tracking-wider mb-1.5">Legend Reference</span>
-                        <div className="space-y-2">
-                          <span className="flex items-center space-x-2">
-                            <span className={`h-2.5 w-4 border border-blue-500 rounded-sm ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}></span>
-                            <span>Fleet Node</span>
-                          </span>
-                          <span className="flex items-center space-x-2">
-                            <span className={`h-3.5 w-3.5 rounded-full border border-slate-500 flex items-center justify-center text-[7px] ${theme === 'dark' ? 'bg-[#0c0f17]' : 'bg-white'}`}>ID</span>
-                            <span>Part Node</span>
-                          </span>
-                          <span className="flex items-center space-x-2">
-                            <span className="h-0 w-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-slate-400 bg-transparent"></span>
-                            <span>Direct Supplier</span>
-                          </span>
-                          <span className="flex items-center space-x-2">
-                            <span className="h-3 w-5 border border-slate-400 bg-transparent rounded-xs flex items-center justify-center text-[6px]">MAT</span>
-                            <span>Raw Material</span>
-                          </span>
-                          <span className="flex items-center space-x-2 text-amber-500 font-bold">
-                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-                            <span>Active Sourcing</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span>
             </h2>
 
-            <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-5 flex-1 flex flex-col justify-between relative overflow-hidden min-h-[460px] max-h-[460px]`}>
-              
-              <div className={`w-full flex-1 flex items-center justify-center relative rounded-lg border p-2 overflow-hidden select-none transition-all duration-300 ${theme === 'dark' ? 'bg-[#06080c]/60 border-[#182030]/40' : 'bg-slate-50 border-slate-100 shadow-inner'}`}>
-                {(!data?.graph?.nodes || data.graph.nodes.length === 0) ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center font-mono text-xs select-none animate-fadeIn">
-                    <div className={`p-4 rounded-full border border-dashed mb-3 ${theme === 'dark' ? 'bg-[#0c0f17] border-slate-700/50' : 'bg-slate-50 border-slate-300'}`}>
-                      <Activity className={`h-8 w-8 text-slate-500 animate-pulse`} />
+            <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-4 flex-1 flex flex-col overflow-y-auto min-h-[460px] max-h-[460px] space-y-3`}>
+              {(() => {
+                const orders = data?.maintenance_orders || [];
+                
+                if (orders.length === 0) {
+                  return (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center font-mono text-xs select-none">
+                      <div className={`p-4 rounded-full border border-dashed mb-3 ${theme === 'dark' ? 'bg-[#0e131f] border-slate-700' : 'bg-slate-50 border-slate-300'}`}>
+                        <ShieldCheck className="h-8 w-8 text-emerald-500" />
+                      </div>
+                      <p className={`font-bold tracking-wider uppercase mb-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>System Standby - Fleet Stable</p>
+                      <p className="text-[10px] text-slate-500 max-w-sm leading-relaxed">
+                        All equipment units are running within standard operational thresholds. No active sourcing or maintenance tickets found.
+                      </p>
                     </div>
-                    <p className={`font-bold tracking-wider uppercase mb-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>Supply Chain Graph is Empty</p>
-                    <p className="text-[10px] text-slate-500 max-w-sm mb-4 leading-relaxed">
-                      No parts or suppliers have been registered for this custom fleet project yet. Use the configurator below to build your supply chain pathways.
-                    </p>
-                    <button 
-                      onClick={() => {
-                        setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
-                        setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
-                        setEditorNodes(data?.graph?.nodes ? JSON.parse(JSON.stringify(data.graph.nodes)) : []);
-                        setEditorEdges(data?.graph?.links ? JSON.parse(JSON.stringify(data.graph.links)) : []);
-                        setShowEditor(true);
-                      }}
-                      className="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-mono text-[9px] font-bold rounded-lg hover:from-cyan-500 hover:to-blue-500 transition-all duration-300 flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Seed or Edit Structure</span>
-                    </button>
-                  </div>
-                ) : (
-                  <svg width="100%" height="100%" viewBox="0 0 600 340" className="max-w-full max-h-full">
-                    <defs>
-                      <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="6" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                      <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="4" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
+                  );
+                }
 
-                    {/* Sourcing active highlights detection */}
-                    {(() => {
-                      const activeOrder = data.maintenance_orders?.find(o => o.status.includes('Sourcing') || o.status === 'Pending_Sourcing');
-                      const failedMachine = data.machines?.find(m => m.id === activeOrder?.machine_id);
-                      const requiredPartId = failedMachine?.critical_thresholds?.required_part_id || "PART-004";
-                      const winnerSupplierName = activeOrder?.root_cause?.match(/Selected Supplier:\s*([^\n\r]+)/)?.[1]?.replace(/\([^)]+\)/g, "")?.trim() || "";
+                return (
+                  <div className="space-y-3">
+                    {orders.map((order) => {
+                      const machine = data?.machines?.find(m => m.id === order.machine_id);
+                      const machineId = machine?.id || order.machine_id;
+                      const requiredPartId = machine?.critical_thresholds?.required_part_id;
+                      const part = data?.inventory?.find(p => p.part_id === requiredPartId);
+                      const componentName = part?.part_name || "Critical Component";
 
-                      // Build lines connecting machine node to all Part nodes
-                      const partNodes = Object.values(layoutNodes).filter(n => n.type === 'Part');
-                      const rootId = firstMachine?.id || "MCH-001";
-                      const rootCoords = layoutNodes[rootId] || { x: 80, y: 170 };
+                      // Parse supplier
+                      const supplierMatch = order.root_cause?.match(/Selected Supplier:\s*([^\n\r(]+)/) || 
+                                            order.root_cause?.match(/dispatched to\s*([^\n\r(]+)/) || 
+                                            order.root_cause?.match(/order dispatched to\s*([^\n\r(]+)/i);
+                      const supplierName = supplierMatch ? supplierMatch[1].trim() : "Optimal Supplier";
+
+                      let approvalState = "Approved";
+                      let rejectionReason = "";
+                      if (order.status === "Pending_Sourcing") {
+                        approvalState = "Pending";
+                      } else if (order.status === "Rejected") {
+                        approvalState = "Rejected";
+                        rejectionReason = "Supplier risk rating exceeds safety margin (0.15 limit)";
+                      }
+
+                      // Stages: 0: Sourcing Approval, 1: Supplier, 2: Company Warehouse, 3: Machine
+                      let activeStageIndex = 0;
+                      if (approvalState === "Approved") {
+                        activeStageIndex = 1;
+                        if (order.status === "Dispatched_Sourcing_Active") {
+                          activeStageIndex = 1;
+                        } else if (order.status === "Approved") {
+                          activeStageIndex = machine?.status === "Operational" ? 3 : 2;
+                        }
+                      } else if (approvalState === "Rejected") {
+                        activeStageIndex = 0;
+                      }
+
+                      // Details of stages - flipped physically (Machine, Warehouse, Supplier, Approval)
+                      const stages = [
+                        {
+                          id: "machine",
+                          step: 4,
+                          title: `${machineId}`,
+                          subtitle: activeStageIndex >= 3 ? "Applied" : "Pending",
+                          details: activeStageIndex >= 3 ? "Restored to service" : "Awaiting installation",
+                          state: activeStageIndex === 3 ? "completed" : "awaiting"
+                        },
+                        {
+                          id: "warehouse",
+                          step: 3,
+                          title: "Company Warehouse",
+                          subtitle: activeStageIndex >= 2 ? (activeStageIndex === 2 ? "Arrived" : "Completed") : "On Route",
+                          details: activeStageIndex >= 2 ? "Awaiting technician swap" : "Transit in progress",
+                          state: activeStageIndex > 2 ? "completed" : (activeStageIndex === 2 ? "current-active" : "awaiting")
+                        },
+                        {
+                          id: "supplier",
+                          step: 2,
+                          title: supplierName,
+                          subtitle: activeStageIndex >= 1 ? (order.status === "Dispatched_Sourcing_Active" ? "In Transit" : "Completed") : "Awaiting",
+                          details: activeStageIndex >= 1 ? "Priority air courier active" : "Pending approval",
+                          state: activeStageIndex > 1 ? "completed" : (activeStageIndex === 1 ? "current-active" : "awaiting")
+                        },
+                        {
+                          id: "approval",
+                          step: 1,
+                          title: "Sourcing Approval",
+                          subtitle: approvalState === "Approved" ? "Approved" : (approvalState === "Pending" ? "Pending" : "Rejected"),
+                          details: approvalState === "Approved" ? "Purchase order dispatched" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
+                          state: approvalState === "Approved" ? "completed" : (approvalState === "Pending" ? "current-pending" : "blocked")
+                        }
+                      ];
+
+                      const isSelected = order.id === (selectedRoadmapOrderId || orders[0]?.id);
 
                       return (
-                        <g>
-                          {/* 1. Draw connections from Machine node to all Part nodes */}
-                          {partNodes.map(p => {
-                            const isPathSourced = activeOrder && p.id === requiredPartId;
-                            return (
-                              <line
-                                key={`mach-to-${p.id}`}
-                                x1={rootCoords.x}
-                                y1={rootCoords.y}
-                                x2={p.x}
-                                y2={p.y}
-                                stroke={isPathSourced ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")}
-                                strokeWidth={isPathSourced ? "3.5" : "1.5"}
-                                strokeDasharray={isPathSourced ? "6,4" : ""}
-                              />
-                            );
-                          })}
+                        <div 
+                          key={order.id} 
+                          onClick={() => setSelectedRoadmapOrderId(order.id)}
+                          className={`border rounded-xl p-3.5 flex flex-col justify-between cursor-pointer transition-all duration-300 min-h-[148px] ${
+                            isSelected 
+                              ? (theme === 'dark' ? 'bg-[#0f131c] border-blue-500/80 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-slate-50 border-blue-400 shadow-sm')
+                              : (theme === 'dark' ? 'bg-[#0f131c]/60 border-[#182030] hover:bg-[#121722]' : 'bg-slate-50/50 border-slate-200 hover:bg-slate-100/30')
+                          }`}
+                        >
+                          {/* Card Header */}
+                          <div className="flex justify-between items-center mb-2 min-w-0">
+                            <div className="min-w-0 mr-4 flex-1">
+                              <h3 className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`} title={componentName}>
+                                {componentName}
+                              </h3>
+                            </div>
+                          </div>
 
-                          {/* 2. Draw connections between Parts, Suppliers, and Materials from links data */}
-                          {(data.graph.links || []).map((link, idx) => {
-                            const src = layoutNodes[link.source];
-                            const tgt = layoutNodes[link.target];
-                            if (!src || !tgt) return null;
+                          {/* Stepper Progression Container */}
+                          <div className="relative pt-1 pb-3 flex-1 flex flex-col justify-center">
+                            
+                            {/* Connector Line Background */}
+                            <div className={`absolute left-[12.5%] right-[12.5%] top-5 h-[2px] ${theme === 'dark' ? 'bg-[#182030]' : 'bg-slate-200'} pointer-events-none z-0`}></div>
+                            
+                            {/* Connector Line Active Overlay - right-anchored */}
+                            {activeStageIndex > 0 && approvalState !== "Rejected" && (
+                              <div 
+                                className="absolute right-[12.5%] top-5 h-[2px] bg-emerald-500 pointer-events-none z-0 transition-all duration-500"
+                                style={{ 
+                                  width: `${(activeStageIndex / 3) * 75}%`
+                                }}
+                              ></div>
+                            )}
 
-                            // Determine if this path connects to the required part and is the winner supplier
-                            const isRequiredPartEdge = (src.id === requiredPartId || tgt.id === requiredPartId);
-                            const isWinnerEdge = activeOrder && isRequiredPartEdge && 
-                              (src.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) || 
-                               tgt.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) ||
-                               activeOrder.root_cause.toLowerCase().includes(src.name.toLowerCase()) ||
-                               activeOrder.root_cause.toLowerCase().includes(tgt.name.toLowerCase()));
+                            {/* Steps Grid */}
+                            <div className="grid grid-cols-4 gap-1 relative z-10">
+                              {stages.map((stage) => {
+                                let nodeStyles = "";
+                                let labelColor = "";
 
-                            return (
-                              <line
-                                key={`edge-${idx}`}
-                                x1={src.x}
-                                y1={src.y}
-                                x2={tgt.x}
-                                y2={tgt.y}
-                                stroke={isWinnerEdge ? "#f59e0b" : (theme === 'dark' ? "#1e293b" : "#cbd5e1")}
-                                strokeWidth={isWinnerEdge ? "3.5" : "1.5"}
-                              />
-                            );
-                          })}
+                                if (stage.state === "completed") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-emerald-500 border-emerald-500 text-[#0c0f17]" 
+                                    : "bg-emerald-600 border-emerald-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-emerald-400" : "text-emerald-700";
+                                } else if (stage.state === "current-active") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-blue-500 border-blue-500 text-[#0c0f17]" 
+                                    : "bg-blue-600 border-blue-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-blue-400" : "text-blue-700";
+                                } else if (stage.state === "current-pending") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-amber-500 border-amber-500 text-[#0c0f17]" 
+                                    : "bg-amber-600 border-amber-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-amber-400" : "text-amber-700";
+                                } else if (stage.state === "blocked") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-red-500 border-red-500 text-[#0c0f17]" 
+                                    : "bg-red-600 border-red-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-red-400" : "text-red-700";
+                                } else {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-[#0e131f] border-slate-700 text-slate-500" 
+                                    : "bg-slate-100 border-slate-300 text-slate-400";
+                                  labelColor = "text-slate-550";
+                                }
 
-                          {/* 3. Render Ping effects for actively sourced nodes */}
-                          {activeOrder && Object.values(layoutNodes).map(node => {
-                            const isTargetPart = node.type === 'Part' && node.id === requiredPartId;
-                            const isWinnerSupplier = node.type === 'Supplier' && 
-                              (node.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) || 
-                               activeOrder.root_cause.toLowerCase().includes(node.name.toLowerCase()));
+                                return (
+                                  <div key={stage.id} className="flex flex-col items-center text-center">
+                                    {/* Circular Node */}
+                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-xs select-none transition-colors duration-300 ${nodeStyles}`}>
+                                      {stage.state === "completed" ? "✓" : stage.step}
+                                    </div>
 
-                            if (isTargetPart || isWinnerSupplier) {
-                              return (
-                                <circle
-                                  key={`ping-${node.id}`}
-                                  cx={node.x}
-                                  cy={node.y}
-                                  r="12"
-                                  fill="#f59e0b"
-                                  opacity="0.25"
-                                >
-                                  <animate attributeName="r" values="12;26;12" dur="2.4s" repeatCount="indefinite" />
-                                  <animate attributeName="opacity" values="0.35;0.02;0.35" dur="2.4s" repeatCount="indefinite" />
-                                </circle>
-                              );
-                            }
-                            return null;
-                          })}
-
-                          {/* 4. Render Machine Root Node */}
-                          {(() => {
-                            const isCritical = firstMachine?.status === "Critical" || firstMachine?.status === "Degraded";
-                            return (
-                              <g transform={`translate(${rootCoords.x}, ${rootCoords.y})`} className="cursor-pointer" onClick={() => setSelectedSupplierNode({ name: firstMachine?.name || "Root Asset", role: 'Telemetry Root Source', details: `Status: ${firstMachine?.status || 'Operational'}. Requires critical spares immediately to bypass active downtime warnings.` })}>
-                                <rect x="-35" y="-18" width="70" height="36" rx="4" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isCritical ? "#ef4444" : "#2563eb"} strokeWidth="2" />
-                                <text textAnchor="middle" y="4" fill={theme === 'dark' ? "#f8fafc" : "#1e293b"} fontSize="10" fontWeight="bold" fontFamily="monospace">{firstMachine?.id || "MCH-001"}</text>
-                                <text textAnchor="middle" y="-23" fill="#64748b" fontSize="8" fontWeight="600">ROOT FLEET</text>
-                              </g>
-                            );
-                          })()}
-
-                          {/* 5. Render Parts, Suppliers, Materials */}
-                          {Object.values(layoutNodes).filter(n => n.type !== 'Machine').map(node => {
-                            const isTargetPart = activeOrder && node.type === 'Part' && node.id === requiredPartId;
-                            const isWinnerSupplier = activeOrder && node.type === 'Supplier' && 
-                              (node.name.toLowerCase().includes(winnerSupplierName.toLowerCase()) || 
-                               activeOrder.root_cause.toLowerCase().includes(node.name.toLowerCase()));
-                            const isHighlighted = isTargetPart || isWinnerSupplier;
-
-                            if (node.type === 'Part') {
-                              return (
-                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer" onClick={() => {
-                                  const invItem = data.inventory?.find(i => i.part_id === node.id);
-                                  setSelectedSupplierNode({
-                                    name: node.name,
-                                    role: `Component Node (${node.id})`,
-                                    details: invItem ? `Relational database stock audit: ${invItem.stock_level <= invItem.reorder_point ? 'LOW STOCK' : 'IN STOCK'} (Stock: ${invItem.stock_level}, Reorder Pt: ${invItem.reorder_point}). Value: $${invItem.cost}. Storage Location: ${invItem.location}.` : `Part configuration node. Sourcing active.`
-                                  });
-                                }}>
-                                  <circle r="12" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isHighlighted ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isHighlighted ? "url(#glow-orange)" : ""} />
-                                  <text textAnchor="middle" y="3" fill={isHighlighted ? "#f59e0b" : (theme === 'dark' ? "#cbd5e1" : "#475569")} fontSize="9" fontWeight="bold" fontFamily="monospace">{node.id.replace("PART-", "P")}</text>
-                                  <text textAnchor="middle" y="-17" fill="#64748b" fontSize="8" fontFamily="monospace">{node.id}</text>
-                                </g>
-                              );
-                            } else if (node.type === 'Supplier') {
-                              return (
-                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer" onClick={() => {
-                                  setSelectedSupplierNode({
-                                    name: node.name,
-                                    role: 'Direct Supplier (Tier 1)',
-                                    details: `Supplier risk rating: ${(node.risk * 100).toFixed(0)}%. Email contact: ${node.email || 'N/A'}. Emergency transit route pre-approved for priority fulfillment.`
-                                  });
-                                }}>
-                                  <polygon points="0,-12 11,8 -11,8" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={isHighlighted ? "#f59e0b" : (theme === 'dark' ? "#475569" : "#94a3b8")} strokeWidth="2" filter={isHighlighted ? "url(#glow-orange)" : ""} />
-                                  <text textAnchor="middle" y="22" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9" fontWeight="bold">{node.name.length > 12 ? node.name.substr(0, 10) + ".." : node.name}</text>
-                                  {isHighlighted && (
-                                    <text textAnchor="middle" y="-18" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace">WINNER</text>
-                                  )}
-                                </g>
-                              );
-                            } else {
-                              // Material Node
-                              return (
-                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer" onClick={() => {
-                                  setSelectedSupplierNode({
-                                    name: node.name,
-                                    role: 'Raw Material (Tier 2)',
-                                    details: `Raw material items used in parts production. Sourcing risk score: ${(node.risk * 100).toFixed(0)}%.`
-                                  });
-                                }}>
-                                  <rect x="-24" y="-12" width="48" height="24" rx="2" fill={theme === 'dark' ? "#0c0f17" : "#ffffff"} stroke={theme === 'dark' ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5" />
-                                  <text textAnchor="middle" y="3" fill="#94a3b8" fontSize="8" fontWeight="bold" fontFamily="monospace">MATERIAL</text>
-                                  <text textAnchor="middle" y="23" fill={theme === 'dark' ? "#cbd5e1" : "#334155"} fontSize="9">{node.name.length > 12 ? node.name.substr(0, 10) + ".." : node.name}</text>
-                                </g>
-                              );
-                            }
-                          })}
-                        </g>
+                                    {/* Info below */}
+                                    <div className="mt-2 max-w-[110px] min-w-0">
+                                      <div className="text-[7.5px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Stage {stage.step}</div>
+                                      <div className={`text-[9.5px] font-bold leading-tight truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`} title={stage.title}>
+                                        {stage.title}
+                                      </div>
+                                      <div className={`text-[8.5px] font-semibold mt-0.5 ${labelColor}`}>
+                                        {stage.subtitle}
+                                      </div>
+                                      <div className="text-[8px] text-slate-500 leading-snug mt-1 max-h-[32px] overflow-hidden">
+                                        {stage.details}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
                       );
-                    })()}
-                  </svg>
-                )}
-              </div>
-
-              {selectedSupplierNode && (
-                <div className={`absolute bottom-4 left-4 right-4 border rounded-lg p-3.5 backdrop-blur-sm font-mono text-xs shadow-2xl transition-all duration-300 bg-slate-950/95 border-amber-500/20 text-slate-350 ${theme === 'dark' ? 'bg-slate-950/95 border-amber-500/20 text-slate-300' : 'bg-white/95 border-amber-500/40 text-slate-700 shadow-[0_10px_30px_rgba(0,0,0,0.08)]'}`}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className={`font-bold tracking-wide uppercase ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>{selectedSupplierNode.name}</span>
-                    <span className="text-[9px] text-slate-500 uppercase">{selectedSupplierNode.role}</span>
+                    })}
                   </div>
-                  <p className={`leading-normal ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{selectedSupplierNode.details}</p>
-                  <button 
-                    onClick={() => setSelectedSupplierNode(null)} 
-                    className="absolute top-2 right-2 text-slate-555 hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </section>
 

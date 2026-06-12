@@ -98,3 +98,12 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+@keyframes marching-ants {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 20px 0;
+  }
+}
+
