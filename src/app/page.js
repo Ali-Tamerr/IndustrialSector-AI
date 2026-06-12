@@ -999,6 +999,24 @@ export default function Home() {
       let localData = localStorage.getItem(`workspace_data_${activeId}`);
       if (localData) {
         const parsed = JSON.parse(localData);
+        // Patch missing components from templates for existing workspaces
+        let needsSave = false;
+        if (parsed.machines) {
+          parsed.machines.forEach(machine => {
+            if (!machine.components || machine.components.length === 0) {
+              const templateMachine = [PETROCHEMICAL_TEMPLATE, AUTOMOTIVE_TEMPLATE, STEEL_TEMPLATE]
+                .flatMap(t => t.machines)
+                .find(m => m.id === machine.id);
+              if (templateMachine && templateMachine.components) {
+                machine.components = templateMachine.components;
+                needsSave = true;
+              }
+            }
+          });
+          if (needsSave) {
+            localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(parsed));
+          }
+        }
         setData(parsed);
       } else {
         const savedProjects = localStorage.getItem("projects");
@@ -2323,10 +2341,17 @@ Industrial Sector AI Automation Network`;
                   {/* Components Indicator */}
                   <button 
                     onClick={() => setComponentsPopupMachineId(componentsPopupMachineId === machine.id ? null : machine.id)}
-                    className={`absolute bottom-3 right-3 p-1.5 rounded-full transition-colors z-10 ${componentsPopupMachineId === machine.id ? 'bg-cyan-500 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' : (theme === 'dark' ? 'text-slate-500 hover:text-cyan-400 hover:bg-[#182030]' : 'text-slate-400 hover:text-cyan-600 hover:bg-slate-100')}`}
+                    className={`absolute bottom-3 right-3 flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 z-10 ${
+                      componentsPopupMachineId === machine.id 
+                        ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' 
+                        : (theme === 'dark' 
+                            ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-[#182030]' 
+                            : 'bg-white border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-300 hover:bg-slate-50 shadow-sm')
+                    }`}
                     title="View Components"
                   >
-                    <Cpu className="w-4 h-4" />
+                    <Cpu className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Parts</span>
                   </button>
 
                   {/* Components Popup Overlay */}
@@ -2346,20 +2371,25 @@ Industrial Sector AI Automation Network`;
                       
                       <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
                         {machine.components && machine.components.length > 0 ? (
-                          machine.components.map((comp, idx) => (
+                          machine.components.map((comp, idx) => {
+                            let displayHealth = comp.health;
+                            if (machine.status !== "Operational" && machine.critical_thresholds?.required_part_id === comp.id) {
+                              displayHealth = machine.status === "Critical" ? 14 : 42;
+                            }
+                            return (
                             <div key={idx} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex justify-between items-start mb-2">
                                 <div className={`font-semibold text-xs truncate max-w-[80%] ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`} title={comp.name}>{comp.name}</div>
-                                <div className={`text-[10px] font-mono font-bold ${comp.health >= 90 ? 'text-emerald-500' : comp.health >= 75 ? 'text-amber-500' : 'text-red-500'}`}>
-                                  {comp.health}%
+                                <div className={`text-[10px] font-mono font-bold ${displayHealth >= 90 ? 'text-emerald-500' : displayHealth >= 70 ? 'text-amber-500' : 'text-red-500'}`}>
+                                  {displayHealth}%
                                 </div>
                               </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2">
-                                <div className={`h-1.5 rounded-full ${comp.health >= 90 ? 'bg-emerald-500' : comp.health >= 75 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${comp.health}%` }}></div>
+                              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+                                <div className={`h-1.5 rounded-full transition-all duration-1000 ${displayHealth >= 90 ? 'bg-emerald-500' : displayHealth >= 70 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${displayHealth}%` }}></div>
                               </div>
                               <div className={`text-[9px] mt-1.5 text-slate-500 font-mono tracking-wider`}>ID: {comp.id}</div>
                             </div>
-                          ))
+                          )})
                         ) : (
                           <div className="text-xs text-slate-500 text-center mt-10">No components data available.</div>
                         )}
