@@ -1040,17 +1040,27 @@ export default function Home() {
     if (typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "granted") {
         try {
-          if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-              registration.showNotification(title, {
-                body: message,
-                tag: "sourcing-milestone"
+          if (document.hidden) {
+            // Tab is in the background: prioritize Service Worker to bypass browser background execution blocks
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.getRegistration().then(registration => {
+                if (registration) {
+                  registration.showNotification(title, {
+                    body: message,
+                    tag: "sourcing-milestone"
+                  });
+                } else {
+                  new Notification(title, { body: message, tag: "sourcing-milestone" });
+                }
+              }).catch(err => {
+                console.error("SW registration fetch failed:", err);
+                new Notification(title, { body: message, tag: "sourcing-milestone" });
               });
-            }).catch(err => {
-              console.error("SW ready failed, falling back to Notification constructor:", err);
+            } else {
               new Notification(title, { body: message, tag: "sourcing-milestone" });
-            });
+            }
           } else {
+            // Tab is in the foreground: standard constructor is fully allowed and faster
             new Notification(title, { body: message, tag: "sourcing-milestone" });
           }
         } catch (err) {
@@ -1059,13 +1069,7 @@ export default function Home() {
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            if ("serviceWorker" in navigator) {
-              navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, { body: message, tag: "sourcing-milestone" });
-              });
-            } else {
-              new Notification(title, { body: message, tag: "sourcing-milestone" });
-            }
+            new Notification(title, { body: message, tag: "sourcing-milestone" });
           }
         });
       }
