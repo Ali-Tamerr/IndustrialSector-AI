@@ -46,6 +46,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata = {
   title: "Autonomous Industrial Control Tower",
   description: "Real-time AI-Agent Fleet Predictive Maintenance & Sourcing Orchestrator Dashboard",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }) {
