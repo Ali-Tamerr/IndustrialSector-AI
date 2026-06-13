@@ -1046,22 +1046,21 @@ export default function Home() {
               navigator.serviceWorker.getRegistration().then(registration => {
                 if (registration) {
                   registration.showNotification(title, {
-                    body: message,
-                    tag: "sourcing-milestone"
+                    body: message
                   });
                 } else {
-                  new Notification(title, { body: message, tag: "sourcing-milestone" });
+                  new Notification(title, { body: message });
                 }
               }).catch(err => {
                 console.error("SW registration fetch failed:", err);
-                new Notification(title, { body: message, tag: "sourcing-milestone" });
+                new Notification(title, { body: message });
               });
             } else {
-              new Notification(title, { body: message, tag: "sourcing-milestone" });
+              new Notification(title, { body: message });
             }
           } else {
             // Tab is in the foreground: standard constructor is fully allowed and faster
-            new Notification(title, { body: message, tag: "sourcing-milestone" });
+            new Notification(title, { body: message });
           }
         } catch (err) {
           console.error("Failed to trigger native Notification", err);
@@ -1069,7 +1068,7 @@ export default function Home() {
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            new Notification(title, { body: message, tag: "sourcing-milestone" });
+            new Notification(title, { body: message });
           }
         });
       }
