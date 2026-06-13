@@ -41,7 +41,7 @@ export default function SourcingTestPage() {
     }
   }, []);
 
-  // Watch for milestone completions across all workflow updates
+  // Watch for milestone changes across all workflow updates
   useEffect(() => {
     if (workflowsData.length === 0) return;
 
@@ -66,7 +66,7 @@ export default function SourcingTestPage() {
 
         const refKey = `${workflow.id}-${order.id}`;
         const prevStage = prevStages.current[refKey];
-        if (prevStage !== undefined && activeStageIndex > prevStage) {
+        if (prevStage !== undefined && activeStageIndex !== prevStage) {
           const stagesNames = [
             "Sourcing Approval",
             "Supplier Shipment",
@@ -77,10 +77,17 @@ export default function SourcingTestPage() {
           const finishedStageName = stagesNames[prevStage];
           const nextStageName = stagesNames[activeStageIndex];
           
-          addToast(
-            "Milestone Completed",
-            `Component '${order.componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Workflow: ${workflow.name || workflow.id}).`
-          );
+          if (activeStageIndex > prevStage) {
+            addToast(
+              "Milestone Completed",
+              `Component '${order.componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Workflow: ${workflow.name || workflow.id}).`
+            );
+          } else {
+            addToast(
+              "Milestone Rolled Back",
+              `Component '${order.componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Workflow: ${workflow.name || workflow.id}).`
+            );
+          }
         }
 
         // Update ref
@@ -88,6 +95,55 @@ export default function SourcingTestPage() {
       });
     });
   }, [workflowsData, addToast]);
+
+  const loadData = useCallback(() => {
+    try {
+      const savedProjects = localStorage.getItem("projects");
+      if (!savedProjects) {
+        setWorkflowsData([]);
+        return;
+      }
+      const parsedProjects = JSON.parse(savedProjects);
+      
+      const loaded = parsedProjects.map(proj => {
+        const localDataRaw = localStorage.getItem(`workspace_data_${proj.id}`);
+        if (!localDataRaw) return { ...proj, orders: [] };
+        
+        const data = JSON.parse(localDataRaw);
+        const orders = data.maintenance_orders || [];
+        
+        const mappedOrders = orders.map(order => {
+          const machine = data.machines?.find(m => m.id === order.machine_id);
+          const machineId = machine?.id || order.machine_id;
+          const requiredPartId = machine?.critical_thresholds?.required_part_id;
+          const part = data.inventory?.find(p => p.part_id === requiredPartId);
+          const componentName = part?.part_name || "Critical Component";
+          
+          return {
+            ...order,
+            machineName: machine?.name || "Machine",
+            machineId,
+            componentName,
+            requiredPartId,
+            status: order.status,
+            rootCause: order.root_cause,
+            machineStatus: machine?.status || "Operational"
+          };
+        });
+
+        return {
+          ...proj,
+          orders: mappedOrders
+        };
+      }).filter(p => p.orders.length > 0);
+
+      setWorkflowsData(loaded);
+    } catch (e) {
+      console.error("Error loading workspace data", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleStageClick = (projectId, orderId, targetIndex) => {
     // 1. Persist to localStorage
@@ -188,57 +244,22 @@ export default function SourcingTestPage() {
       document.documentElement.classList.remove("dark");
     }
     
-    const loadData = () => {
-      try {
-        const savedProjects = localStorage.getItem("projects");
-        if (!savedProjects) {
-          setWorkflowsData([]);
-          return;
-        }
-        const parsedProjects = JSON.parse(savedProjects);
-        
-        const loaded = parsedProjects.map(proj => {
-          const localDataRaw = localStorage.getItem(`workspace_data_${proj.id}`);
-          if (!localDataRaw) return { ...proj, orders: [] };
-          
-          const data = JSON.parse(localDataRaw);
-          const orders = data.maintenance_orders || [];
-          
-          const mappedOrders = orders.map(order => {
-            const machine = data.machines?.find(m => m.id === order.machine_id);
-            const machineId = machine?.id || order.machine_id;
-            const requiredPartId = machine?.critical_thresholds?.required_part_id;
-            const part = data.inventory?.find(p => p.part_id === requiredPartId);
-            const componentName = part?.part_name || "Critical Component";
-            
-            return {
-              ...order,
-              machineName: machine?.name || "Machine",
-              machineId,
-              componentName,
-              requiredPartId,
-              status: order.status,
-              rootCause: order.root_cause,
-              machineStatus: machine?.status || "Operational"
-            };
-          });
+    loadData();
+  }, [loadData]);
 
-          return {
-            ...proj,
-            orders: mappedOrders
-          };
-        }).filter(p => p.orders.length > 0);
-
-        setWorkflowsData(loaded);
-      } catch (e) {
-        console.error("Error loading workspace data", e);
-      } finally {
-        setLoading(false);
+  // Listen for storage changes to sync across other tabs instantly
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key && e.key.startsWith("workspace_data_")) {
+        loadData();
       }
     };
-    
-    loadData();
-  }, []);
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [loadData]);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
