@@ -529,16 +529,117 @@ export default function Home() {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectNameInput, setProjectNameInput] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("steel");
+  const [activeProjectTabs, setActiveProjectTabs] = useState({});
+
+  // Helper to update this tab's active project in localStorage
+  const updateTabActiveProject = useCallback((projectId) => {
+    if (typeof window === "undefined") return;
+    try {
+      let tabId = sessionStorage.getItem("tabId");
+      if (!tabId) {
+        tabId = Math.random().toString(36).substring(2, 11);
+        sessionStorage.setItem("tabId", tabId);
+      }
+      const currentRaw = localStorage.getItem("active_project_tabs");
+      let current = currentRaw ? JSON.parse(currentRaw) : {};
+      
+      const now = Date.now();
+      const cleaned = {};
+      Object.keys(current).forEach(id => {
+        if (id === tabId || (current[id] && now - current[id].lastActive < 15000)) {
+          cleaned[id] = current[id];
+        }
+      });
+
+      if (projectId) {
+        cleaned[tabId] = { projectId, lastActive: now };
+      } else {
+        delete cleaned[tabId];
+      }
+      localStorage.setItem("active_project_tabs", JSON.stringify(cleaned));
+      setActiveProjectTabs(cleaned);
+    } catch (err) {
+      console.error("Failed to update active project tabs", err);
+    }
+  }, []);
+
+  // Periodically refresh active tabs to clear out stale entries (e.g. from crashed tabs)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const raw = localStorage.getItem("active_project_tabs");
+        if (raw) {
+          setActiveProjectTabs(JSON.parse(raw));
+        }
+      } catch (e) {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Heartbeat to keep this tab's active project alive in localStorage
+  useEffect(() => {
+    if (!isSetupCompleted || !activeProjectId) return;
+    
+    const heartbeat = () => {
+      updateTabActiveProject(activeProjectId);
+    };
+    
+    const interval = setInterval(heartbeat, 5000);
+    return () => clearInterval(interval);
+  }, [isSetupCompleted, activeProjectId, updateTabActiveProject]);
 
   // Load project initialization state & projects list
   useEffect(() => {
+    let tabId = sessionStorage.getItem("tabId");
+    if (!tabId) {
+      tabId = Math.random().toString(36).substring(2, 11);
+      sessionStorage.setItem("tabId", tabId);
+    }
+
     const completed = localStorage.getItem("isSetupCompleted");
-    if (completed === "true") {
+    const savedActiveId = localStorage.getItem("activeProjectId");
+    if (completed === "true" && savedActiveId) {
       setIsSetupCompleted(true);
+      setActiveProjectId(savedActiveId);
+      updateTabActiveProject(savedActiveId);
       if (window.location.hash !== "#dashboard") {
         window.history.replaceState(null, "", "#dashboard");
       }
+    } else {
+      updateTabActiveProject(null);
     }
+
+    const syncActiveTabs = () => {
+      try {
+        const raw = localStorage.getItem("active_project_tabs");
+        setActiveProjectTabs(raw ? JSON.parse(raw) : {});
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    syncActiveTabs();
+
+    const handleStorage = (e) => {
+      if (e.key === "active_project_tabs") {
+        syncActiveTabs();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    const handleUnload = () => {
+      try {
+        const currentRaw = localStorage.getItem("active_project_tabs");
+        if (currentRaw) {
+          const current = JSON.parse(currentRaw);
+          delete current[tabId];
+          localStorage.setItem("active_project_tabs", JSON.stringify(current));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+
     const savedProjects = localStorage.getItem("projects");
     if (savedProjects) {
       try {
@@ -585,11 +686,13 @@ export default function Home() {
         console.error("Failed to parse projects:", e);
       }
     }
-    const savedActiveId = localStorage.getItem("activeProjectId");
-    if (savedActiveId) {
-      setActiveProjectId(savedActiveId);
-    }
-  }, []);
+
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, [updateTabActiveProject]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -598,11 +701,12 @@ export default function Home() {
         setActiveProjectId(null);
         localStorage.removeItem("activeProjectId");
         localStorage.removeItem("isSetupCompleted");
+        updateTabActiveProject(null);
       }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [updateTabActiveProject]);
 
 
   const generateDefaultName = (type, templateId) => {
@@ -649,6 +753,7 @@ export default function Home() {
       localStorage.setItem(`workspace_data_${finalProjectId}`, JSON.stringify(seeded));
       localStorage.setItem("isSetupCompleted", "true");
       setIsSetupCompleted(true);
+      updateTabActiveProject(finalProjectId);
       if (window.location.hash !== "#dashboard") {
         window.history.pushState(null, "", "#dashboard");
       }
@@ -696,6 +801,7 @@ export default function Home() {
     localStorage.setItem("activeProjectId", proj.id);
     localStorage.setItem("isSetupCompleted", "true");
     setIsSetupCompleted(true);
+    updateTabActiveProject(proj.id);
     if (window.location.hash !== "#dashboard") {
       window.history.pushState(null, "", "#dashboard");
     }
@@ -728,6 +834,7 @@ export default function Home() {
       localStorage.removeItem("activeProjectId");
       localStorage.removeItem("isSetupCompleted");
       setIsSetupCompleted(false);
+      updateTabActiveProject(null);
     }
   };
 
@@ -1728,6 +1835,7 @@ Industrial Sector AI Automation Network`;
                   onClick={() => {
                     setActiveProjectId(null);
                     localStorage.removeItem("activeProjectId");
+                    updateTabActiveProject(null);
                     setProjectNameInput("");
                   }}
                   className={`w-full py-3 px-4 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
@@ -1753,7 +1861,7 @@ Industrial Sector AI Automation Network`;
                 ) : (
                   <div className="space-y-2.5">
                     {projects.map((proj) => {
-                      const isProjActive = activeProjectId === proj.id;
+                      const isProjActive = Object.values(activeProjectTabs).some(entry => entry && entry.projectId === proj.id && (Date.now() - entry.lastActive < 15000)) || activeProjectId === proj.id;
                       let details = "";
                       if (proj.type === "template") {
                         if (proj.templateId === "steel") details = "Steel Complex • 3 pdm assets";
@@ -2336,6 +2444,7 @@ Industrial Sector AI Automation Network`;
                 setActiveProjectId(null);
                 localStorage.removeItem("activeProjectId");
                 localStorage.removeItem("isSetupCompleted");
+                updateTabActiveProject(null);
                 if (window.location.hash === "#dashboard") {
                   window.history.pushState(null, "", window.location.pathname);
                 }
