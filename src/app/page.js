@@ -1043,37 +1043,18 @@ export default function Home() {
     }
   }, [activeProjectId]);
 
-  // Only poll when the dashboard is active and the tab is visible
+  // Keep polling in the background continuously
   useEffect(() => {
     if (!isSetupCompleted) return;
 
-    const startPolling = () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      refreshData();
-      pollIntervalRef.current = setInterval(refreshData, 6000);
-    };
+    refreshData();
+    pollIntervalRef.current = setInterval(refreshData, 6000);
 
-    const stopPolling = () => {
+    return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
       }
-    };
-
-    const handleVisibility = () => {
-      if (document.hidden) {
-        stopPolling();
-      } else {
-        startPolling();
-      }
-    };
-
-    startPolling();
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      stopPolling();
-      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [isSetupCompleted, refreshData]);
 
@@ -1121,12 +1102,20 @@ export default function Home() {
     }
   }, []);
 
-  // Request browser Notification permission on mount
+  // Request browser Notification permission on mount or first user interaction click
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "default") {
         Notification.requestPermission();
       }
+      
+      const request = () => {
+        if (Notification.permission === "default") {
+          Notification.requestPermission();
+        }
+      };
+      window.addEventListener("click", request, { once: true });
+      return () => window.removeEventListener("click", request);
     }
   }, []);
 

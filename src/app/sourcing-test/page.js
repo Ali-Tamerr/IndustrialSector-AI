@@ -32,12 +32,20 @@ export default function SourcingTestPage() {
     }
   }, []);
 
-  // Request browser Notification permission on mount
+  // Request browser Notification permission on mount or first user interaction click
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "default") {
         Notification.requestPermission();
       }
+      
+      const request = () => {
+        if (Notification.permission === "default") {
+          Notification.requestPermission();
+        }
+      };
+      window.addEventListener("click", request, { once: true });
+      return () => window.removeEventListener("click", request);
     }
   }, []);
 
