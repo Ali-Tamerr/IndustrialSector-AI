@@ -1078,6 +1078,28 @@ export default function Home() {
     };
   }, [isSetupCompleted, refreshData]);
 
+  // Listen for storage events to update data instantly across tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (e.key === `workspace_data_${activeId}`) {
+        if (e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            setData(parsed);
+          } catch (err) {
+            console.error("Storage event parse error", err);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [activeProjectId]);
+
   // Toast notifications helper
   const addToast = useCallback((title, message) => {
     const id = Date.now() + Math.random();
@@ -1108,7 +1130,7 @@ export default function Home() {
     }
   }, []);
 
-  // Watch for milestone completions in Zone 3 sourcing progression
+  // Watch for milestone changes in Zone 3 sourcing progression
   useEffect(() => {
     if (!data?.maintenance_orders) return;
 
@@ -1138,7 +1160,7 @@ export default function Home() {
       }
 
       const prevStage = prevStages.current[order.id];
-      if (prevStage !== undefined && activeStageIndex > prevStage) {
+      if (prevStage !== undefined && activeStageIndex !== prevStage) {
         const stagesNames = [
           "Sourcing Approval",
           "Supplier Shipment",
@@ -1149,10 +1171,17 @@ export default function Home() {
         const finishedStageName = stagesNames[prevStage];
         const nextStageName = stagesNames[activeStageIndex];
         
-        addToast(
-          "Milestone Completed",
-          `Component '${componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
-        );
+        if (activeStageIndex > prevStage) {
+          addToast(
+            "Milestone Completed",
+            `Component '${componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
+          );
+        } else {
+          addToast(
+            "Milestone Rolled Back",
+            `Component '${componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
+          );
+        }
       }
 
       // Update ref
