@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Allow server actions or other Next components
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/#dashboard',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;
