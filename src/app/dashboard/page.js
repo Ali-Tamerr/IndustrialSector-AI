@@ -1,0 +1,3350 @@
+"use client";
+
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { 
+  Activity, 
+  Cpu, 
+  Layers, 
+  Settings, 
+  AlertTriangle, 
+  TrendingUp, 
+  CheckCircle2, 
+  ExternalLink, 
+  ShieldCheck, 
+  Clock, 
+  Inbox, 
+  Mail, 
+  HelpCircle,
+  Play,
+  RotateCcw,
+  Plus,
+  Trash,
+  ArrowRight,
+  Sparkles,
+  Building,
+  Database,
+  LayoutGrid,
+  Sun,
+  Moon,
+  ChevronDown
+} from "lucide-react";
+
+const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
+  ? ""
+  : (process.env.NEXT_PUBLIC_API_URL || "");
+
+// Inline Sparkline Component using native React SVG paths
+function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
+  if (!data || data.length < 2) return null;
+  
+  const max = Math.max(...data) * 1.05;
+  const min = Math.min(...data) * 0.95;
+  const range = max - min || 1;
+  
+  const points = data.map((val, index) => {
+    const x = (index / (data.length - 1)) * width;
+    const y = height - ((val - min) / range) * height;
+    return `${x},${y}`;
+  }).join(" ");
+
+  const latestVal = data[data.length - 1];
+  const cx = width;
+  const cy = height - ((latestVal - min) / range) * height;
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+      <circle 
+        cx={cx - 2} 
+        cy={cy} 
+        r="4" 
+        fill={color}
+        opacity="0.3"
+      >
+        <animate attributeName="r" values="3;6;3" dur="1.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite" />
+      </circle>
+      <circle 
+        cx={cx - 2} 
+        cy={cy} 
+        r="2.5" 
+        fill={color}
+      />
+    </svg>
+  );
+}
+
+const PETROCHEMICAL_TEMPLATE = {
+  machines: [
+    {
+      id: "MCH-201",
+      name: "Crude Transfer Pump Alpha",
+      location: "Bay 5 - Hydrocracking",
+      status: "Operational",
+      critical_thresholds: { temperature: 95.0, vibration: 8.5, pressure: 12.0, current: 40.0, required_part_id: "PART-203" },
+      components: [
+        { id: "PART-203", name: "Petrochemical Centrifugal Impeller", health: 85 },
+        { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", health: 92 }
+      ]
+    },
+    {
+      id: "MCH-202",
+      name: "Gas Combustion Turbine Beta",
+      location: "Bay 9 - Power Generation",
+      status: "Operational",
+      critical_thresholds: { temperature: 110.0, vibration: 12.0, pressure: 16.5, current: 85.0, required_part_id: "PART-201" },
+      components: [
+        { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", health: 78 },
+        { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", health: 88 }
+      ]
+    },
+    {
+      id: "MCH-203",
+      name: "Heavy Heat Exchanger Fan",
+      location: "Bay 2 - Cooling Complex",
+      status: "Operational",
+      critical_thresholds: { temperature: 85.0, vibration: 9.0, pressure: 4.5, current: 18.0, required_part_id: "PART-204" },
+      components: [
+        { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", health: 95 },
+        { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", health: 90 }
+      ]
+    }
+  ],
+  inventory: [
+    { part_id: "PART-201", part_name: "Extreme Heat Gas Turbine Valve", stock_level: 2, reorder_point: 5, cost: 2450.00, location: "Warehouse C - Aisle 1" },
+    { part_id: "PART-202", part_name: "Fluorosilicone High-Pressure Gasket", stock_level: 25, reorder_point: 10, cost: 85.00, location: "Warehouse A - Aisle 9" },
+    { part_id: "PART-203", part_name: "Petrochemical Centrifugal Impeller", stock_level: 1, reorder_point: 3, cost: 1450.00, location: "Warehouse C - Aisle 3" },
+    { part_id: "PART-204", part_name: "Exchanger Fan 3-Phase Rotor Winding", stock_level: 8, reorder_point: 2, cost: 720.00, location: "Warehouse B - Aisle 7" }
+  ],
+  nodes: [
+    { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", type: "Part", risk: 0, email: "" },
+    { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", type: "Part", risk: 0, email: "" },
+    { id: "PART-203", name: "Petrochemical Centrifugal Impeller", type: "Part", risk: 0, email: "" },
+    { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", type: "Part", risk: 0, email: "" },
+    { id: "SUP-201", name: "GE Power Systems Logistics", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
+    { id: "SUP-202", name: "Chevron Seals Houston", type: "Supplier", risk: 0.04, email: "houston.sales@chevronseals.com" },
+    { id: "SUP-203", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
+    { id: "SUP-204", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" },
+    { id: "MAT-201", name: "Superalloy Nickel Base Bar", type: "Material", risk: 0.15, email: "" },
+    { id: "MAT-202", name: "NBR Rubber Compound", type: "Material", risk: 0.05, email: "" }
+  ],
+  links: [
+    { id: 1, source: "SUP-201", target: "PART-201", relationship: "SUPPLIES", transit: 4, price: 3200.00 },
+    { id: 2, source: "SUP-202", target: "PART-202", relationship: "SUPPLIES", transit: 1, price: 95.00 },
+    { id: 3, source: "SUP-203", target: "PART-203", relationship: "SUPPLIES", transit: 12, price: 1750.00 },
+    { id: 4, source: "SUP-204", target: "PART-204", relationship: "SUPPLIES", transit: 6, price: 850.00 },
+    { id: 5, source: "SUP-201", target: "PART-203", relationship: "SUPPLIES", transit: 26, price: 1250.00 },
+    { id: 6, source: "SUP-203", target: "MAT-201", relationship: "SUPPLIES", transit: 4, price: 600.00 },
+    { id: 7, source: "MAT-201", target: "PART-201", relationship: "USED_IN", transit: 3, price: 900.00 },
+    { id: 8, source: "SUP-202", target: "MAT-202", relationship: "SUPPLIES", transit: 2, price: 40.00 },
+    { id: 9, source: "MAT-202", target: "PART-202", relationship: "USED_IN", transit: 1, price: 20.00 }
+  ],
+  anomalyMachineId: "MCH-203"
+};
+
+const AUTOMOTIVE_TEMPLATE = {
+  machines: [
+    {
+      id: "MCH-301",
+      name: "6-Axis Welder Robot Joint",
+      location: "Bay 1 - Welding Cell",
+      status: "Operational",
+      critical_thresholds: { temperature: 80.0, vibration: 15.0, pressure: 5.0, current: 30.0, required_part_id: "PART-301" },
+      components: [
+        { id: "PART-301", name: "Harmonic Welder Gear Box Drive", health: 80 },
+        { id: "PART-304", name: "Welder Copper Cable Core", health: 95 }
+      ]
+    },
+    {
+      id: "MCH-302",
+      name: "Main Assembly Conveyor Drive",
+      location: "Bay 6 - Painting Line",
+      status: "Operational",
+      critical_thresholds: { temperature: 75.0, vibration: 8.0, pressure: 6.0, current: 22.0, required_part_id: "PART-302" },
+      components: [
+        { id: "PART-302", name: "3-Phase Drive Motor Brushless", health: 88 }
+      ]
+    },
+    {
+      id: "MCH-303",
+      name: "Fleet Pneumatic Compressor Main",
+      location: "Bay 14 - Assembly Main",
+      status: "Operational",
+      critical_thresholds: { temperature: 90.0, vibration: 9.5, pressure: 9.0, current: 50.0, required_part_id: "PART-303" },
+      components: [
+        { id: "PART-303", name: "Pneumatic Double Solenoid Valve", health: 92 }
+      ]
+    }
+  ],
+  inventory: [
+    { part_id: "PART-301", part_name: "Harmonic Welder Gear Box Drive", stock_level: 0, reorder_point: 2, cost: 3850.00, location: "Warehouse D - Aisle 3" },
+    { part_id: "PART-302", part_name: "3-Phase Drive Motor Brushless", stock_level: 5, reorder_point: 2, cost: 950.00, location: "Warehouse B - Aisle 1" },
+    { part_id: "PART-303", part_name: "Pneumatic Double Solenoid Valve", stock_level: 2, reorder_point: 8, cost: 140.00, location: "Warehouse A - Aisle 2" },
+    { part_id: "PART-304", part_name: "Welder Copper Cable Core", stock_level: 12, reorder_point: 5, cost: 220.00, location: "Warehouse B - Aisle 9" }
+  ],
+  nodes: [
+    { id: "PART-301", name: "Harmonic Welder Gear Box Drive", type: "Part", risk: 0, email: "" },
+    { id: "PART-302", name: "3-Phase Drive Motor Brushless", type: "Part", risk: 0, email: "" },
+    { id: "PART-303", name: "Pneumatic Double Solenoid Valve", type: "Part", risk: 0, email: "" },
+    { id: "PART-304", name: "Welder Copper Cable Core", type: "Part", risk: 0, email: "" },
+    { id: "SUP-301", name: "Yaskawa Motoman Logistics", type: "Supplier", risk: 0.05, email: "logistics@yaskawa.com" },
+    { id: "SUP-302", name: "SMC Pneumatics Cleveland", type: "Supplier", risk: 0.03, email: "orders@smcpneumatics.com" },
+    { id: "SUP-303", name: "Siemens Munich", type: "Supplier", risk: 0.10, email: "logistics@siemens.de" },
+    { id: "SUP-304", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" },
+    { id: "MAT-301", name: "High-Grade Copper Core", type: "Material", risk: 0.10, email: "" },
+    { id: "MAT-302", name: "Harmonic Steel Castings", type: "Material", risk: 0.08, email: "" }
+  ],
+  links: [
+    { id: 1, source: "SUP-301", target: "PART-301", relationship: "SUPPLIES", transit: 7, price: 4200.00 },
+    { id: 2, source: "SUP-302", target: "PART-303", relationship: "SUPPLIES", transit: 2, price: 120.00 },
+    { id: 3, source: "SUP-303", target: "PART-302", relationship: "SUPPLIES", transit: 5, price: 1100.00 },
+    { id: 4, source: "SUP-304", target: "PART-304", relationship: "SUPPLIES", transit: 3, price: 195.00 },
+    { id: 5, source: "SUP-303", target: "PART-301", relationship: "SUPPLIES", transit: 29, price: 3900.00 },
+    { id: 6, source: "SUP-304", target: "MAT-301", relationship: "SUPPLIES", transit: 3, price: 90.00 },
+    { id: 7, source: "MAT-301", target: "PART-304", relationship: "USED_IN", transit: 1, price: 100.00 },
+    { id: 8, source: "SUP-301", target: "MAT-302", relationship: "SUPPLIES", transit: 4, price: 800.00 },
+    { id: 9, source: "MAT-302", target: "PART-301", relationship: "USED_IN", transit: 3, price: 1200.00 }
+  ],
+  anomalyMachineId: "MCH-301"
+};
+
+const STEEL_TEMPLATE = {
+  machines: [
+    {
+      id: "MCH-001",
+      name: "Rotary Gear Pump A",
+      location: "Bay 3 - Fluids Processing",
+      status: "Operational",
+      critical_thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" },
+      components: [
+        { id: "PART-001", name: "Heavy-Duty Bearing Assembly", health: 85 },
+        { id: "PART-003", name: "Centrifugal Pump Impeller", health: 90 }
+      ]
+    },
+    {
+      id: "MCH-002",
+      name: "High-Speed Industrial Fan B",
+      location: "Bay 7 - Ventilation and Exhaust",
+      status: "Operational",
+      critical_thresholds: { temperature: 80.0, vibration: 10.0, pressure: 3.0, current: 20.0, required_part_id: "PART-004" },
+      components: [
+        { id: "PART-004", name: "3-Phase Electric Motor Winding", health: 75 }
+      ]
+    },
+    {
+      id: "MCH-003",
+      name: "Heavy-Duty Compressor C",
+      location: "Bay 12 - Pneumatics & Air Power",
+      status: "Operational",
+      critical_thresholds: { temperature: 95.0, vibration: 7.5, pressure: 8.5, current: 25.0, required_part_id: "PART-002" },
+      components: [
+        { id: "PART-002", name: "High-Pressure Hydraulic Seal", health: 82 }
+      ]
+    }
+  ],
+  inventory: [
+    { part_id: "PART-001", part_name: "Heavy-Duty Bearing Assembly", stock_level: 15, reorder_point: 5, cost: 120.50, location: "Warehouse A - Aisle 4" },
+    { part_id: "PART-002", part_name: "High-Pressure Hydraulic Seal", stock_level: 3, reorder_point: 10, cost: 45.00, location: "Warehouse A - Aisle 6" },
+    { part_id: "PART-003", part_name: "Centrifugal Pump Impeller", stock_level: 8, reorder_point: 2, cost: 350.00, location: "Warehouse B - Aisle 2" },
+    { part_id: "PART-004", part_name: "3-Phase Electric Motor Winding", stock_level: 1, reorder_point: 3, cost: 850.00, location: "Warehouse B - Aisle 5" }
+  ],
+  nodes: [
+    { id: "PART-001", name: "Heavy-Duty Bearing Assembly", type: "Part", risk: 0, email: "" },
+    { id: "PART-002", name: "High-Pressure Hydraulic Seal", type: "Part", risk: 0, email: "" },
+    { id: "PART-003", name: "Centrifugal Pump Impeller", type: "Part", risk: 0, email: "" },
+    { id: "PART-004", name: "3-Phase Electric Motor Winding", type: "Part", risk: 0, email: "" },
+    { id: "SUP-001", name: "Siemens Shanghai", type: "Supplier", risk: 0.70, email: "procurement@siemens.cn" },
+    { id: "SUP-002", name: "SKF Munich", type: "Supplier", risk: 0.15, email: "logistics@skf.de" },
+    { id: "SUP-003", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" },
+    { id: "SUP-004", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishtech.at" },
+    { id: "SUP-005", name: "Parker Hannifin Cleveland", type: "Supplier", risk: 0.05, email: "orders@parkerhannifin.com" },
+    { id: "SUP-006", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
+    { id: "MAT-001", name: "High-Conductivity Copper Wire", type: "Material", risk: 0.10, email: "" },
+    { id: "MAT-002", name: "High-Temperature Insulating Varnish", type: "Material", risk: 0.20, email: "" },
+    { id: "MAT-003", name: "NBR Rubber Compound", type: "Material", risk: 0.05, email: "" },
+    { id: "MAT-004", name: "Stainless Steel Casting", type: "Material", risk: 0.12, email: "" }
+  ],
+  links: [
+    { id: 1, source: "SUP-002", target: "PART-001", relationship: "SUPPLIES", transit: 5, price: 450.00 },
+    { id: 2, source: "SUP-005", target: "PART-002", relationship: "SUPPLIES", transit: 2, price: 35.00 },
+    { id: 3, source: "SUP-006", target: "PART-003", relationship: "SUPPLIES", transit: 14, price: 250.00 },
+    { id: 4, source: "SUP-001", target: "PART-004", relationship: "SUPPLIES", transit: 28, price: 850.00 },
+    { id: 5, source: "SUP-002", target: "PART-004", relationship: "SUPPLIES", transit: 5, price: 1200.00 },
+    { id: 6, source: "SUP-003", target: "MAT-001", relationship: "SUPPLIES", transit: 3, price: 300.00 },
+    { id: 7, source: "MAT-001", target: "PART-004", relationship: "USED_IN", transit: 3, price: 400.00 },
+    { id: 8, source: "SUP-004", target: "MAT-002", relationship: "SUPPLIES", transit: 4, price: 150.00 },
+    { id: 9, source: "MAT-002", target: "PART-004", relationship: "USED_IN", transit: 2, price: 600.00 },
+    { id: 10, source: "SUP-003", target: "MAT-003", relationship: "SUPPLIES", transit: 3, price: 10.00 },
+    { id: 11, source: "MAT-003", target: "PART-002", relationship: "USED_IN", transit: 1, price: 15.00 },
+    { id: 12, source: "SUP-003", target: "MAT-004", relationship: "SUPPLIES", transit: 5, price: 80.00 },
+    { id: 13, source: "MAT-004", target: "PART-003", relationship: "USED_IN", transit: 4, price: 120.00 }
+  ],
+  anomalyMachineId: "MCH-001"
+};
+
+const generateBaselines = (machineId) => {
+  const baselines = {
+    "MCH-001": { temp: 55.0, vib: 1.8, pres: 5.2, cur: 8.2 },
+    "MCH-002": { temp: 48.0, vib: 2.1, pres: 2.0, cur: 11.0 },
+    "MCH-003": { temp: 62.0, vib: 2.4, pres: 7.0, cur: 17.5 },
+    "MCH-201": { temp: 65.0, vib: 2.0, pres: 8.2, cur: 22.0 },
+    "MCH-202": { temp: 75.0, vib: 3.5, pres: 10.5, cur: 45.0 },
+    "MCH-203": { temp: 42.0, vib: 1.5, pres: 2.5, cur: 8.5 },
+    "MCH-301": { temp: 45.0, vib: 3.0, pres: 3.2, cur: 12.0 },
+    "MCH-302": { temp: 40.0, vib: 1.2, pres: 4.0, cur: 9.8 },
+    "MCH-303": { temp: 58.0, vib: 2.0, pres: 6.5, cur: 28.0 }
+  };
+  return baselines[machineId] || { temp: 50.0, vib: 2.0, pres: 5.0, cur: 12.0 };
+};
+
+function seedWorkspaceData(type, templateId, customMachinesInput) {
+  let machinesToSeed = [];
+  let inventoryToSeed = [];
+  let supplierNodesToSeed = [];
+  let supplierEdgesToSeed = [];
+  let anomalyMachineId = null;
+
+  if (type === "template") {
+    if (templateId === "petrochemical") {
+      machinesToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.machines));
+      inventoryToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.inventory));
+      supplierNodesToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.nodes));
+      supplierEdgesToSeed = JSON.parse(JSON.stringify(PETROCHEMICAL_TEMPLATE.links));
+      anomalyMachineId = PETROCHEMICAL_TEMPLATE.anomalyMachineId;
+    } else if (templateId === "automotive") {
+      machinesToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.machines));
+      inventoryToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.inventory));
+      supplierNodesToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.nodes));
+      supplierEdgesToSeed = JSON.parse(JSON.stringify(AUTOMOTIVE_TEMPLATE.links));
+      anomalyMachineId = AUTOMOTIVE_TEMPLATE.anomalyMachineId;
+    } else if (templateId === "blank") {
+      machinesToSeed = [];
+      inventoryToSeed = [];
+      supplierNodesToSeed = [];
+      supplierEdgesToSeed = [];
+      anomalyMachineId = null;
+    } else {
+      machinesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.machines));
+      inventoryToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.inventory));
+      supplierNodesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.nodes));
+      supplierEdgesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.links));
+      anomalyMachineId = STEEL_TEMPLATE.anomalyMachineId;
+    }
+  } else {
+    const getVal = (v, fallback) => {
+      if (v === undefined || v === null || v === "") return fallback;
+      const parsed = parseFloat(v);
+      return isNaN(parsed) ? fallback : parsed;
+    };
+    machinesToSeed = (customMachinesInput || []).map((m, idx) => ({
+      id: m.id || `MCH-10${idx + 1}`,
+      name: m.name || `Asset ${idx + 1}`,
+      location: m.location || `Bay ${idx + 1} Assembly`,
+      status: "Operational",
+      critical_thresholds: {
+        temperature: getVal(m.thresholds?.temperature, 90.0),
+        vibration: getVal(m.thresholds?.vibration, 8.0),
+        pressure: getVal(m.thresholds?.pressure, 6.5),
+        current: getVal(m.thresholds?.current, 15.0),
+        required_part_id: m.thresholds?.required_part_id || "PART-001"
+      }
+    }));
+    inventoryToSeed = [];
+    supplierNodesToSeed = [];
+    supplierEdgesToSeed = [];
+    anomalyMachineId = null;
+  }
+
+  const now = new Date();
+  const pointsToGenerate = 15;
+  const telemetry = {};
+  
+  machinesToSeed.forEach(m => {
+    const metrics = generateBaselines(m.id);
+    const mTelemetry = [];
+    for (let i = 0; i < pointsToGenerate; i++) {
+      const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
+      const temp = metrics.temp + (Math.random() * 2 - 1);
+      const vib = metrics.vib + (Math.random() * 0.4 - 0.2);
+      const pres = metrics.pres + (Math.random() * 0.2 - 0.1);
+      const cur = metrics.cur + (Math.random() * 0.6 - 0.3);
+      mTelemetry.push({
+        timestamp: timestamp.toISOString(),
+        temperature: parseFloat(temp.toFixed(2)),
+        vibration: parseFloat(vib.toFixed(2)),
+        pressure: parseFloat(pres.toFixed(2)),
+        current: parseFloat(cur.toFixed(2))
+      });
+    }
+    telemetry[m.id] = mTelemetry;
+  });
+
+  const orders = [];
+
+  if (anomalyMachineId) {
+    const activeMachine = machinesToSeed.find(m => m.id === anomalyMachineId);
+    if (activeMachine) {
+      const thresholds = activeMachine.critical_thresholds;
+      const badTemp = thresholds.temperature * 1.05;
+      const badVib = thresholds.vibration * 1.15;
+      const badPres = thresholds.pressure * 0.45;
+      const badCur = thresholds.current * 1.35;
+      
+      const timestamp = new Date();
+      if (telemetry[anomalyMachineId]) {
+        telemetry[anomalyMachineId].push({
+          timestamp: timestamp.toISOString(),
+          temperature: parseFloat(badTemp.toFixed(2)),
+          vibration: parseFloat(badVib.toFixed(2)),
+          pressure: parseFloat(badPres.toFixed(2)),
+          current: parseFloat(badCur.toFixed(2))
+        });
+      }
+      
+      activeMachine.status = "Critical";
+      
+      const rootCause = `Automated Predictive Maintenance Alert: Thermal & mechanical degradation thresholds breached on ${activeMachine.name}. ` +
+        `Vibration reading of ${badVib.toFixed(2)} mm/s exceeded the limit of ${thresholds.vibration} mm/s. ` +
+        `Winding temperature spiked to ${badTemp.toFixed(1)}°C. Automatic RAG parts audit initiated for replacement components. Sourcing active.\n\n` +
+        `Subject: URGENT: Autonomous Sourcing Bypass Route for ${activeMachine.id}\n` +
+        `To: logistics@skf.de\n` +
+        `From: ai-orchestrator@industrial-tower.internal\n` +
+        `Date: ${new Date().toUTCString()}\n\n` +
+        `Dear SKF Munich Logistics Team,\n\n` +
+        `This is an automated purchase request dispatched by the Autonomic Industrial Control Tower.\n\n` +
+        `Our predictive maintenance models have flagged a critical bearing degradation event on ${activeMachine.name} (${activeMachine.id}). To bypass catastrophic line failure and avoid $22,000/minute downtime penalties, our multi-agent sourcing router has initiated emergency procurement of a 3-Phase Electric Motor Winding (PART-004).\n\n` +
+        `Supply Chain Path Resilience Scoring Model Summary:\n` +
+        `- Selected Supplier: SKF Munich (DDP Air freight, 5-day lead-time)\n` +
+        `- Alternate Evaluated: Siemens Shanghai (Maritime transit delay bottleneck, 28-day penalty)\n` +
+        `- Path Sourcing Optimization Resilience Score: 59.50 (Approved)\n\n` +
+        `Please dispatch one unit to fluids bay processing location immediately.\n\n` +
+        `Best regards,\n` +
+        `Autonomous Procurement Agent`;
+        
+      orders.push({
+        id: 1,
+        machine_id: anomalyMachineId,
+        priority: 'Critical',
+        status: 'Pending_Sourcing',
+        root_cause: rootCause,
+        assigned_technician: 'Sarah Jenkins (PdM Lead)',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+  }
+
+  return {
+    machines: machinesToSeed,
+    inventory: inventoryToSeed,
+    telemetry: telemetry,
+    maintenance_orders: orders,
+    graph: {
+      nodes: supplierNodesToSeed,
+      links: supplierEdgesToSeed
+    }
+  };
+}
+
+export default function Home() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [simulating, setSimulating] = useState(false);
+  const [thoughts, setThoughts] = useState([
+    { id: 1, agent: "System", type: "info", text: "Autonomous Control Tower Initialized. Scanning network..." },
+    { id: 2, agent: "System", type: "info", text: "Local storage workspace engine online. Standing by..." }
+  ]);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [selectedEmail, setSelectedEmail] = useState(null);
+  const [selectedSupplierNode, setSelectedSupplierNode] = useState(null);
+  const [showGraphLegendPopup, setShowGraphLegendPopup] = useState(false);
+  const [selectedRoadmapOrderId, setSelectedRoadmapOrderId] = useState(null);
+  const [simulatorDropdownOpen, setSimulatorDropdownOpen] = useState(false);
+  const [componentsPopupMachineId, setComponentsPopupMachineId] = useState(null);
+  const [graphsPopupMachineId, setGraphsPopupMachineId] = useState(null);
+  const prevStages = useRef({});
+  const thoughtsContainerRef = useRef(null);
+  const pollIntervalRef = useRef(null);
+
+  const [theme, setTheme] = useState("dark");
+  const [notificationPermission, setNotificationPermission] = useState("default");
+
+  const requestNotificationPermission = () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        setNotificationPermission(permission);
+      });
+    }
+  };
+
+  // Load and apply theme globally
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("appTheme") || "dark";
+    setTheme(savedTheme);
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("appTheme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  // Setup Portal states to explain project and configure data from scratch
+  const [isSetupCompleted, setIsSetupCompleted] = useState(false);
+  const [activeSetupTab, setActiveSetupTab] = useState("presets");
+  const [seeding, setSeeding] = useState(false);
+  const [customMachines, setCustomMachines] = useState([
+    { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15, required_part_id: "PART-001" } }
+  ]);
+
+  // Visual Editor Configurator panel states
+  const [showEditor, setShowEditor] = useState(false);
+  const [editorTab, setEditorTab] = useState("machines");
+  const [editorMachines, setEditorMachines] = useState([]);
+  const [editorInventory, setEditorInventory] = useState([]);
+  const [editorNodes, setEditorNodes] = useState([]);
+  const [editorEdges, setEditorEdges] = useState([]);
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  // Projects Portal State variables
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [projectNameInput, setProjectNameInput] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("steel");
+  const [activeProjectTabs, setActiveProjectTabs] = useState({});
+
+  // Helper to update this tab's active project in localStorage
+  const updateTabActiveProject = useCallback((projectId) => {
+    if (typeof window === "undefined") return;
+    try {
+      let tabId = sessionStorage.getItem("tabId");
+      if (!tabId) {
+        tabId = Math.random().toString(36).substring(2, 11);
+        sessionStorage.setItem("tabId", tabId);
+      }
+      const currentRaw = localStorage.getItem("active_project_tabs");
+      let current = currentRaw ? JSON.parse(currentRaw) : {};
+      
+      const now = Date.now();
+      const cleaned = {};
+      Object.keys(current).forEach(id => {
+        if (id === tabId || (current[id] && now - current[id].lastActive < 15000)) {
+          cleaned[id] = current[id];
+        }
+      });
+
+      if (projectId) {
+        cleaned[tabId] = { projectId, lastActive: now };
+      } else {
+        delete cleaned[tabId];
+      }
+      localStorage.setItem("active_project_tabs", JSON.stringify(cleaned));
+      setActiveProjectTabs(cleaned);
+    } catch (err) {
+      console.error("Failed to update active project tabs", err);
+    }
+  }, []);
+
+  // Periodically refresh active tabs to clear out stale entries (e.g. from crashed tabs)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const raw = localStorage.getItem("active_project_tabs");
+        if (raw) {
+          setActiveProjectTabs(JSON.parse(raw));
+        }
+      } catch (e) {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Heartbeat to keep this tab's active project alive in localStorage
+  useEffect(() => {
+    if (!isSetupCompleted || !activeProjectId) return;
+    
+    const heartbeat = () => {
+      updateTabActiveProject(activeProjectId);
+    };
+    
+    const interval = setInterval(heartbeat, 5000);
+    return () => clearInterval(interval);
+  }, [isSetupCompleted, activeProjectId, updateTabActiveProject]);
+
+  // Load project initialization state & projects list
+  useEffect(() => {
+    let tabId = sessionStorage.getItem("tabId");
+    if (!tabId) {
+      tabId = Math.random().toString(36).substring(2, 11);
+      sessionStorage.setItem("tabId", tabId);
+    }
+
+    const completed = localStorage.getItem("isSetupCompleted");
+    const savedActiveId = localStorage.getItem("activeProjectId");
+    if (completed !== "true" || !savedActiveId) {
+      window.location.replace("/");
+      return;
+    } else {
+      setIsSetupCompleted(true);
+      setActiveProjectId(savedActiveId);
+      updateTabActiveProject(savedActiveId);
+    }
+
+    const syncActiveTabs = () => {
+      try {
+        const raw = localStorage.getItem("active_project_tabs");
+        setActiveProjectTabs(raw ? JSON.parse(raw) : {});
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    syncActiveTabs();
+
+    const handleStorage = (e) => {
+      if (e.key === "active_project_tabs") {
+        syncActiveTabs();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    const handleUnload = () => {
+      try {
+        const currentRaw = localStorage.getItem("active_project_tabs");
+        if (currentRaw) {
+          const current = JSON.parse(currentRaw);
+          delete current[tabId];
+          localStorage.setItem("active_project_tabs", JSON.stringify(current));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+
+    const savedProjects = localStorage.getItem("projects");
+    if (savedProjects) {
+      try {
+        const parsedProjects = JSON.parse(savedProjects);
+        setProjects(parsedProjects);
+
+        // Pre-initialize milestone refs for all projects to prevent initial-load notification spam
+        parsedProjects.forEach(proj => {
+          const localDataRaw = localStorage.getItem(`workspace_data_${proj.id}`);
+          if (localDataRaw) {
+            try {
+              const data = JSON.parse(localDataRaw);
+              if (data.maintenance_orders) {
+                data.maintenance_orders.forEach(order => {
+                  const machine = data.machines?.find(m => m.id === order.machine_id);
+                  const machineStatus = machine?.status || "Operational";
+                  let approvalState = "Approved";
+                  if (order.status === "Pending_Sourcing") {
+                    approvalState = "Pending";
+                  } else if (order.status === "Rejected") {
+                    approvalState = "Rejected";
+                  }
+
+                  let activeStageIndex = 0;
+                  if (approvalState === "Approved") {
+                    activeStageIndex = 1;
+                    if (order.status === "Dispatched_Sourcing_Active") {
+                      activeStageIndex = 1;
+                    } else if (order.status === "Approved") {
+                      activeStageIndex = machineStatus === "Operational" ? 3 : 2;
+                    }
+                  }
+                  
+                  const refKey = `${proj.id}-${order.id}`;
+                  prevStages.current[refKey] = activeStageIndex;
+                });
+              }
+            } catch (err) {
+              console.error("Failed to parse project data during init:", err);
+            }
+          }
+        });
+      } catch (e) {
+        console.error("Failed to parse projects:", e);
+      }
+    }
+
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, [updateTabActiveProject]);
+
+
+
+
+  const generateDefaultName = (type, templateId) => {
+    const customPrefixes = [
+      "Quantum Factory", "Cyber-Physical Grid", "Hyperion Facility", "Apex Assembly",
+      "Omni-Nexus Fleet", "Specter Automation", "Vanguard Complex", "Helix Industrial"
+    ];
+    const steelPrefixes = [
+      "Heavy Steel Mill", "Titanium Smelter", "Vulcan Ironworks", "Forge Nexus",
+      "Apex Rolling Complex", "Pinnacle Steel Grid"
+    ];
+    const petroPrefixes = [
+      "Hydrocracker Hub", "Refinery Grid", "Petrochemical Nexus", "Octane Transfer Complex",
+      "Aero-Chemical Base", "Solvent Processing Sector"
+    ];
+    const autoPrefixes = [
+      "6-Axis Assembly Sector", "Welding Line Beta", "Precision Motion Base", "Robotics Assembly Grid",
+      "Automotive Cell Delta", "Kinetic Assembler Facility"
+    ];
+
+    let prefixes = customPrefixes;
+    if (type === "template") {
+      if (templateId === "steel") prefixes = steelPrefixes;
+      else if (templateId === "petrochemical") prefixes = petroPrefixes;
+      else if (templateId === "automotive") prefixes = autoPrefixes;
+    }
+    
+    const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    return `${randomPrefix} #${randomNum}`;
+  };
+
+  const handleSetup = async (type, templateId = null, customMchs = null, isNewProject = false, projectId = null) => {
+    setSeeding(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const finalProjectId = projectId || activeProjectId;
+      if (!finalProjectId) {
+        alert("Setup failed: No project active.");
+        return;
+      }
+      
+      const seeded = seedWorkspaceData(type, templateId, customMchs);
+      localStorage.setItem(`workspace_data_${finalProjectId}`, JSON.stringify(seeded));
+      localStorage.setItem("isSetupCompleted", "true");
+      setIsSetupCompleted(true);
+      updateTabActiveProject(finalProjectId);
+      // No hash push needed since route is /dashboard
+      localStorage.setItem("lastSeededProjectId", finalProjectId);
+      await refreshData();
+      
+      // Trigger tour onboarding only on first creation
+      if (isNewProject) {
+        localStorage.removeItem("hasSeenTutorial");
+        setShowTutorial(true);
+        setTutorialStep(0);
+      }
+    } catch (err) {
+      console.error("Local setup failed:", err);
+      alert("Local setup failed: " + err.message);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleCreateProject = async (type) => {
+    const finalName = projectNameInput.trim() || generateDefaultName(type, selectedTemplateId);
+    const newProject = {
+      id: "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+      name: finalName,
+      type,
+      templateId: type === "template" ? selectedTemplateId : null,
+      customMachines: type === "custom" ? customMachines : [],
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    localStorage.setItem("projects", JSON.stringify(updatedProjects));
+    
+    setActiveProjectId(newProject.id);
+    localStorage.setItem("activeProjectId", newProject.id);
+    setProjectNameInput("");
+
+    await handleSetup(type, newProject.templateId, newProject.customMachines, true, newProject.id);
+  };
+
+  const handleLaunchProject = async (proj) => {
+    setActiveProjectId(proj.id);
+    localStorage.setItem("activeProjectId", proj.id);
+    localStorage.setItem("isSetupCompleted", "true");
+    setIsSetupCompleted(true);
+    updateTabActiveProject(proj.id);
+    // No hash push needed since route is /dashboard
+
+    const localData = localStorage.getItem(`workspace_data_${proj.id}`);
+    if (!localData) {
+      await handleSetup(proj.type, proj.templateId, proj.customMachines, false, proj.id);
+    } else {
+      await refreshData();
+    }
+  };
+
+  const handleRenameProject = (projId, newName) => {
+    if (!projId) return;
+    const updated = projects.map(p => p.id === projId ? { ...p, name: newName } : p);
+    setProjects(updated);
+    localStorage.setItem("projects", JSON.stringify(updated));
+  };
+
+  const handleDeleteProject = (projId, e) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this project config?")) return;
+    
+    const updated = projects.filter(p => p.id !== projId);
+    setProjects(updated);
+    localStorage.setItem("projects", JSON.stringify(updated));
+
+    if (activeProjectId === projId) {
+      setActiveProjectId(null);
+      localStorage.removeItem("activeProjectId");
+      localStorage.removeItem("isSetupCompleted");
+      setIsSetupCompleted(false);
+      updateTabActiveProject(null);
+    }
+  };
+
+  const activeProject = useMemo(() => {
+    return projects.find(p => p.id === activeProjectId) || null;
+  }, [projects, activeProjectId]);
+
+  const firstMachine = useMemo(() => {
+    if (data && data.machines && data.machines.length > 0) {
+      return data.machines[0];
+    }
+    return { id: "MCH-002", name: "High-Speed Industrial Fan B", status: "Operational" };
+  }, [data]);
+
+  // Dynamically map and layout supply chain graph nodes into Column coordinates
+  const layoutNodes = useMemo(() => {
+    if (!data || !data.graph || !data.graph.nodes) return {};
+
+    const nodes = data.graph.nodes;
+    const parts = nodes.filter(n => n.type === 'Part');
+    const suppliers = nodes.filter(n => n.type === 'Supplier');
+    const materials = nodes.filter(n => n.type === 'Material');
+
+    const mapped = {};
+
+    // 1. Add active root machine
+    const firstMachineId = firstMachine?.id || "MCH-001";
+    mapped[firstMachineId] = {
+      id: firstMachineId,
+      name: firstMachine?.name || "Root Asset",
+      type: 'Machine',
+      x: 80,
+      y: 170,
+      details: `Status: ${firstMachine?.status || 'Operational'}. Telemetry source node.`
+    };
+
+    // 2. Layout Parts at x = 220
+    parts.forEach((p, idx) => {
+      const count = parts.length;
+      const spacing = count > 3 ? 60 : 80;
+      const startY = 170 - ((count - 1) * spacing) / 2;
+      mapped[p.id] = {
+        ...p,
+        x: 220,
+        y: startY + idx * spacing
+      };
+    });
+
+    // 3. Layout Suppliers at x = 380
+    suppliers.forEach((s, idx) => {
+      const count = suppliers.length;
+      const spacing = count > 4 ? 50 : 80;
+      const startY = 170 - ((count - 1) * spacing) / 2;
+      mapped[s.id] = {
+        ...s,
+        x: 380,
+        y: startY + idx * spacing
+      };
+    });
+
+    // 4. Layout Materials at x = 520
+    materials.forEach((m, idx) => {
+      const count = materials.length;
+      const spacing = count > 2 ? 60 : 80;
+      const startY = 170 - ((count - 1) * spacing) / 2;
+      mapped[m.id] = {
+        ...m,
+        x: 520,
+        y: startY + idx * spacing
+      };
+    });
+
+    return mapped;
+  }, [data, firstMachine]);
+
+  // Load custom presets inside the visual editor
+  const handleLoadPreset = (presetType) => {
+    if (presetType === "steel") {
+      setEditorMachines([
+        { id: "MCH-001", name: "Rotary Gear Pump A", location: "Bay 3 - Fluids Processing", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15, required_part_id: "PART-001" } },
+        { id: "MCH-002", name: "High-Speed Industrial Fan B", location: "Bay 7 - Ventilation and Exhaust", thresholds: { temperature: 80, vibration: 10, pressure: 3, current: 20, required_part_id: "PART-004" } },
+        { id: "MCH-003", name: "Heavy-Duty Compressor C", location: "Bay 12 - Pneumatics & Air Power", thresholds: { temperature: 95, vibration: 7.5, pressure: 8.5, current: 25, required_part_id: "PART-002" } }
+      ]);
+      setEditorInventory([
+        { part_id: "PART-001", part_name: "Heavy-Duty Bearing Assembly", stock_level: 15, reorder_point: 5, cost: 120.50, location: "Warehouse A - Aisle 4" },
+        { part_id: "PART-002", part_name: "High-Pressure Hydraulic Seal", stock_level: 3, reorder_point: 10, cost: 45.00, location: "Warehouse A - Aisle 6" },
+        { part_id: "PART-003", part_name: "Centrifugal Pump Impeller", stock_level: 8, reorder_point: 2, cost: 350.00, location: "Warehouse B - Aisle 2" },
+        { part_id: "PART-004", part_name: "3-Phase Electric Motor Winding", stock_level: 1, reorder_point: 3, cost: 850.00, location: "Warehouse B - Aisle 5" }
+      ]);
+      setEditorNodes([
+        { id: "PART-001", name: "Heavy-Duty Bearing Assembly", type: "Part", risk: 0, email: "" },
+        { id: "PART-002", name: "High-Pressure Hydraulic Seal", type: "Part", risk: 0, email: "" },
+        { id: "PART-003", name: "Centrifugal Pump Impeller", type: "Part", risk: 0, email: "" },
+        { id: "PART-004", name: "3-Phase Electric Motor Winding", type: "Part", risk: 0, email: "" },
+        { id: "SUP-001", name: "Siemens Shanghai", type: "Supplier", risk: 0.70, email: "procurement@siemens.cn" },
+        { id: "SUP-002", name: "SKF Munich", type: "Supplier", risk: 0.15, email: "logistics@skf.de" },
+        { id: "SUP-003", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" },
+        { id: "SUP-004", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" },
+        { id: "SUP-005", name: "Parker Hannifin Cleveland", type: "Supplier", risk: 0.05, email: "orders@parkerhannifin.com" },
+        { id: "SUP-006", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" }
+      ]);
+      setEditorEdges([
+        { source: "SUP-002", target: "PART-001", relationship: "SUPPLIES", transit: 5, price: 450.00 },
+        { source: "SUP-005", target: "PART-002", relationship: "SUPPLIES", transit: 2, price: 35.00 },
+        { source: "SUP-006", target: "PART-003", relationship: "SUPPLIES", transit: 14, price: 250.00 },
+        { source: "SUP-001", target: "PART-004", relationship: "SUPPLIES", transit: 28, price: 850.00 },
+        { source: "SUP-002", target: "PART-004", relationship: "SUPPLIES", transit: 5, price: 1200.00 }
+      ]);
+    } else if (presetType === "petrochemical") {
+      setEditorMachines([
+        { id: "MCH-201", name: "Crude Transfer Pump Alpha", location: "Bay 5 - Hydrocracking", thresholds: { temperature: 95.0, vibration: 8.5, pressure: 12.0, current: 40.0, required_part_id: "PART-203" } },
+        { id: "MCH-202", name: "Gas Combustion Turbine Beta", location: "Bay 9 - Power Generation", thresholds: { temperature: 110.0, vibration: 12.0, pressure: 16.5, current: 85.0, required_part_id: "PART-201" } },
+        { id: "MCH-203", name: "Heavy Heat Exchanger Fan", location: "Bay 2 - Cooling Complex", thresholds: { temperature: 85.0, vibration: 9.0, pressure: 4.5, current: 18.0, required_part_id: "PART-204" } }
+      ]);
+      setEditorInventory([
+        { part_id: "PART-201", part_name: "Extreme Heat Gas Turbine Valve", stock_level: 2, reorder_point: 5, cost: 2450.00, location: "Warehouse C - Aisle 1" },
+        { part_id: "PART-202", part_name: "Fluorosilicone High-Pressure Gasket", stock_level: 25, reorder_point: 10, cost: 85.00, location: "Warehouse A - Aisle 9" },
+        { part_id: "PART-203", part_name: "Petrochemical Centrifugal Impeller", stock_level: 1, reorder_point: 3, cost: 1450.00, location: "Warehouse C - Aisle 3" },
+        { part_id: "PART-204", part_name: "Exchanger Fan 3-Phase Rotor Winding", stock_level: 8, reorder_point: 2, cost: 720.00, location: "Warehouse B - Aisle 7" }
+      ]);
+      setEditorNodes([
+        { id: "PART-201", name: "Extreme Heat Gas Turbine Valve", type: "Part", risk: 0, email: "" },
+        { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", type: "Part", risk: 0, email: "" },
+        { id: "PART-203", name: "Petrochemical Centrifugal Impeller", type: "Part", risk: 0, email: "" },
+        { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", type: "Part", risk: 0, email: "" },
+        { id: "SUP-201", name: "GE Power Systems Logistics", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
+        { id: "SUP-202", name: "Chevron Seals Houston", type: "Supplier", risk: 0.04, email: "houston.sales@chevronseals.com" },
+        { id: "SUP-203", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
+        { id: "SUP-204", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" }
+      ]);
+      setEditorEdges([
+        { source: "SUP-201", target: "PART-201", relationship: "SUPPLIES", transit: 4, price: 3200.00 },
+        { source: "SUP-202", target: "PART-202", relationship: "SUPPLIES", transit: 1, price: 95.00 },
+        { source: "SUP-203", target: "PART-203", relationship: "SUPPLIES", transit: 12, price: 1750.00 },
+        { source: "SUP-204", target: "PART-204", relationship: "SUPPLIES", transit: 6, price: 850.00 },
+        { source: "SUP-201", target: "PART-203", relationship: "SUPPLIES", transit: 26, price: 1250.00 }
+      ]);
+    } else if (presetType === "automotive") {
+      setEditorMachines([
+        { id: "MCH-301", name: "6-Axis Welder Robot Joint", location: "Bay 1 - Welding Cell", thresholds: { temperature: 80.0, vibration: 15.0, pressure: 5.0, current: 30.0, required_part_id: "PART-301" } },
+        { id: "MCH-302", name: "Main Assembly Conveyor Drive", location: "Bay 6 - Painting Line", thresholds: { temperature: 75.0, vibration: 8.0, pressure: 6.0, current: 22.0, required_part_id: "PART-302" } },
+        { id: "MCH-303", name: "Fleet Pneumatic Compressor Main", location: "Bay 14 - Assembly Main", thresholds: { temperature: 90.0, vibration: 9.5, pressure: 9.0, current: 50.0, required_part_id: "PART-303" } }
+      ]);
+      setEditorInventory([
+        { part_id: "PART-301", part_name: "Harmonic Welder Gear Box Drive", stock_level: 0, reorder_point: 2, cost: 3850.00, location: "Warehouse D - Aisle 3" },
+        { part_id: "PART-302", part_name: "3-Phase Drive Motor Brushless", stock_level: 5, reorder_point: 2, cost: 950.00, location: "Warehouse B - Aisle 1" },
+        { part_id: "PART-303", part_name: "Pneumatic Double Solenoid Valve", stock_level: 2, reorder_point: 8, cost: 140.00, location: "Warehouse A - Aisle 2" },
+        { part_id: "PART-304", part_name: "Welder Copper Cable Core", stock_level: 12, reorder_point: 5, cost: 220.00, location: "Warehouse B - Aisle 9" }
+      ]);
+      setEditorNodes([
+        { id: "PART-301", name: "Harmonic Welder Gear Box Drive", type: "Part", risk: 0, email: "" },
+        { id: "PART-302", name: "3-Phase Drive Motor Brushless", type: "Part", risk: 0, email: "" },
+        { id: "PART-303", name: "Pneumatic Double Solenoid Valve", type: "Part", risk: 0, email: "" },
+        { id: "PART-304", name: "Welder Copper Cable Core", type: "Part", risk: 0, email: "" },
+        { id: "SUP-301", name: "Yaskawa Motoman Logistics", type: "Supplier", risk: 0.05, email: "logistics@yaskawa.com" },
+        { id: "SUP-302", name: "SMC Pneumatics Cleveland", type: "Supplier", risk: 0.03, email: "orders@smcpneumatics.com" },
+        { id: "SUP-303", name: "Siemens Munich", type: "Supplier", risk: 0.10, email: "logistics@siemens.de" },
+        { id: "SUP-304", name: "CopperWorks Ohio", type: "Supplier", risk: 0.10, email: "orders@copperworksohio.com" }
+      ]);
+      setEditorEdges([
+        { source: "SUP-301", target: "PART-301", relationship: "SUPPLIES", transit: 7, price: 4200.00 },
+        { source: "SUP-302", target: "PART-303", relationship: "SUPPLIES", transit: 2, price: 120.00 },
+        { source: "SUP-303", target: "PART-302", relationship: "SUPPLIES", transit: 5, price: 1100.00 },
+        { source: "SUP-304", target: "PART-304", relationship: "SUPPLIES", transit: 3, price: 195.00 },
+        { source: "SUP-303", target: "PART-301", relationship: "SUPPLIES", transit: 29, price: 3900.00 }
+      ]);
+    } else if (presetType === "empty") {
+      setEditorMachines([]);
+      setEditorInventory([]);
+      setEditorNodes([]);
+      setEditorEdges([]);
+    }
+  };
+
+  // POST newly visual configurations directly into PostgreSQL DB
+  const handleSaveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) {
+        alert("Configuration save failed: No project active.");
+        return;
+      }
+      
+      let localData = localStorage.getItem(`workspace_data_${activeId}`);
+      let currentData = localData ? JSON.parse(localData) : {};
+      
+      currentData.machines = editorMachines;
+      currentData.inventory = editorInventory;
+      currentData.graph = {
+        nodes: editorNodes,
+        links: editorEdges
+      };
+      
+      if (!currentData.telemetry) currentData.telemetry = {};
+      const now = new Date();
+      const pointsToGenerate = 15;
+      
+      editorMachines.forEach(m => {
+        if (!currentData.telemetry[m.id]) {
+          const metrics = generateBaselines(m.id);
+          const mTelemetry = [];
+          for (let i = 0; i < pointsToGenerate; i++) {
+            const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
+            const temp = metrics.temp + (Math.random() * 2 - 1);
+            const vib = metrics.vib + (Math.random() * 0.4 - 0.2);
+            const pres = metrics.pres + (Math.random() * 0.2 - 0.1);
+            const cur = metrics.cur + (Math.random() * 0.6 - 0.3);
+            mTelemetry.push({
+              timestamp: timestamp.toISOString(),
+              temperature: parseFloat(temp.toFixed(2)),
+              vibration: parseFloat(vib.toFixed(2)),
+              pressure: parseFloat(pres.toFixed(2)),
+              current: parseFloat(cur.toFixed(2))
+            });
+          }
+          currentData.telemetry[m.id] = mTelemetry;
+        }
+      });
+      
+      localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
+      setShowEditor(false);
+      await refreshData();
+      alert("Factory fleet structure successfully synchronized with Local Storage!");
+    } catch (err) {
+      console.error("Config save failed:", err);
+      alert("Saving configuration failed: " + err.message);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const tutorialSteps = [
+    {
+      title: "Welcome to the Autonomic Control Tower",
+      description: "This dashboard orchestrates an advanced, offline-first multi-agent industrial repair system. When machinery fails, specialized AI agents automatically diagnose the failure, audit spare parts inventories, optimize supply-chain logistics, and prepare supplier purchase orders in seconds.",
+      icon: <Cpu className="w-12 h-12 text-blue-400 animate-pulse" />,
+      selector: null,
+      positionClass: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg",
+      style: {},
+    },
+    {
+      title: "Zone 1: Telemetry Live Monitor",
+      description: "Real-time sensor arrays track Winding Temperature, Radial Vibration, Discharge Pressure, and Coil Current for your factory fleet. Custom SVG sparklines display live 24-hour fluctuations to identify abnormal spikes before they become breakdowns.",
+      icon: <Activity className="w-12 h-12 text-emerald-400" />,
+      selector: "zone-1",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", bottom: "24px", right: "24px", left: "auto", top: "auto", transform: "none" },
+    },
+    {
+      title: "Autonomous Agent Catalyst",
+      description: "Clicking 'Simulate Bearing Failure on Machine 2' injects a live fault in the fleet. This acts as the catalyst for our AI agents to step in, collaborate, and execute emergency procurement actions.",
+      icon: <Play className="w-12 h-12 text-red-400 animate-pulse" />,
+      selector: "simulator-btn",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", left: "24px", right: "auto", bottom: "auto", transform: "none" },
+    },
+    {
+      title: "Zone 2: Multi-Agent Execution Log",
+      description: "Observe the 'Thoughts' stream—the live, step-by-step reasoning logs of collaborating agents. Watch the Anomaly Agent flag the failure, the Diagnostic Agent query technical manuals, and the Sourcing Agent negotiate part routing.",
+      icon: <Layers className="w-12 h-12 text-amber-400" />,
+      selector: "zone-2",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", right: "24px", left: "auto", bottom: "auto", transform: "none" },
+    },
+    {
+      title: "Zone 3: Supply Chain Knowledge Graph",
+      description: "A dynamic semantic graph mapping spare parts and Tier-1 and Tier-2 suppliers. Hover over nodes to inspect real-time logistics. When a bottleneck or failure occurs, the best routing path is automatically highlighted in orange.",
+      icon: <Settings className="w-12 h-12 text-orange-400 animate-spin" />,
+      selector: "zone-3",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", left: "24px", right: "auto", bottom: "auto", transform: "none" },
+    },
+    {
+      title: "Zone 4: Action Center",
+      description: "Here, automated purchase and dispatch tickets are created in PostgreSQL. Click 'Inspect Email Draft' to review professional, AI-crafted supplier procurement contracts complete with lead-time, price, and resilience scores.",
+      icon: <Inbox className="w-12 h-12 text-purple-400" />,
+      selector: "zone-4",
+      positionClass: "fixed w-full max-w-sm",
+      style: { position: "fixed", top: "96px", left: "50%", transform: "translateX(-50%)", right: "auto", bottom: "auto" },
+    }
+  ];
+
+  const closeTutorial = () => {
+    localStorage.setItem("hasSeenTutorial", "true");
+    setShowTutorial(false);
+  };
+
+
+
+  // Scroll and highlight selector element during step changes
+  useEffect(() => {
+    if (showTutorial) {
+      const step = tutorialSteps[tutorialStep];
+      if (step && step.selector) {
+        const element = document.getElementById(step.selector);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("ring-2", "ring-blue-500", "ring-offset-4", "ring-offset-[#06080c]", "scale-[1.015]");
+          return () => {
+            element.classList.remove("ring-2", "ring-blue-500", "ring-offset-4", "ring-offset-[#06080c]", "scale-[1.015]");
+          };
+        }
+      }
+    }
+  }, [tutorialStep, showTutorial]);
+
+  // Native browser notifications helper
+  const triggerDeviceNotification = useCallback((title, message) => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        try {
+          if (document.hidden) {
+            // Tab is in the background: prioritize Service Worker to bypass browser background execution blocks
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.getRegistration().then(registration => {
+                if (registration) {
+                  registration.showNotification(title, {
+                    body: message
+                  });
+                } else {
+                  new Notification(title, { body: message });
+                }
+              }).catch(err => {
+                console.error("SW registration fetch failed:", err);
+                new Notification(title, { body: message });
+              });
+            } else {
+              new Notification(title, { body: message });
+            }
+          } else {
+            // Tab is in the foreground: standard constructor is fully allowed and faster
+            new Notification(title, { body: message });
+          }
+        } catch (err) {
+          console.error("Failed to trigger native Notification", err);
+        }
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification(title, { body: message });
+          }
+        });
+      }
+    }
+  }, []);
+
+  // Request browser Notification permission on mount or first user interaction click, and register Service Worker
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(reg => console.log("SW Registered:", reg.scope))
+        .catch(err => console.error("SW Registration failed:", err));
+    }
+
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+      
+      const request = () => {
+        if (Notification.permission === "default") {
+          Notification.requestPermission().then(permission => {
+            setNotificationPermission(permission);
+          });
+        }
+      };
+      window.addEventListener("click", request, { once: true });
+      return () => window.removeEventListener("click", request);
+    }
+  }, []);
+
+  // Watcher and notifier for milestone changes (scoped to all projects)
+  const checkMilestones = useCallback((projectId, maintenanceOrders, machines, inventory) => {
+    if (!maintenanceOrders) return;
+
+    maintenanceOrders.forEach(order => {
+      const machine = machines?.find(m => m.id === order.machine_id);
+      const machineStatus = machine?.status || "Operational";
+      const requiredPartId = machine?.critical_thresholds?.required_part_id;
+      const part = inventory?.find(p => p.part_id === requiredPartId);
+      const componentName = part?.part_name || "Critical Component";
+
+      // Compute active stage index
+      let approvalState = "Approved";
+      if (order.status === "Pending_Sourcing") {
+        approvalState = "Pending";
+      } else if (order.status === "Rejected") {
+        approvalState = "Rejected";
+      }
+
+      let activeStageIndex = 0;
+      if (approvalState === "Approved") {
+        activeStageIndex = 1;
+        if (order.status === "Dispatched_Sourcing_Active") {
+          activeStageIndex = 1;
+        } else if (order.status === "Approved") {
+          activeStageIndex = machineStatus === "Operational" ? 3 : 2;
+        }
+      }
+
+      const refKey = `${projectId}-${order.id}`;
+      const prevStage = prevStages.current[refKey];
+      if (prevStage !== undefined && activeStageIndex !== prevStage) {
+        // Stage labels that match exactly what the UI displays
+        const supplierMatch = order.root_cause?.match(/Selected Supplier:\s*([^\n\r(]+)/) ||
+                              order.root_cause?.match(/dispatched to\s*([^\n\r(]+)/i);
+        const supplierLabel = supplierMatch ? supplierMatch[1].trim() : "Supplier";
+
+        const stageLabels = [
+          { n: 1, name: "Sourcing Approval" },
+          { n: 2, name: supplierLabel },
+          { n: 3, name: "Company Warehouse" },
+          { n: 4, name: machine?.id || "Machine" }
+        ];
+
+        const prevLabel = stageLabels[prevStage];
+        const nextLabel = stageLabels[activeStageIndex];
+        const prevDisplay = prevLabel ? `Stage ${prevLabel.n}: ${prevLabel.name}` : `Stage ${prevStage + 1}`;
+        const nextDisplay = nextLabel ? `Stage ${nextLabel.n}: ${nextLabel.name}` : `Stage ${activeStageIndex + 1}`;
+
+        if (activeStageIndex > prevStage) {
+          triggerDeviceNotification(
+            "Stage Advanced",
+            `${componentName} (Ticket #${order.id}) moved from ${prevDisplay} → ${nextDisplay}.`
+          );
+        } else {
+          triggerDeviceNotification(
+            "Stage Rolled Back",
+            `${componentName} (Ticket #${order.id}) reverted from ${prevDisplay} → ${nextDisplay}.`
+          );
+        }
+      }
+
+      // Update ref
+      prevStages.current[refKey] = activeStageIndex;
+    });
+  }, [triggerDeviceNotification]);
+
+  // Core API Poller
+  const refreshData = useCallback(async () => {
+    try {
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) {
+        setData(null);
+        setLoading(false);
+        return;
+      }
+      
+      let localData = localStorage.getItem(`workspace_data_${activeId}`);
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        // Patch missing components from templates for existing workspaces
+        let needsSave = false;
+        if (parsed.machines) {
+          parsed.machines.forEach(machine => {
+            if (!machine.components || machine.components.length === 0) {
+              const templateMachine = [PETROCHEMICAL_TEMPLATE, AUTOMOTIVE_TEMPLATE, STEEL_TEMPLATE]
+                .flatMap(t => t.machines)
+                .find(m => m.id === machine.id);
+              if (templateMachine && templateMachine.components) {
+                machine.components = templateMachine.components;
+                needsSave = true;
+              }
+            }
+          });
+          if (needsSave) {
+            localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(parsed));
+          }
+        }
+        setData(parsed);
+        checkMilestones(activeId, parsed.maintenance_orders, parsed.machines, parsed.inventory);
+      } else {
+        const savedProjects = localStorage.getItem("projects");
+        if (savedProjects) {
+          const projs = JSON.parse(savedProjects);
+          const currentProj = projs.find(p => p.id === activeId);
+          if (currentProj) {
+            const seeded = seedWorkspaceData(currentProj.type, currentProj.templateId, currentProj.customMachines);
+            localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(seeded));
+            setData(seeded);
+            checkMilestones(activeId, seeded.maintenance_orders, seeded.machines, seeded.inventory);
+          } else {
+            setData(null);
+          }
+        } else {
+          setData(null);
+        }
+      }
+    } catch (err) {
+      console.error("[UI] Local storage read failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeProjectId, checkMilestones]);
+
+  // Keep polling in the background continuously
+  useEffect(() => {
+    if (!isSetupCompleted) return;
+
+    refreshData();
+    pollIntervalRef.current = setInterval(refreshData, 6000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [isSetupCompleted, refreshData]);
+
+  // Listen for storage events to update data instantly across tabs for ALL projects
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key && e.key.startsWith("workspace_data_")) {
+        const projectId = e.key.replace("workspace_data_", "");
+        if (e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            
+            // 1. Run the milestone check regardless of whether it's active
+            checkMilestones(projectId, parsed.maintenance_orders, parsed.machines, parsed.inventory);
+            
+            // 2. If it is the currently active project on this tab, update the state to refresh the UI
+            const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+            if (projectId === activeId) {
+              setData(parsed);
+            }
+          } catch (err) {
+            console.error("Storage event parse error", err);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [activeProjectId, checkMilestones]);
+
+  // Auto scroll console terminal scroll container (non-intrusive)
+  useEffect(() => {
+    if (thoughtsContainerRef.current) {
+      const container = thoughtsContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [thoughts]);
+
+  // Trigger Anomaly simulation
+  const handleSimulation = async (machineIdToSimulate = null) => {
+    setSimulating(true);
+    setThoughts((prev) => [
+      ...prev,
+      { id: Date.now(), agent: "Simulator", type: "warning", text: `Simulating stator coil winding overload on ${machineIdToSimulate || "Machine 2"}...` }
+    ]);
+
+    try {
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) {
+        throw new Error("No active project workspace loaded.");
+      }
+      
+      const localData = localStorage.getItem(`workspace_data_${activeId}`);
+      if (!localData) {
+        throw new Error("Workspace data not found in local storage.");
+      }
+      
+      const currentData = JSON.parse(localData);
+      
+      let targetMachine = null;
+      if (currentData.machines && currentData.machines.length > 0) {
+        if (typeof machineIdToSimulate === 'string') {
+          targetMachine = currentData.machines.find(m => m.id === machineIdToSimulate);
+        } else {
+          targetMachine = currentData.machines.find(m => m.id === "MCH-002");
+          if (!targetMachine) {
+            targetMachine = currentData.machines.find(m => m.id === "MCH-202") || 
+                            currentData.machines.find(m => m.id === "MCH-302") || 
+                            currentData.machines.find(m => m.status === "Operational") ||
+                            currentData.machines[0];
+          }
+        }
+      }
+      
+      if (!targetMachine) {
+        throw new Error("No machines found in this fleet to target.");
+      }
+      
+      const machineId = targetMachine.id;
+      const machineName = targetMachine.name;
+      const thresholds = targetMachine.critical_thresholds || { temperature: 80, vibration: 10, pressure: 3, current: 20 };
+      
+      const base_temp = (thresholds.temperature || 80.0) * 0.65;
+      const base_vib = (thresholds.vibration || 10.0) * 0.35;
+      const base_pres = (thresholds.pressure || 3.0) * 0.95;
+      const base_cur = (thresholds.current || 20.0) * 0.75;
+      
+      const telemetryRecords = [];
+      const now = new Date();
+      const points = 144;
+      
+      for (let i = 0; i < points; i++) {
+        const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (points - i));
+        const progress = i / (points - 1);
+        const degFactor = Math.pow(progress, 2.5);
+        
+        const tLimit = thresholds.temperature || 80.0;
+        const temp = tLimit > 0 ? (base_temp + (tLimit * 1.15 - base_temp) * degFactor + (Math.random() - 0.5)) : 0;
+        
+        const vLimit = thresholds.vibration || 10.0;
+        const vib = vLimit > 0 ? (base_vib + (vLimit * 1.30 - base_vib) * degFactor + (Math.random() * 0.2 - 0.1)) : 0;
+        
+        const pLimit = thresholds.pressure || 3.0;
+        const pres = pLimit > 0 ? (base_pres - (base_pres - pLimit * 0.40) * degFactor + (Math.random() * 0.1 - 0.05)) : 0;
+        
+        const cLimit = thresholds.current || 20.0;
+        const cur = cLimit > 0 ? (base_cur + (cLimit * 1.35 - base_cur) * degFactor + (Math.random() * 0.4 - 0.2)) : 0;
+        
+        telemetryRecords.push({
+          timestamp: timestamp.toISOString(),
+          temperature: parseFloat(temp.toFixed(2)),
+          vibration: parseFloat(vib.toFixed(2)),
+          pressure: parseFloat(pres.toFixed(2)),
+          current: parseFloat(cur.toFixed(2))
+        });
+      }
+      
+      currentData.telemetry[machineId] = telemetryRecords;
+      targetMachine.status = "Critical";
+      
+      const required_part = thresholds.required_part_id || "PART-004";
+      
+      let invItem = currentData.inventory.find(inv => inv.part_id === required_part);
+      if (!invItem) {
+        invItem = {
+          part_id: required_part,
+          part_name: required_part === "PART-001" ? "Heavy-Duty Bearing Assembly" : "3-Phase Electric Motor Winding",
+          stock_level: 1,
+          reorder_point: 3,
+          cost: 850.00,
+          location: "Warehouse B - Aisle 5"
+        };
+        currentData.inventory.push(invItem);
+      }
+      
+      const part_name = invItem.part_name;
+      const stock_level = invItem.stock_level;
+      const reorder_point = invItem.reorder_point;
+      const is_in_stock = stock_level > reorder_point;
+      
+      let detected_fault = "AC stator winding thermal overload and structural blade imbalance";
+      let rul = 14;
+      if (required_part === "PART-001" || required_part.toLowerCase().includes("bearing")) {
+        detected_fault = "Rotary gear pump main bearing cage wear and localized race friction";
+        rul = 12;
+      } else if (required_part === "PART-002" || required_part.toLowerCase().includes("seal")) {
+        detected_fault = "Centrifugal impeller cavitation leading to hydraulic seal fracture";
+        rul = 10;
+      }
+      
+      const latestReading = telemetryRecords[telemetryRecords.length - 1];
+      const anomaly_explanation = `Metric 'vibration' crossed critical limit: ${latestReading.vibration.toFixed(2)} mm/s > ${(thresholds.vibration || 10.0).toFixed(2)} mm/s. Metric 'temperature' crossed critical limit: ${latestReading.temperature.toFixed(1)}°C > ${(thresholds.temperature || 80.0).toFixed(1)}°C. High thermal ramp rate detected.`;
+      
+      const newOrderId = (currentData.maintenance_orders || []).reduce((max, o) => o.id > max ? o.id : max, 0) + 1;
+      let detailed_cause = "";
+      let order_status = "";
+      let assigned_technician = "";
+      
+      let thoughts_log = [
+        `[AnomalyDetectionAgent (Evaluator)] Initiating telemetry fleet scan...`,
+        `[AnomalyDetectionAgent (Evaluator)] Evaluating machine ${machineName} (${machineId})...`,
+        `[AnomalyDetectionAgent (Evaluator)] Machine ${machineId} Evaluation: Anomaly=true, Severity=Critical`,
+        `[AnomalyDetectionAgent (Evaluator)] Updated local machine '${machineId}' status to 'Critical'.`,
+        `[DiagnosticAgent (RAG Analyst)] Performing RAG query against Chroma Vector Database...`,
+        `[DiagnosticAgent (RAG Analyst)] Successfully retrieved 2 relevant manual chunks from ChromaDB.`,
+        `[DiagnosticAgent (RAG Analyst)] Analyzing telemetry alongside operational manuals to isolate root cause...`,
+        `[DiagnosticAgent (RAG Analyst)] Diagnostic Completed: Fault='${detected_fault}', RUL=${rul}h, Part Needed=${required_part}`,
+        `[PlanningToolAgent (Action)] Analyzing diagnostic. Required part: ${required_part}`,
+        `[PlanningToolAgent (Action) Tool] Executing check_inventory for Part: ${required_part}`,
+        `[PlanningToolAgent (Action)] Tool Call Response: Stock Level = ${stock_level}, Reorder point = ${reorder_point}`
+      ];
+      
+      let suppliers = [];
+      let best_supplier_id = null;
+      let best_supplier_name = "SKF Munich";
+      let best_score = 0;
+      
+      if (is_in_stock) {
+        invItem.stock_level = stock_level - 1;
+        order_status = "Approved";
+        assigned_technician = "Sarah Jenkins (PdM Specialist)";
+        
+        detailed_cause = `Automated PdM Diagnostic & Dispatch Report:
+- Isolated Fault: ${detected_fault}
+- Remaining Useful Life (RUL): ${rul} Hours
+- Required Part: ${required_part} (${part_name}) - IN STOCK (Stock Level: ${stock_level}, Location: ${invItem.location})
+- Dispatch Action: PART SECURED. Maintenance order approved automatically. Scheduling immediate technician dispatch.
+
+Anomaly Telemetry Analysis:
+${anomaly_explanation}`;
+        
+        thoughts_log.push(
+          `[PlanningToolAgent (Action)] Success: Part ${required_part} is IN STOCK (Stock: ${stock_level} > Reorder Point: ${reorder_point}).`,
+          `[PlanningToolAgent (Action) Tool] Executing create_maintenance_order status='Approved'...`,
+          `[Orchestrator] Workflow completed for machine: '${machineName}'!`,
+          `[Orchestrator] Outcome: Immediate Dispatch Scheduled.`
+        );
+      } else {
+        order_status = "Pending_Sourcing";
+        assigned_technician = "Procurement & Logistics Agent";
+        
+        detailed_cause = `Automated PdM Diagnostic & Supply Chain Routing Report:
+- Isolated Fault: ${detected_fault}
+- Remaining Useful Life (RUL): ${rul} Hours
+- Required Part: ${required_part} (${part_name}) - OUT OF STOCK / BELOW REORDER LIMIT (Stock Level: ${stock_level}, Reorder Threshold: ${reorder_point})
+- Logistical Urgent Dispatch: Triggered supply chain routing search in supplier graph database.`;
+        
+        if (currentData.graph && currentData.graph.links) {
+          const links = currentData.graph.links;
+          const nodes = currentData.graph.nodes;
+          
+          links.forEach(l => {
+            const otherNodeId = l.source === required_part ? l.target : (l.target === required_part ? l.source : null);
+            if (otherNodeId) {
+              const otherNode = nodes.find(n => n.id === otherNodeId && n.type === "Supplier");
+              if (otherNode) {
+                const risk = otherNode.risk || 0.5;
+                const price = l.price || 500;
+                const transit = l.transit || 5;
+                const score = 100 - (transit * 7.5) - (risk * 45.0) - (price / 100 * 1.5);
+                suppliers.push({
+                  supplier_id: otherNode.id,
+                  supplier_name: otherNode.name,
+                  price: price,
+                  transit_time_days: transit,
+                  risk_rating: risk,
+                  contact_email: otherNode.email || `logistics@${otherNode.name.toLowerCase().replace(/\s/g, "")}.com`,
+                  score: score
+                });
+              }
+            }
+          });
+        }
+        
+        if (suppliers.length === 0) {
+          suppliers = [
+            {
+              supplier_id: "SUP-002",
+              supplier_name: "SKF Munich",
+              price: 1200.00,
+              transit_time_days: 5,
+              risk_rating: 0.15,
+              contact_email: "logistics@skf.de",
+              score: 100 - (5 * 7.5) - (0.15 * 45.0) - (1200 / 100 * 1.5)
+            },
+            {
+              supplier_id: "SUP-001",
+              supplier_name: "Siemens Shanghai",
+              price: 850.00,
+              transit_time_days: 28,
+              risk_rating: 0.70,
+              contact_email: "procurement@siemens.cn",
+              score: Math.max(0, 100 - (28 * 7.5) - (0.7 * 45.0) - (850 / 100 * 1.5))
+            }
+          ];
+        }
+        
+        suppliers.sort((a, b) => b.score - a.score);
+        const best = suppliers[0];
+        best_supplier_id = best.supplier_id;
+        best_supplier_name = best.supplier_name;
+        best_score = best.score;
+        
+        const orderQty = Math.max(1, reorder_point - stock_level + 2);
+        
+        const email_subject = `URGENT: Expedited Parts Procurement Order - Machine Down (${machineId})`;
+        const email_body = `Subject: ${email_subject}
+To: ${best.contact_email} (Attn: ${best_supplier_name} Sales & Logistics)
+From: procurement-agent@industrial-ai.com
+Date: ${new Date().toISOString().split('T')[0]}
+
+Dear ${best_supplier_name} Team,
+
+This is an URGENT automated procurement request on behalf of our Industrial Operations Facility. 
+
+We have encountered a critical equipment status alert on our factory floor:
+- Equipment: ${machineName} (ID: ${machineId})
+- Fleet Operational Status: CRITICAL / IMMINENT DOWNTIME HAZARD
+
+To prevent severe assembly line stagnation and operational downtime, we require the immediate dispatch of the following component:
+- Required Component: ${part_name}
+- Requested Quantity: ${orderQty} unit(s)
+
+As our supplier graph indicates you are our optimal source, please process this order for EXPEDITED shipping immediately. Please confirm stock availability, estimated dispatch time, and provide tracking numbers to our digital logistics webhook as soon as they are generated.
+
+We request priority processing and air-courier routing if possible. All associated expedited freight surcharges have been pre-approved on our corporate procurement billing profile.
+
+Thank you for your rapid cooperation in resolving this production emergency.
+
+Sincerely,
+Autonomous Supply Chain Procurement Agent
+Industrial Sector AI Automation Network`;
+
+        const procurement_summary = `\n\n[Procurement Action] Order dispatched to ${best_supplier_name} (${best_supplier_id}). ` +
+          `Professional email draft generated. Requested ${orderQty} unit(s) with expedited shipping. ` +
+          `Sourcing Optimization score: ${best_score.toFixed(2)}.\n\n` +
+          email_body;
+
+        detailed_cause += procurement_summary;
+        order_status = "Dispatched_Sourcing_Active";
+        assigned_technician = "Procurement & Logistics Agent";
+        
+        thoughts_log.push(
+          `[PlanningToolAgent (Action)] Supply Chain Alert: Part ${required_part} is OUT OF STOCK or BELOW REORDER POINT (Stock: ${stock_level} <= Reorder Point: ${reorder_point}). Sourcing action required!`,
+          `[PlanningToolAgent (Action) Tool] Executing create_maintenance_order status='Pending_Sourcing'...`,
+          `[PlanningToolAgent (Action) Tool] Triggering supply chain reroute for Part ID: ${required_part}...`,
+          `[PlanningToolAgent (Action)] Executing recursive supplier graph traversal for: ${part_name}`,
+          `[SourcingOptimizationAgent] Optimizing sourcing for part '${part_name}' with ${suppliers.length} options...`,
+          `[SourcingOptimizationAgent] Chosen '${best_supplier_name}' with score ${best_score.toFixed(2)}.`,
+          `[PlanningToolAgent (Action) Tool] Executing draft_procurement_order for Supplier: ${best_supplier_id}`,
+          `[PlanningToolAgent (Action) Tool] Updated maintenance order #${newOrderId} status to 'Dispatched_Sourcing_Active'`,
+          `[Orchestrator] Workflow completed for machine: '${machineName}'!`,
+          `[Orchestrator] Outcome: Pending Supply Chain Sourcing - Sourcing Active.`
+        );
+      }
+      
+      const newOrder = {
+        id: newOrderId,
+        machine_id: machineId,
+        priority: "Critical",
+        status: order_status,
+        root_cause: detailed_cause,
+        assigned_technician: assigned_technician,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      if (!currentData.maintenance_orders) currentData.maintenance_orders = [];
+      currentData.maintenance_orders.unshift(newOrder);
+      
+      localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
+      
+      let delay = 200;
+      thoughts_log.forEach((logLine) => {
+        if (!logLine.trim()) return;
+        
+        setTimeout(() => {
+          let agent = "System";
+          let text = logLine;
+          let type = "info";
+          
+          const match = logLine.match(/^\[(.*?)\]\s*(.*)/);
+          if (match) {
+            agent = match[1];
+            text = match[2];
+            if (agent.includes("Anomaly") || text.includes("WARNING")) type = "warning";
+            else if (agent.includes("Diagnostic") || text.includes("Diagnosed")) type = "diagnostic";
+            else if (agent.includes("Planning") || text.includes("Inventory")) type = "planning";
+            else if (agent.includes("Sourcing") || agent.includes("Graph") || text.includes("route")) type = "sourcing";
+          }
+          
+          setThoughts((prev) => [
+            ...prev,
+            { id: Date.now() + Math.random(), agent, type, text }
+          ]);
+        }, delay);
+        delay += 350;
+      });
+      
+      await refreshData();
+      
+    } catch (err) {
+      console.error("[UI] Simulation failed:", err);
+      setThoughts((prev) => [
+        ...prev,
+        { id: Date.now(), agent: "System", type: "error", text: `Simulation failure: ${err.message}` }
+      ]);
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  // Status badges configurations
+  const getStatusBadges = (status) => {
+    const isDark = theme === "dark";
+    switch (status) {
+      case "Operational":
+        return { 
+          label: "Stable", 
+          bg: isDark ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-emerald-55 text-emerald-700 border-emerald-300", 
+          dot: "bg-emerald-500", 
+          sparkColor: "#10b981" 
+        };
+      case "Degraded":
+        return { 
+          label: "Warning", 
+          bg: isDark ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-amber-55 text-amber-700 border-amber-300", 
+          dot: "bg-amber-500", 
+          sparkColor: "#f59e0b" 
+        };
+      case "Critical":
+        return { 
+          label: "Anomaly", 
+          bg: isDark ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-55 text-red-700 border-red-300", 
+          dot: "bg-red-500", 
+          sparkColor: "#ef4444" 
+        };
+      default:
+        return { 
+          label: "Inactive", 
+          bg: isDark ? "bg-slate-500/10 text-slate-400 border-slate-500/20" : "bg-slate-100 text-slate-700 border-slate-200", 
+          dot: "bg-slate-500", 
+          sparkColor: "#64748b" 
+        };
+    }
+  };
+
+  // Helper to extract automated emails from the text fields
+  const getEmailDraftContent = (rootCause) => {
+    if (!rootCause) return null;
+    const emailHeader = "Subject: URGENT:";
+    const idx = rootCause.indexOf(emailHeader);
+    if (idx !== -1) {
+      const emailSection = rootCause.substring(idx);
+      const lines = emailSection.split("\n");
+      const subject = lines[0].replace("Subject: ", "");
+      const to = lines[1].replace("To: ", "");
+      const from = lines[2].replace("From: ", "");
+      const date = lines[3].replace("Date: ", "");
+      const body = lines.slice(5).join("\n");
+      return { to, from, subject, date, body };
+    }
+    return null;
+  };
+
+  // Determine graph states
+  const isM2Anomaly = useMemo(() => {
+    if (!data || !data.machines) return false;
+    return data.machines.some(m => m.status === "Critical" || m.status === "Degraded");
+  }, [data]);
+
+  if (!isSetupCompleted) {
+    return (
+      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'} font-mono`}>
+        <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
+        <div className="animate-pulse tracking-widest text-xs font-bold">REDIRECTING TO PROJECTS PORTAL...</div>
+      </div>
+    );
+  }
+
+
+  if (loading && !data) {
+    return (
+      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'} font-mono`}>
+        <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
+        <div className="animate-pulse tracking-widest text-xs font-bold">SYNCHRONIZING WORKSPACE CONTROL METRICS...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} pb-12 font-sans select-none transition-colors duration-300 relative overflow-hidden`}>
+      
+      {/* Prismatic Digital Grid Background for Dashboard */}
+      <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none animate-grid-move`}></div>
+      
+      {/* Ambient Floating Glow Mesh Spheres */}
+      <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.04]' : 'bg-purple-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow`}></div>
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow-alt`}></div>
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
+
+      {/* Dynamic Header */}
+      <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300`}>
+        <div className="flex items-center space-x-3">
+          <div className={`h-8.5 w-8.5 ${theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'} rounded border flex items-center justify-center`}>
+            <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={activeProject?.name || ""}
+                onChange={(e) => handleRenameProject(activeProject?.id, e.target.value)}
+                className={`bg-transparent border-b border-transparent hover:border-slate-500 focus:border-blue-500 outline-none font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-805'} transition-all w-[320px]`}
+                placeholder="Unnamed Project"
+              />
+              <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'} border`}>
+                {activeProject?.type === "template" ? `${activeProject?.templateId?.toUpperCase()}_TEMPLATE` : "CUSTOM_FLEET"}
+              </span>
+            </div>
+            <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} font-mono tracking-widest uppercase`}>Predictive Maintenance & Supply Chain Sourcing Graph</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-3.5">
+          <div className="hidden lg:flex flex-col text-right font-mono text-[10px]">
+            <span className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>FLEET PERFORMANCE</span>
+            <span className={`${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'} font-bold tracking-widest`}>99.78% RESILIENT</span>
+          </div>
+
+          {notificationPermission !== "granted" && (
+            <button
+              onClick={requestNotificationPermission}
+              className="px-3 py-2 font-mono text-xs font-bold rounded bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center space-x-1.5 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+              title="Click to authorize system notifications on milestone events"
+            >
+              <span>🔔 Enable System Notifications</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => { setTutorialStep(0); setShowTutorial(true); }}
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+              theme === 'dark'
+                ? 'bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white'
+                : 'bg-blue-50 text-blue-600 border-blue-200/80 hover:bg-blue-600 hover:text-white shadow-sm'
+            }`}
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Dashboard Tour</span>
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
+                localStorage.removeItem("activeProjectId");
+                localStorage.removeItem("isSetupCompleted");
+                updateTabActiveProject(null);
+                window.location.href = "/";
+              }
+            }}
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+              theme === 'dark'
+                ? 'bg-cyan-950/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
+                : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white shadow-sm'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Projects Portal</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
+              setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
+              setEditorNodes(data?.graph?.nodes ? JSON.parse(JSON.stringify(data.graph.nodes)) : []);
+              setEditorEdges(data?.graph?.links ? JSON.parse(JSON.stringify(data.graph.links)) : []);
+              setShowEditor(true);
+            }}
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+              theme === 'dark'
+                ? 'bg-slate-900 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
+                : 'bg-white text-cyan-700 border-cyan-200/80 hover:bg-cyan-600 hover:text-white shadow-sm'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Configure Fleet & Graph</span>
+          </button>
+
+          <div className="relative">
+            <button
+              id="simulator-btn"
+              onClick={() => {
+                if (!simulating) setSimulatorDropdownOpen(!simulatorDropdownOpen);
+              }}
+              disabled={simulating}
+              className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-2 ${
+                simulating
+                  ? "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed"
+                  : (theme === 'dark'
+                      ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
+                      : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
+              }`}
+            >
+              <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
+              <span>{simulating ? "PROCESSING AGENTS..." : "Simulate Failure"}</span>
+              {!simulating && <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+            </button>
+            
+            {simulatorDropdownOpen && (
+              <div className={`absolute right-0 mt-2 w-[340px] rounded-xl shadow-xl z-50 overflow-hidden border ${theme === 'dark' ? 'bg-[#182030] border-[#2b3548] shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)]'}`}>
+                <div className={`text-[10px] font-mono tracking-widest uppercase px-4 py-3 border-b ${theme === 'dark' ? 'text-slate-500 border-[#2b3548]' : 'text-slate-500 border-slate-200'}`}>
+                  On:
+                </div>
+                <ul className="max-h-72 overflow-y-auto">
+                  {data?.machines?.map(machine => (
+                    <li 
+                      key={machine.id}
+                      onClick={() => {
+                        setSimulatorDropdownOpen(false);
+                        handleSimulation(machine.id);
+                      }}
+                      className={`flex justify-between items-center px-4 py-3 cursor-pointer text-xs transition-colors border-b last:border-b-0 ${
+                        theme === 'dark' 
+                          ? 'border-[#2b3548]/50 hover:bg-[#202a3d]' 
+                          : 'border-slate-100 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className={theme === 'dark' ? 'text-red-400/90 font-medium' : 'text-red-600/90 font-medium'}>{machine.name}</span>
+                      <span className={`font-mono text-[10px] ml-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{machine.id}</span>
+                    </li>
+                  ))}
+                  {(!data?.machines || data.machines.length === 0) && (
+                    <li className={`px-4 py-4 text-center text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                      No machines available
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Theme Toggle Button positioned at the far right of the sticky header */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2.5 rounded-full border transition-all duration-300 flex items-center justify-center ${
+              theme === 'dark'
+                ? 'bg-slate-950/40 border-slate-800 text-yellow-400 hover:bg-slate-900 hover:text-yellow-300 hover:scale-105 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-105'
+            }`}
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </div>
+      </header>
+
+      {/* Grid Layout */}
+      <main className="p-6 max-w-7xl mx-auto space-y-6">
+        
+        {/* Zone 1: Telemetry Live Monitor */}
+        <section id="zone-1" className="space-y-3 transition-all duration-500">
+          <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
+            <Activity className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+            <span>Zone 1: Telemetry Live Monitor (Fleet Grid)</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {data?.machines.map((machine) => {
+              const latest = data.telemetry[machine.id]?.[data.telemetry[machine.id].length - 1];
+              const health = getStatusBadges(machine.status);
+              const tempHistory = data.telemetry[machine.id]?.map(p => p.temperature) || [];
+              const vibHistory = data.telemetry[machine.id]?.map(p => p.vibration) || [];
+              
+              const hasTemp = (machine.critical_thresholds?.temperature ?? 0) > 0;
+              const hasVib = (machine.critical_thresholds?.vibration ?? 0) > 0;
+              const hasPres = (machine.critical_thresholds?.pressure ?? 0) > 0;
+              const hasCurr = (machine.critical_thresholds?.current ?? 0) > 0;
+
+              return (
+                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group flex flex-col`}>
+                  <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden pointer-events-none">
+                    <div className={`absolute top-2.5 right-[-26px] transform rotate-45 text-center text-[9px] font-mono font-bold uppercase py-0.5 w-[90px] ${
+                      machine.status === "Operational" ? "bg-emerald-500/10 text-emerald-400" :
+                      machine.status === "Degraded" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400"
+                    }`}>
+                      {health.label}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className={`font-mono font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{machine.name}</h3>
+                      <span className="text-[10px] text-slate-500 font-mono tracking-wider">{machine.id} · {machine.location}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded-full border ${health.bg} flex items-center space-x-1 mr-6`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${health.dot} ${machine.status !== "Operational" ? "animate-ping" : ""}`}></span>
+                      <span>{machine.status.toUpperCase()}</span>
+                    </span>
+                  </div>
+
+                  {latest ? (
+                    <div className="space-y-4 font-mono">
+                      {/* First Row: Temp & Vibration */}
+                      {(hasTemp || hasVib) && (
+                        <div className={`grid ${hasTemp && hasVib ? 'grid-cols-2' : 'grid-cols-1'} gap-4 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
+                          {hasTemp && (
+                            <div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Winding Temp</div>
+                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                                {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
+                              </div>
+                            </div>
+                          )}
+                          {hasVib && (
+                            <div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Radial Vibration</div>
+                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                                {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Second Row: Pressure & Current */}
+                      {(hasPres || hasCurr) && (
+                        <div className={`grid ${hasPres && hasCurr ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+                          {hasPres && (
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Discharge Pressure</span>
+                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.pressure.toFixed(2)} Bar</span>
+                            </div>
+                          )}
+                          {hasCurr && (
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Coil Amperage</span>
+                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sparkline trends removed to be in a popup */}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center text-xs text-slate-500">No active telemetry signal.</div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className={`mt-auto pt-4 border-t flex justify-end items-center space-x-2 z-10 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
+                    <button 
+                      onClick={() => setGraphsPopupMachineId(graphsPopupMachineId === machine.id ? null : machine.id)}
+                      className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${
+                        graphsPopupMachineId === machine.id 
+                          ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_8px_rgba(59,130,246,0.5)]' 
+                          : (theme === 'dark' 
+                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-[#182030]' 
+                              : 'bg-white border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-slate-50 shadow-sm')
+                      }`}
+                      title="View Graphs"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Graphs</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setComponentsPopupMachineId(componentsPopupMachineId === machine.id ? null : machine.id)}
+                      className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${
+                        componentsPopupMachineId === machine.id 
+                          ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' 
+                          : (theme === 'dark' 
+                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-[#182030]' 
+                              : 'bg-white border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-300 hover:bg-slate-50 shadow-sm')
+                      }`}
+                      title="View Components"
+                    >
+                      <Cpu className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Parts</span>
+                    </button>
+                  </div>
+
+                  {/* Components Popup Overlay */}
+                  {componentsPopupMachineId === machine.id && (
+                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          Machine Components
+                        </h4>
+                        <button 
+                          onClick={() => setComponentsPopupMachineId(null)}
+                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                        {machine.components && machine.components.length > 0 ? (
+                          machine.components.map((comp, idx) => {
+                            let displayHealth = comp.health;
+                            if (machine.status !== "Operational" && machine.critical_thresholds?.required_part_id === comp.id) {
+                              displayHealth = machine.status === "Critical" ? 14 : 42;
+                            }
+                            return (
+                            <div key={idx} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                              <div className="flex justify-between items-start mb-2">
+                                <div className={`font-semibold text-xs truncate max-w-[80%] ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`} title={comp.name}>{comp.name}</div>
+                                <div className={`text-[10px] font-mono font-bold ${displayHealth >= 90 ? 'text-emerald-500' : displayHealth >= 70 ? 'text-amber-500' : 'text-red-500'}`}>
+                                  {displayHealth}%
+                                </div>
+                              </div>
+                              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+                                <div className={`h-1.5 rounded-full transition-all duration-1000 ${displayHealth >= 90 ? 'bg-emerald-500' : displayHealth >= 70 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${displayHealth}%` }}></div>
+                              </div>
+                              <div className={`text-[9px] mt-1.5 text-slate-500 font-mono tracking-wider`}>ID: {comp.id}</div>
+                            </div>
+                          )})
+                        ) : (
+                          <div className="text-xs text-slate-500 text-center mt-10">No components data available.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Graphs Popup Overlay */}
+                  {graphsPopupMachineId === machine.id && (
+                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
+                      <div className="flex justify-between items-center mb-6">
+                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          <Activity className="w-4 h-4 text-blue-500" />
+                          <span>24H Realtime Telemetry</span>
+                        </h4>
+                        <button 
+                          onClick={() => setGraphsPopupMachineId(null)}
+                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col justify-center space-y-8 pb-4">
+                        {(hasTemp || hasVib) ? (
+                          <>
+                            {hasTemp && (
+                              <div className="flex flex-col space-y-2">
+                                <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
+                                  <span>WINDING TEMPERATURE</span>
+                                  <span className={theme === 'dark' ? 'text-red-400' : 'text-red-600'}>{latest?.temperature?.toFixed(1)}°C</span>
+                                </div>
+                                <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                                  <Sparkline data={tempHistory} color={health.sparkColor} width={220} height={50} />
+                                </div>
+                              </div>
+                            )}
+                            
+                            {hasVib && (
+                              <div className="flex flex-col space-y-2">
+                                <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
+                                  <span>RADIAL VIBRATION</span>
+                                  <span className="text-blue-500">{latest?.vibration?.toFixed(2)}mm/s</span>
+                                </div>
+                                <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                                  <Sparkline data={vibHistory} color="#3b82f6" width={220} height={50} />
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-xs text-slate-500 text-center">No telemetry graphs available.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Console / Graph Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Zone 2: Thoughts Stream Terminal */}
+          <section id="zone-2" className="lg:col-span-5 space-y-3 flex flex-col transition-all duration-500">
+            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
+              <Layers className="w-3.5 h-3.5 text-blue-400" />
+              <span>Zone 2: Multi-Agent Execution Log (Thoughts Stream)</span>
+            </h2>
+            
+            <div className={`bg-[#080a0f] border rounded-xl flex-1 flex flex-col overflow-hidden scanlines shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px] ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-200'}`}>
+              <div className={`border-b px-4 py-2.5 bg-[#0c0f17] flex items-center justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/80' : 'border-slate-250'}`}>
+                <div className="flex items-center space-x-1.5">
+                  <span className="h-2 w-2 rounded-full bg-red-500/20"></span>
+                  <span className="h-2 w-2 rounded-full bg-yellow-500/20"></span>
+                  <span className="h-2 w-2 rounded-full bg-green-500/20"></span>
+                  <span className="ml-2 text-slate-400 font-bold uppercase tracking-widest text-[9px]">ORCHESTRATOR_EXEC_LOG</span>
+                </div>
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <span className="animate-pulse text-blue-400">● SIGNAL ACTIVE</span>
+                </div>
+              </div>
+
+              {/* Terminal Body */}
+              <div ref={thoughtsContainerRef} className="p-4 flex-1 overflow-y-auto font-mono text-[11px] space-y-3 scroll-smooth leading-relaxed">
+                {thoughts.map((log) => {
+                  let tagColor = "text-slate-400 bg-slate-500/10 border-slate-500/20";
+                  if (log.agent.includes("Anomaly")) tagColor = "text-amber-400 bg-amber-400/10 border-amber-400/20";
+                  else if (log.agent.includes("Diagnostic")) tagColor = "text-blue-400 bg-blue-400/10 border-blue-400/20";
+                  else if (log.agent.includes("Planning") || log.agent.includes("Tool")) tagColor = "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
+                  else if (log.agent.includes("Sourcing") || log.agent.includes("Graph")) tagColor = "text-orange-400 bg-orange-400/10 border-orange-400/20";
+                  else if (log.agent.includes("Simulator")) tagColor = "text-red-400 bg-red-400/10 border-red-400/20";
+
+                  return (
+                    <div key={log.id} className="border-l border-slate-800 pl-3 py-0.5 hover:bg-slate-900/40 rounded transition-colors duration-150">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold border ${tagColor} mr-2 uppercase tracking-wide`}>
+                        {log.agent}
+                      </span>
+                      <span className="text-slate-300">{log.text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* Zone 3: Component Sourcing Roadmap */}
+          <section id="zone-3" className="lg:col-span-7 space-y-3 flex flex-col transition-all duration-500 relative">
+            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <Settings className="w-3.5 h-3.5 text-blue-400" />
+                <span>Zone 3: Component Sourcing Roadmap</span>
+              </div>
+              <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span>
+            </h2>
+
+            <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-4 flex-1 flex flex-col overflow-y-auto min-h-[460px] max-h-[460px] space-y-3`}>
+              {(() => {
+                const orders = data?.maintenance_orders || [];
+                
+                if (orders.length === 0) {
+                  return (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center font-mono text-xs select-none">
+                      <div className={`p-4 rounded-full border border-dashed mb-3 ${theme === 'dark' ? 'bg-[#0e131f] border-slate-700' : 'bg-slate-50 border-slate-300'}`}>
+                        <ShieldCheck className="h-8 w-8 text-emerald-500" />
+                      </div>
+                      <p className={`font-bold tracking-wider uppercase mb-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>System Standby - Fleet Stable</p>
+                      <p className="text-[10px] text-slate-500 max-w-sm leading-relaxed">
+                        All equipment units are running within standard operational thresholds. No active sourcing or maintenance tickets found.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {orders.map((order) => {
+                      const machine = data?.machines?.find(m => m.id === order.machine_id);
+                      const machineId = machine?.id || order.machine_id;
+                      const requiredPartId = machine?.critical_thresholds?.required_part_id;
+                      const part = data?.inventory?.find(p => p.part_id === requiredPartId);
+                      const componentName = part?.part_name || "Critical Component";
+
+                      // Parse supplier
+                      const supplierMatch = order.root_cause?.match(/Selected Supplier:\s*([^\n\r(]+)/) || 
+                                            order.root_cause?.match(/dispatched to\s*([^\n\r(]+)/) || 
+                                            order.root_cause?.match(/order dispatched to\s*([^\n\r(]+)/i);
+                      const supplierName = supplierMatch ? supplierMatch[1].trim() : "Optimal Supplier";
+
+                      let approvalState = "Approved";
+                      let rejectionReason = "";
+                      if (order.status === "Pending_Sourcing") {
+                        approvalState = "Pending";
+                      } else if (order.status === "Rejected") {
+                        approvalState = "Rejected";
+                        rejectionReason = "Supplier risk rating exceeds safety margin (0.15 limit)";
+                      }
+
+                      // Stages: 0: Sourcing Approval, 1: Supplier, 2: Company Warehouse, 3: Machine
+                      let activeStageIndex = 0;
+                      if (approvalState === "Approved") {
+                        activeStageIndex = 1;
+                        if (order.status === "Dispatched_Sourcing_Active") {
+                          activeStageIndex = 1;
+                        } else if (order.status === "Approved") {
+                          activeStageIndex = machine?.status === "Operational" ? 3 : 2;
+                        }
+                      } else if (approvalState === "Rejected") {
+                        activeStageIndex = 0;
+                      }
+
+                      // Details of stages - flipped physically (Machine, Warehouse, Supplier, Approval)
+                      const stages = [
+                        {
+                          id: "machine",
+                          step: 4,
+                          title: `${machineId}`,
+                          subtitle: activeStageIndex >= 3 ? "Applied" : "Pending",
+                          details: activeStageIndex >= 3 ? "Restored to service" : "Awaiting installation",
+                          state: activeStageIndex === 3 ? "completed" : "awaiting"
+                        },
+                        {
+                          id: "warehouse",
+                          step: 3,
+                          title: "Company Warehouse",
+                          subtitle: activeStageIndex >= 2 ? (activeStageIndex === 2 ? "Arrived" : "Completed") : "On Route",
+                          details: activeStageIndex >= 2 ? "Awaiting technician swap" : "Transit in progress",
+                          state: activeStageIndex > 2 ? "completed" : (activeStageIndex === 2 ? "current-active" : "awaiting")
+                        },
+                        {
+                          id: "supplier",
+                          step: 2,
+                          title: supplierName,
+                          subtitle: activeStageIndex >= 1 ? (order.status === "Dispatched_Sourcing_Active" ? "In Transit" : "Completed") : "Awaiting",
+                          details: activeStageIndex >= 1 ? "Priority air courier active" : "Pending approval",
+                          state: activeStageIndex > 1 ? "completed" : (activeStageIndex === 1 ? "current-active" : "awaiting")
+                        },
+                        {
+                          id: "approval",
+                          step: 1,
+                          title: "Sourcing Approval",
+                          subtitle: approvalState === "Approved" ? "Approved" : (approvalState === "Pending" ? "Pending" : "Rejected"),
+                          details: approvalState === "Approved" ? "Purchase order dispatched" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
+                          state: approvalState === "Approved" ? "completed" : (approvalState === "Pending" ? "current-pending" : "blocked")
+                        }
+                      ];
+
+                      const isSelected = order.id === (selectedRoadmapOrderId || orders[0]?.id);
+
+                      return (
+                        <div 
+                          key={order.id} 
+                          onClick={() => setSelectedRoadmapOrderId(order.id)}
+                          className={`border rounded-xl p-3.5 flex flex-col justify-between cursor-pointer transition-all duration-300 min-h-[148px] ${
+                            isSelected 
+                              ? (theme === 'dark' ? 'bg-[#0f131c] border-blue-500/80 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-slate-50 border-blue-400 shadow-sm')
+                              : (theme === 'dark' ? 'bg-[#0f131c]/60 border-[#182030] hover:bg-[#121722]' : 'bg-slate-50/50 border-slate-200 hover:bg-slate-100/30')
+                          }`}
+                        >
+                          {/* Card Header */}
+                          <div className="flex justify-between items-start mb-3 min-w-0">
+                            <div className="min-w-0 mr-4 flex-1">
+                              <h3 className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`} title={componentName}>
+                                {componentName}
+                              </h3>
+                              <p className={`text-[9px] font-mono tracking-widest mt-1 uppercase ${theme === 'dark' ? 'text-indigo-400/90' : 'text-indigo-600/90'}`} title={`${machine?.name || 'Machine'}, ${machineId}`}>
+                                FOR: {machine?.name || "Machine"}, {machineId}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Stepper Progression Container */}
+                          <div className="relative pt-1 pb-3 flex-1 flex flex-col justify-center">
+                            
+                            {/* Connector Line Background */}
+                            <div className={`absolute left-[12.5%] right-[12.5%] top-5 h-[2px] ${theme === 'dark' ? 'bg-[#182030]' : 'bg-slate-200'} pointer-events-none z-0`}></div>
+                            
+                            {/* Connector Line Active Overlay - right-anchored */}
+                            {activeStageIndex > 0 && approvalState !== "Rejected" && (
+                              <div 
+                                className="absolute right-[12.5%] top-5 h-[2px] bg-emerald-500 pointer-events-none z-0 transition-all duration-500"
+                                style={{ 
+                                  width: `${(activeStageIndex / 3) * 75}%`
+                                }}
+                              ></div>
+                            )}
+
+                            {/* Steps Grid */}
+                            <div className="grid grid-cols-4 gap-1 relative z-10">
+                              {stages.map((stage) => {
+                                let nodeStyles = "";
+                                let labelColor = "";
+
+                                if (stage.state === "completed") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-emerald-500 border-emerald-500 text-[#0c0f17]" 
+                                    : "bg-emerald-600 border-emerald-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-emerald-400" : "text-emerald-700";
+                                } else if (stage.state === "current-active") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-blue-500 border-blue-500 text-[#0c0f17]" 
+                                    : "bg-blue-600 border-blue-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-blue-400" : "text-blue-700";
+                                } else if (stage.state === "current-pending") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-amber-500 border-amber-500 text-[#0c0f17]" 
+                                    : "bg-amber-600 border-amber-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-amber-400" : "text-amber-700";
+                                } else if (stage.state === "blocked") {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-red-500 border-red-500 text-[#0c0f17]" 
+                                    : "bg-red-600 border-red-600 text-white";
+                                  labelColor = theme === 'dark' ? "text-red-400" : "text-red-700";
+                                } else {
+                                  nodeStyles = theme === 'dark' 
+                                    ? "bg-[#0e131f] border-slate-700 text-slate-500" 
+                                    : "bg-slate-100 border-slate-300 text-slate-400";
+                                  labelColor = "text-slate-550";
+                                }
+
+                                return (
+                                  <div key={stage.id} className="flex flex-col items-center text-center">
+                                    {/* Circular Node */}
+                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-xs select-none transition-colors duration-300 ${nodeStyles}`}>
+                                      {stage.state === "completed" ? "✓" : stage.step}
+                                    </div>
+
+                                    {/* Info below */}
+                                    <div className="mt-2 max-w-[110px] min-w-0">
+                                      <div className="text-[7.5px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Stage {stage.step}</div>
+                                      <div className={`text-[9.5px] font-bold leading-tight truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`} title={stage.title}>
+                                        {stage.title}
+                                      </div>
+                                      <div className={`text-[8.5px] font-semibold mt-0.5 ${labelColor}`}>
+                                        {stage.subtitle}
+                                      </div>
+                                      <div className="text-[8px] text-slate-500 leading-snug mt-1 max-h-[32px] overflow-hidden">
+                                        {stage.details}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </section>
+
+        </div>
+
+        {/* Zone 4: Action Center */}
+        <section id="zone-4" className="space-y-3 transition-all duration-500">
+          <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
+            <Inbox className="w-3.5 h-3.5 text-blue-400" />
+            <span>Zone 4: Action Center (Active Maintenance Orders)</span>
+          </h2>
+
+          <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl overflow-hidden`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs border-collapse">
+                <thead>
+                  <tr className={`${theme === 'dark' ? 'bg-[#0f131c] border-[#182030]' : 'bg-slate-50 border-slate-100'} text-slate-500 border-b uppercase tracking-widest text-[9px]`}>
+                    <th className="py-3.5 px-5">Ticket ID</th>
+                    <th className="py-3.5 px-4">Equipment</th>
+                    <th className="py-3.5 px-4">Priority</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Assigned Specialist</th>
+                    <th className="py-3.5 px-4 text-right">Autonomous Procurement Actions</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${theme === 'dark' ? 'divide-[#182030]/40 text-slate-300' : 'divide-slate-100 text-slate-700'}`}>
+                  {data?.maintenance_orders && data.maintenance_orders.length > 0 ? (
+                    data.maintenance_orders.map((order) => {
+                      const email = getEmailDraftContent(order.root_cause);
+                      
+                      return (
+                        <tr key={order.id} className={`transition-colors duration-150 ${theme === 'dark' ? 'hover:bg-slate-900/40 text-slate-300' : 'hover:bg-slate-50 text-slate-700'}`}>
+                          <td className={`py-3.5 px-5 font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>#{order.id}</td>
+                          <td className="py-3.5 px-4">
+                            <span className={`font-semibold block ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{order.machine_id}</span>
+                            <span className="text-[10px] text-slate-500">Autonomous PdM</span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              order.priority === "Critical" ? "bg-red-500/10 text-red-400" :
+                              order.priority === "High" ? "bg-amber-500/10 text-amber-400" : "bg-slate-700/20 text-slate-400"
+                            }`}>
+                              {order.priority}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              order.status === "Approved" ? "bg-emerald-500/10 text-emerald-400" :
+                              order.status === "Dispatched_Sourcing_Active" ? "bg-orange-500/10 text-orange-400" : "bg-amber-500/10 text-amber-400"
+                            }`}>
+                              {order.status.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className={`py-3.5 px-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>{order.assigned_technician}</td>
+                          <td className="py-3.5 px-4 text-right">
+                            {email ? (
+                              <button
+                                onClick={() => setSelectedEmail(email)}
+                                className="px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-md hover:bg-blue-600 hover:text-white transition-all duration-200"
+                              >
+                                Inspect Email Draft
+                              </button>
+                            ) : (
+                              <span className="text-slate-500 italic text-[11px]">Direct Part Secure / No Sourcing Draft</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="py-12 text-center text-slate-500 italic">
+                        No active maintenance orders processed in Local Storage.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      {/* Tutorial Tour Guide Overlay */}
+      {showTutorial && (
+        <div className={`fixed inset-0 z-50 transition-all duration-300 ${
+          tutorialSteps[tutorialStep].selector 
+            ? "bg-slate-950/20 pointer-events-none" 
+            : "bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4"
+        }`}>
+          <div 
+            style={tutorialSteps[tutorialStep].style}
+            className={`${theme === 'dark' ? 'bg-[#0c0f17]/95 border-[#182030] text-slate-300 shadow-2xl' : 'bg-white/95 border-slate-200 text-slate-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)]'} rounded-2xl overflow-hidden relative p-6 space-y-6 animate-fadeIn font-sans transition-all duration-500 ease-in-out pointer-events-auto ${
+              tutorialSteps[tutorialStep].selector 
+                ? tutorialSteps[tutorialStep].positionClass 
+                : "w-full max-w-lg"
+            }`}
+          >
+            
+            {/* Header / Skip */}
+            <div className="flex justify-between items-start">
+              <span className="text-[9px] font-mono font-bold uppercase py-0.5 px-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
+                STEP {tutorialStep + 1} OF {tutorialSteps.length}
+              </span>
+              <button 
+                onClick={closeTutorial}
+                className={`font-mono text-xs px-2.5 py-1 rounded transition-colors ${theme === 'dark' ? 'text-slate-505 hover:text-white hover:bg-slate-800/60' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+              >
+                Skip Tour ✕
+              </button>
+            </div>
+
+            {/* Icon & Title */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className={`p-4 rounded-full border shadow-inner ${theme === 'dark' ? 'bg-slate-900/60 border-[#182030]' : 'bg-slate-50 border-slate-100'}`}>
+                {tutorialSteps[tutorialStep].icon}
+              </div>
+              <h3 className={`text-lg font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+                {tutorialSteps[tutorialStep].title}
+              </h3>
+              <p className={`text-xs leading-relaxed font-normal max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                {tutorialSteps[tutorialStep].description}
+              </p>
+            </div>
+
+            {/* Progress Dots */}
+            <div className="flex justify-center space-x-2">
+              {tutorialSteps.map((_, idx) => (
+                <span 
+                  key={idx} 
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === tutorialStep ? "w-6 bg-blue-500" : "w-1.5 bg-slate-700"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className={`flex justify-between items-center pt-2 border-t font-mono text-xs ${theme === 'dark' ? 'border-[#182030]/50' : 'border-slate-100'}`}>
+              <button
+                disabled={tutorialStep === 0}
+                onClick={() => setTutorialStep(prev => prev - 1)}
+                className={`px-4 py-2 rounded border transition-colors ${
+                  tutorialStep === 0 
+                    ? (theme === 'dark' ? "text-slate-600 border-slate-900 cursor-not-allowed" : "text-slate-400 border-slate-200 cursor-not-allowed") 
+                    : (theme === 'dark' ? "text-slate-300 border-slate-800 hover:bg-slate-800" : "text-slate-700 border-slate-250 hover:bg-slate-50")
+                }`}
+              >
+                ◀ Back
+              </button>
+              
+              {tutorialStep < tutorialSteps.length - 1 ? (
+                <button
+                  onClick={() => setTutorialStep(prev => prev + 1)}
+                  className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors shadow-[0_0_15px_rgba(37,99,235,0.2)]"
+                >
+                  Next Step ▶
+                </button>
+              ) : (
+                <button
+                  onClick={closeTutorial}
+                  className="px-5 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                >
+                  Get Started ✓
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Slide-over / Modal Inspector */}
+      {selectedEmail && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-300' : 'bg-white border-slate-200 text-slate-700 shadow-2xl'} border rounded-xl w-full max-w-2xl overflow-hidden relative`}>
+            <div className={`border-b px-6 py-4 flex justify-between items-center ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-100 bg-slate-50'}`}>
+              <h3 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+                <Mail className="w-4 h-4 text-blue-400" />
+                <span>Autonomous Procurement Agent Draft</span>
+              </h3>
+              <button 
+                onClick={() => setSelectedEmail(null)}
+                className={`text-slate-500 transition-colors duration-150 ${theme === 'dark' ? 'hover:text-white' : 'hover:text-slate-800'}`}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className={`rounded-lg p-4 font-mono text-xs space-y-1.5 border ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
+                <div><span className="text-slate-500">From:</span> <span className="text-emerald-400">{selectedEmail.from}</span></div>
+                <div><span className="text-slate-500">To:</span> <span className="text-blue-400">{selectedEmail.to}</span></div>
+                <div><span className="text-slate-500">Subject:</span> <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedEmail.subject}</span></div>
+                <div><span className="text-slate-500">Date:</span> <span className="text-slate-400">{selectedEmail.date}</span></div>
+              </div>
+              
+              <div className={`rounded-lg p-4 font-mono text-[11px] max-h-80 overflow-y-auto border leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
+                {selectedEmail.body}
+              </div>
+            </div>
+
+            <div className={`border-t px-6 py-4 flex justify-end space-x-3 font-mono text-xs ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-100 bg-slate-50'}`}>
+              <button 
+                onClick={() => setSelectedEmail(null)}
+                className={`px-4 py-2 rounded transition-colors duration-150 ${theme === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/50'}`}
+              >
+                Dismiss
+              </button>
+              <button 
+                onClick={() => {
+                  alert("Expedited dispatch webhook triggered! Order confirmed.");
+                  setSelectedEmail(null);
+                }}
+                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors duration-150"
+              >
+                Approve & Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visual Editor Configurator Modal Panel */}
+      {showEditor && (
+        <div className="fixed inset-0 z-55 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`w-full max-w-5xl rounded-2xl border flex flex-col max-h-[90vh] overflow-hidden shadow-2xl transition-all duration-300 ${
+            theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-300 shadow-[0_0_50px_rgba(6,182,212,0.15)]' : 'bg-white border-slate-200 text-slate-700'
+          }`}>
+            
+            {/* Modal Header */}
+            <div className={`border-b px-6 py-4 flex justify-between items-center ${
+              theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/80' : 'border-slate-100 bg-slate-50'
+            }`}>
+              <div>
+                <h3 className={`font-mono text-sm font-bold uppercase tracking-wider flex items-center space-x-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-slate-800'
+                }`}>
+                  <Settings className="w-5 h-5 text-cyan-400 animate-spin-slow" />
+                  <span>Visual Fleet & Graph Configurator</span>
+                </h3>
+                <p className="text-[10px] text-slate-500 font-mono mt-0.5">Customize your factory machines, spare parts catalog, and supply chain routing nodes/edges</p>
+              </div>
+              <button 
+                onClick={() => setShowEditor(false)}
+                className={`text-slate-500 hover:text-slate-300 transition-colors p-1.5 rounded-lg ${
+                  theme === 'dark' ? 'hover:bg-slate-800/45' : 'hover:bg-slate-100'
+                }`}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Presets Quick Load Bar inside modal */}
+            <div className={`px-6 py-3.5 border-b flex flex-wrap items-center justify-between gap-3 text-xs font-mono bg-cyan-950/[0.08] ${
+              theme === 'dark' ? 'border-[#182030]/60 text-slate-400' : 'border-slate-150 text-slate-600'
+            }`}>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">LOAD PRESET STRUCTURES:</span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("steel")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-blue-950/20 border-blue-500/30 text-blue-400 hover:bg-blue-900/30'
+                      : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Heavy Steel Mill
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("petrochemical")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/30'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                >
+                  Petrochemical Refinery
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("automotive")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-purple-950/20 border-purple-500/30 text-purple-400 hover:bg-purple-900/30'
+                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                  }`}
+                >
+                  Robotics Assembly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset("empty")}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'
+                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Clear to Empty (Zero)
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Tabs Selector */}
+            <div className={`flex border-b font-mono text-xs p-1 gap-1 ${
+              theme === 'dark' ? 'border-[#182030]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-50'
+            }`}>
+              {[
+                { tabId: "machines", label: "Fleet Assets", icon: <Cpu className="w-3.5 h-3.5" /> },
+                { tabId: "inventory", label: "Spare Inventory", icon: <Database className="w-3.5 h-3.5" /> },
+                { tabId: "nodes", label: "Graph Nodes", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+                { tabId: "edges", label: "Graph Edges", icon: <Activity className="w-3.5 h-3.5" /> },
+              ].map(t => (
+                <button
+                  key={t.tabId}
+                  onClick={() => setEditorTab(t.tabId)}
+                  className={`flex-1 py-2.5 px-3 rounded-lg font-bold uppercase transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                    editorTab === t.tabId
+                      ? (theme === 'dark' 
+                          ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.05)]" 
+                          : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/20"
+                  }`}
+                >
+                  {t.icon}
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Modal Body / Tab Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              
+              {/* FLEET ASSETS TAB */}
+              {editorTab === "machines" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Fleet Asset System Profiles ({editorMachines.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditorMachines(prev => [
+                        ...prev,
+                        { id: `MCH-10${prev.length + 1}`, name: `Asset ${prev.length + 1}`, location: "Bay 1 Assembly", thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" } }
+                      ])}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Fleet Machine
+                    </button>
+                  </div>
+
+                  {editorMachines.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No machines defined in custom fleet database. Click "Add Fleet Machine" or load a preset.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editorMachines.map((m, idx) => (
+                        <div key={idx} className={`border p-4 rounded-xl space-y-3 font-mono text-xs relative ${
+                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                        }`}>
+                          <div className="flex justify-between items-center border-b pb-2 mb-2 border-slate-700/20">
+                            <span className="text-cyan-500 font-bold">Fleet Asset #{idx + 1} Profile</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditorMachines(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
+                            >
+                              <Trash className="w-3 h-3" /> Remove
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Asset ID</label>
+                              <input
+                                type="text"
+                                value={m.id}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, id: val } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'
+                                } border`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Name</label>
+                              <input
+                                type="text"
+                                value={m.name}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500'
+                                } border`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Bay Location</label>
+                              <input
+                                type="text"
+                                value={m.location}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, location: val } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                } border`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Requires Spare Part</label>
+                              <select
+                                value={m.thresholds?.required_part_id || "PART-001"}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, required_part_id: val } } : item));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none text-xs ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                } border`}
+                              >
+                                {editorInventory.length === 0 ? (
+                                  <option value="PART-001">PART-001 (Default)</option>
+                                ) : (
+                                  editorInventory.map(part => (
+                                    <option key={part.part_id} value={part.part_id}>{part.part_id} - {part.part_name}</option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <span className="block text-[9px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Winding Temp limit (°C)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.temperature || 90.0}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, temperature: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Vibration limit (mm/s)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.vibration || 8.0}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, vibration: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Discharge Pres limit (Bar)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.pressure || 6.5}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, pressure: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Coil Amps limit (A)</label>
+                                <input
+                                  type="number"
+                                  value={m.thresholds?.current || 15.0}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0.0;
+                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, current: val } } : item));
+                                  }}
+                                  className={`w-full rounded-lg p-1.5 outline-none ${
+                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                  } border`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SPARE INVENTORY TAB */}
+              {editorTab === "inventory" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Spare Parts Catalog ({editorInventory.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditorInventory(prev => [
+                        ...prev,
+                        { part_id: `PART-10${prev.length + 1}`, part_name: `Spare Part ${prev.length + 1}`, stock_level: 5, reorder_point: 2, cost: 150.00, location: "Warehouse A - Aisle 1" }
+                      ])}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Spare Part
+                    </button>
+                  </div>
+
+                  {editorInventory.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No spare parts defined. Click "Add Spare Part" or load a preset.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editorInventory.map((item, idx) => (
+                        <div key={idx} className={`border p-4 rounded-xl grid grid-cols-1 md:grid-cols-7 gap-3 font-mono text-xs relative ${
+                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                        }`}>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Part ID</label>
+                            <input
+                              type="text"
+                              value={item.part_id}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, part_id: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Part Name</label>
+                            <input
+                              type="text"
+                              value={item.part_name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, part_name: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Stock Level</label>
+                            <input
+                              type="number"
+                              value={item.stock_level}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, stock_level: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Reorder Pt</label>
+                            <input
+                              type="number"
+                              value={item.reorder_point}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, reorder_point: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Unit Cost ($)</label>
+                            <input
+                              type="number"
+                              value={item.cost}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0.0;
+                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, cost: val } : p));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div className="flex items-end justify-between gap-2">
+                            <div className="flex-1">
+                              <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Location</label>
+                              <input
+                                type="text"
+                                value={item.location}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, location: val } : p));
+                                }}
+                                className={`w-full rounded-lg p-2 outline-none ${
+                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                                } border`}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEditorInventory(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-300 font-bold p-2.5 rounded-lg border border-red-500/10 hover:bg-red-500/10"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* GRAPH NODES TAB */}
+              {editorTab === "nodes" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Supply Chain Nodes ({editorNodes.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditorNodes(prev => [
+                        ...prev,
+                        { id: `SUP-10${prev.length + 1}`, name: `Supplier ${prev.length + 1}`, type: "Supplier", risk: 0.15, email: "sales@supplier.com" }
+                      ])}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Graph Node
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {editorNodes.map((n, idx) => (
+                      <div key={idx} className={`border p-4 rounded-xl space-y-3 font-mono text-xs relative ${
+                        theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                      }`}>
+                        <div className="flex justify-between items-center border-b pb-1.5 mb-1.5 border-slate-700/20">
+                          <span className="text-cyan-500 font-bold uppercase text-[10px]">Node #{idx + 1} Profile</span>
+                          <button
+                            type="button"
+                            onClick={() => setEditorNodes(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
+                          >
+                            <Trash className="w-3 h-3" /> Remove
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node ID (Tag)</label>
+                            <input
+                              type="text"
+                              value={n.id}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, id: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Name</label>
+                            <input
+                              type="text"
+                              value={n.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Type</label>
+                            <select
+                              value={n.type}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, type: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              <option value="Supplier">Supplier (Tier 1)</option>
+                              <option value="Part">Spare Part Component</option>
+                              <option value="Material">Raw Material (Tier 2)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Supplier Risk (0.0 to 1.0)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={n.risk || 0.0}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0.0;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, risk: val } : item));
+                              }}
+                              disabled={n.type === "Part"}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                n.type === "Part" ? "bg-slate-850/40 text-slate-500 cursor-not-allowed border-slate-800" :
+                                (theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800')
+                              } border`}
+                            />
+                          </div>
+                        </div>
+                        {n.type === "Supplier" && (
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Contact Email</label>
+                            <input
+                              type="email"
+                              value={n.email || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, email: val } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                              placeholder="sales@supplier.com"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* GRAPH EDGES TAB */}
+              {editorTab === "edges" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Supplier Graph Routing Edges ({editorEdges.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const defaultSource = editorNodes.find(n => n.type === "Supplier")?.id || "SUP-001";
+                        const defaultTarget = editorNodes.find(n => n.type === "Part")?.id || "PART-001";
+                        setEditorEdges(prev => [
+                          ...prev,
+                          { source: defaultSource, target: defaultTarget, relationship: "SUPPLIES", transit: 5, price: 200.00 }
+                        ]);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
+                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Graph Connection (Edge)
+                    </button>
+                  </div>
+
+                  {editorEdges.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No routing connections mapped in the database. Click "Add Graph Connection" or load a preset.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editorEdges.map((e, idx) => (
+                        <div key={idx} className={`border p-4 rounded-xl grid grid-cols-1 md:grid-cols-6 gap-3 font-mono text-xs relative ${
+                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
+                        }`}>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Source (From)</label>
+                            <select
+                              value={e.source}
+                              onChange={(val) => {
+                                const v = val.target.value;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, source: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              {editorNodes.map(node => (
+                                <option key={node.id} value={node.id}>{node.id} ({node.name})</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Target (To)</label>
+                            <select
+                              value={e.target}
+                              onChange={(val) => {
+                                const v = val.target.value;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, target: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              {editorNodes.map(node => (
+                                <option key={node.id} value={node.id}>{node.id} ({node.name})</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Relationship</label>
+                            <select
+                              value={e.relationship}
+                              onChange={(val) => {
+                                const v = val.target.value;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, relationship: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            >
+                              <option value="SUPPLIES">SUPPLIES (Supplier &rarr; Part)</option>
+                              <option value="USED_IN">USED_IN (Material &rarr; Part)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Transit Lead Time (Days)</label>
+                            <input
+                              type="number"
+                              value={e.transit}
+                              onChange={(val) => {
+                                const v = parseInt(val.target.value) || 0;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, transit: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Price / Cost ($)</label>
+                            <input
+                              type="number"
+                              value={e.price}
+                              onChange={(val) => {
+                                const v = parseFloat(val.target.value) || 0.0;
+                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, price: v } : item));
+                              }}
+                              className={`w-full rounded-lg p-2 outline-none ${
+                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
+                              } border`}
+                            />
+                          </div>
+                          <div className="flex items-end justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setEditorEdges(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-300 font-bold p-2.5 rounded-lg border border-red-500/10 hover:bg-red-500/10"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className={`border-t px-6 py-4 flex justify-between items-center font-mono text-xs ${
+              theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/90' : 'border-slate-100 bg-slate-50'
+            }`}>
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                {savingConfig ? "WRITING TO LOCAL STORAGE..." : "STANDING BY TO COMMIT CONFIG"}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditor(false)}
+                  className={`px-4 py-2 rounded-xl transition-all duration-200 border ${
+                    theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200/50'
+                  }`}
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConfig}
+                  disabled={savingConfig}
+                  className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.2)] disabled:opacity-50"
+                >
+                  {savingConfig ? "Synchronizing..." : "Apply & Sync to Local Storage"}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
