@@ -1133,25 +1133,32 @@ export default function Home() {
       const refKey = `${projectId}-${order.id}`;
       const prevStage = prevStages.current[refKey];
       if (prevStage !== undefined && activeStageIndex !== prevStage) {
-        const stagesNames = [
-          "Sourcing Approval",
-          "Supplier Shipment",
-          "Warehouse Arrival",
-          "Technician Installation"
+        // Stage labels that match exactly what the UI displays
+        const supplierMatch = order.root_cause?.match(/Selected Supplier:\s*([^\n\r(]+)/) ||
+                              order.root_cause?.match(/dispatched to\s*([^\n\r(]+)/i);
+        const supplierLabel = supplierMatch ? supplierMatch[1].trim() : "Supplier";
+
+        const stageLabels = [
+          { n: 1, name: "Sourcing Approval" },
+          { n: 2, name: supplierLabel },
+          { n: 3, name: "Company Warehouse" },
+          { n: 4, name: machine?.id || "Machine" }
         ];
-        
-        const finishedStageName = stagesNames[prevStage];
-        const nextStageName = stagesNames[activeStageIndex];
-        
+
+        const prevLabel = stageLabels[prevStage];
+        const nextLabel = stageLabels[activeStageIndex];
+        const prevDisplay = prevLabel ? `Stage ${prevLabel.n}: ${prevLabel.name}` : `Stage ${prevStage + 1}`;
+        const nextDisplay = nextLabel ? `Stage ${nextLabel.n}: ${nextLabel.name}` : `Stage ${activeStageIndex + 1}`;
+
         if (activeStageIndex > prevStage) {
           triggerDeviceNotification(
-            "Milestone Completed",
-            `Component '${componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
+            "Stage Advanced",
+            `${componentName} (Ticket #${order.id}) moved from ${prevDisplay} → ${nextDisplay}.`
           );
         } else {
           triggerDeviceNotification(
-            "Milestone Rolled Back",
-            `Component '${componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
+            "Stage Rolled Back",
+            `${componentName} (Ticket #${order.id}) reverted from ${prevDisplay} → ${nextDisplay}.`
           );
         }
       }

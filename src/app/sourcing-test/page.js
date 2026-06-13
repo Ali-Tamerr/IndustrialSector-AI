@@ -111,25 +111,33 @@ export default function SourcingTestPage() {
         const refKey = `${workflow.id}-${order.id}`;
         const prevStage = prevStages.current[refKey];
         if (prevStage !== undefined && activeStageIndex !== prevStage) {
-          const stagesNames = [
-            "Sourcing Approval",
-            "Supplier Shipment",
-            "Warehouse Arrival",
-            "Technician Installation"
+          // Derive the supplier name the same way the UI card does
+          const supplierMatch = order.rootCause?.match(/Selected Supplier:\s*([^\n\r(]+)/) ||
+                                order.rootCause?.match(/dispatched to\s*([^\n\r(]+)/i);
+          const supplierLabel = supplierMatch ? supplierMatch[1].trim() : "Supplier";
+
+          // Labels match exactly what's shown on the progress bar
+          const stageLabels = [
+            { n: 1, name: "Sourcing Approval" },
+            { n: 2, name: supplierLabel },
+            { n: 3, name: "Company Warehouse" },
+            { n: 4, name: order.machineId || "Machine" }
           ];
-          
-          const finishedStageName = stagesNames[prevStage];
-          const nextStageName = stagesNames[activeStageIndex];
-          
+
+          const prevLabel = stageLabels[prevStage];
+          const nextLabel = stageLabels[activeStageIndex];
+          const prevDisplay = prevLabel ? `Stage ${prevLabel.n}: ${prevLabel.name}` : `Stage ${prevStage + 1}`;
+          const nextDisplay = nextLabel ? `Stage ${nextLabel.n}: ${nextLabel.name}` : `Stage ${activeStageIndex + 1}`;
+
           if (activeStageIndex > prevStage) {
             triggerDeviceNotification(
-              "Milestone Completed",
-              `Component '${order.componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Workflow: ${workflow.name || workflow.id}).`
+              "Stage Advanced",
+              `${order.componentName} (Ticket #${order.id}) moved from ${prevDisplay} → ${nextDisplay}.`
             );
           } else {
             triggerDeviceNotification(
-              "Milestone Rolled Back",
-              `Component '${order.componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Workflow: ${workflow.name || workflow.id}).`
+              "Stage Rolled Back",
+              `${order.componentName} (Ticket #${order.id}) reverted from ${prevDisplay} → ${nextDisplay}.`
             );
           }
         }
