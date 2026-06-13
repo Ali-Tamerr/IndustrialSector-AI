@@ -6,6 +6,10 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+self.addEventListener('fetch', (event) => {
+  // Pass-through fetch handler to satisfy browser PWA installability requirements
+});
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
