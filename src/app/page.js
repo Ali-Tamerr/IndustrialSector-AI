@@ -1040,25 +1040,46 @@ export default function Home() {
     if (typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "granted") {
         try {
-          new Notification(title, {
-            body: message,
-            tag: "sourcing-milestone"
-          });
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+              registration.showNotification(title, {
+                body: message,
+                tag: "sourcing-milestone"
+              });
+            }).catch(err => {
+              console.error("SW ready failed, falling back to Notification constructor:", err);
+              new Notification(title, { body: message, tag: "sourcing-milestone" });
+            });
+          } else {
+            new Notification(title, { body: message, tag: "sourcing-milestone" });
+          }
         } catch (err) {
           console.error("Failed to trigger native Notification", err);
         }
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            new Notification(title, { body: message, tag: "sourcing-milestone" });
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, { body: message, tag: "sourcing-milestone" });
+              });
+            } else {
+              new Notification(title, { body: message, tag: "sourcing-milestone" });
+            }
           }
         });
       }
     }
   }, []);
 
-  // Request browser Notification permission on mount or first user interaction click
+  // Request browser Notification permission on mount or first user interaction click, and register Service Worker
   useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(reg => console.log("SW Registered:", reg.scope))
+        .catch(err => console.error("SW Registration failed:", err));
+    }
+
     if (typeof window !== "undefined" && "Notification" in window) {
       setNotificationPermission(Notification.permission);
       if (Notification.permission === "default") {
