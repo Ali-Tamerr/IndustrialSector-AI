@@ -475,6 +475,15 @@ export default function Home() {
   const pollIntervalRef = useRef(null);
 
   const [theme, setTheme] = useState("dark");
+  const [notificationPermission, setNotificationPermission] = useState("default");
+
+  const requestNotificationPermission = () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        setNotificationPermission(permission);
+      });
+    }
+  };
 
   // Load and apply theme globally
   useEffect(() => {
@@ -533,7 +542,45 @@ export default function Home() {
     const savedProjects = localStorage.getItem("projects");
     if (savedProjects) {
       try {
-        setProjects(JSON.parse(savedProjects));
+        const parsedProjects = JSON.parse(savedProjects);
+        setProjects(parsedProjects);
+
+        // Pre-initialize milestone refs for all projects to prevent initial-load notification spam
+        parsedProjects.forEach(proj => {
+          const localDataRaw = localStorage.getItem(`workspace_data_${proj.id}`);
+          if (localDataRaw) {
+            try {
+              const data = JSON.parse(localDataRaw);
+              if (data.maintenance_orders) {
+                data.maintenance_orders.forEach(order => {
+                  const machine = data.machines?.find(m => m.id === order.machine_id);
+                  const machineStatus = machine?.status || "Operational";
+                  let approvalState = "Approved";
+                  if (order.status === "Pending_Sourcing") {
+                    approvalState = "Pending";
+                  } else if (order.status === "Rejected") {
+                    approvalState = "Rejected";
+                  }
+
+                  let activeStageIndex = 0;
+                  if (approvalState === "Approved") {
+                    activeStageIndex = 1;
+                    if (order.status === "Dispatched_Sourcing_Active") {
+                      activeStageIndex = 1;
+                    } else if (order.status === "Approved") {
+                      activeStageIndex = machineStatus === "Operational" ? 3 : 2;
+                    }
+                  }
+                  
+                  const refKey = `${proj.id}-${order.id}`;
+                  prevStages.current[refKey] = activeStageIndex;
+                });
+              }
+            } catch (err) {
+              console.error("Failed to parse project data during init:", err);
+            }
+          }
+        });
       } catch (e) {
         console.error("Failed to parse projects:", e);
       }
@@ -988,6 +1035,108 @@ export default function Home() {
     }
   }, [tutorialStep, showTutorial]);
 
+  // Native browser notifications helper
+  const triggerDeviceNotification = useCallback((title, message) => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        try {
+          new Notification(title, {
+            body: message,
+            tag: "sourcing-milestone"
+          });
+        } catch (err) {
+          console.error("Failed to trigger native Notification", err);
+        }
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification(title, { body: message, tag: "sourcing-milestone" });
+          }
+        });
+      }
+    }
+  }, []);
+
+  // Request browser Notification permission on mount or first user interaction click
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+      
+      const request = () => {
+        if (Notification.permission === "default") {
+          Notification.requestPermission().then(permission => {
+            setNotificationPermission(permission);
+          });
+        }
+      };
+      window.addEventListener("click", request, { once: true });
+      return () => window.removeEventListener("click", request);
+    }
+  }, []);
+
+  // Watcher and notifier for milestone changes (scoped to all projects)
+  const checkMilestones = useCallback((projectId, maintenanceOrders, machines, inventory) => {
+    if (!maintenanceOrders) return;
+
+    maintenanceOrders.forEach(order => {
+      const machine = machines?.find(m => m.id === order.machine_id);
+      const machineStatus = machine?.status || "Operational";
+      const requiredPartId = machine?.critical_thresholds?.required_part_id;
+      const part = inventory?.find(p => p.part_id === requiredPartId);
+      const componentName = part?.part_name || "Critical Component";
+
+      // Compute active stage index
+      let approvalState = "Approved";
+      if (order.status === "Pending_Sourcing") {
+        approvalState = "Pending";
+      } else if (order.status === "Rejected") {
+        approvalState = "Rejected";
+      }
+
+      let activeStageIndex = 0;
+      if (approvalState === "Approved") {
+        activeStageIndex = 1;
+        if (order.status === "Dispatched_Sourcing_Active") {
+          activeStageIndex = 1;
+        } else if (order.status === "Approved") {
+          activeStageIndex = machineStatus === "Operational" ? 3 : 2;
+        }
+      }
+
+      const refKey = `${projectId}-${order.id}`;
+      const prevStage = prevStages.current[refKey];
+      if (prevStage !== undefined && activeStageIndex !== prevStage) {
+        const stagesNames = [
+          "Sourcing Approval",
+          "Supplier Shipment",
+          "Warehouse Arrival",
+          "Technician Installation"
+        ];
+        
+        const finishedStageName = stagesNames[prevStage];
+        const nextStageName = stagesNames[activeStageIndex];
+        
+        if (activeStageIndex > prevStage) {
+          triggerDeviceNotification(
+            "Milestone Completed",
+            `Component '${componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
+          );
+        } else {
+          triggerDeviceNotification(
+            "Milestone Rolled Back",
+            `Component '${componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
+          );
+        }
+      }
+
+      // Update ref
+      prevStages.current[refKey] = activeStageIndex;
+    });
+  }, [triggerDeviceNotification]);
+
   // Core API Poller
   const refreshData = useCallback(async () => {
     try {
@@ -1020,6 +1169,7 @@ export default function Home() {
           }
         }
         setData(parsed);
+        checkMilestones(activeId, parsed.maintenance_orders, parsed.machines, parsed.inventory);
       } else {
         const savedProjects = localStorage.getItem("projects");
         if (savedProjects) {
@@ -1029,6 +1179,7 @@ export default function Home() {
             const seeded = seedWorkspaceData(currentProj.type, currentProj.templateId, currentProj.customMachines);
             localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(seeded));
             setData(seeded);
+            checkMilestones(activeId, seeded.maintenance_orders, seeded.machines, seeded.inventory);
           } else {
             setData(null);
           }
@@ -1041,7 +1192,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [activeProjectId]);
+  }, [activeProjectId, checkMilestones]);
 
   // Keep polling in the background continuously
   useEffect(() => {
@@ -1058,15 +1209,23 @@ export default function Home() {
     };
   }, [isSetupCompleted, refreshData]);
 
-  // Listen for storage events to update data instantly across tabs
+  // Listen for storage events to update data instantly across tabs for ALL projects
   useEffect(() => {
     const handleStorageChange = (e) => {
-      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
-      if (e.key === `workspace_data_${activeId}`) {
+      if (e.key && e.key.startsWith("workspace_data_")) {
+        const projectId = e.key.replace("workspace_data_", "");
         if (e.newValue) {
           try {
             const parsed = JSON.parse(e.newValue);
-            setData(parsed);
+            
+            // 1. Run the milestone check regardless of whether it's active
+            checkMilestones(projectId, parsed.maintenance_orders, parsed.machines, parsed.inventory);
+            
+            // 2. If it is the currently active project on this tab, update the state to refresh the UI
+            const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+            if (projectId === activeId) {
+              setData(parsed);
+            }
           } catch (err) {
             console.error("Storage event parse error", err);
           }
@@ -1078,105 +1237,7 @@ export default function Home() {
     return () => {
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [activeProjectId]);
-
-  // Native browser notifications helper
-  const triggerDeviceNotification = useCallback((title, message) => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      if (Notification.permission === "granted") {
-        try {
-          new Notification(title, {
-            body: message,
-            tag: "sourcing-milestone"
-          });
-        } catch (err) {
-          console.error("Failed to trigger native Notification", err);
-        }
-      } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            new Notification(title, { body: message, tag: "sourcing-milestone" });
-          }
-        });
-      }
-    }
-  }, []);
-
-  // Request browser Notification permission on mount or first user interaction click
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      if (Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-      
-      const request = () => {
-        if (Notification.permission === "default") {
-          Notification.requestPermission();
-        }
-      };
-      window.addEventListener("click", request, { once: true });
-      return () => window.removeEventListener("click", request);
-    }
-  }, []);
-
-  // Watch for milestone changes in Zone 3 sourcing progression
-  useEffect(() => {
-    if (!data?.maintenance_orders) return;
-
-    data.maintenance_orders.forEach(order => {
-      const machine = data.machines?.find(m => m.id === order.machine_id);
-      const machineStatus = machine?.status || "Operational";
-      const requiredPartId = machine?.critical_thresholds?.required_part_id;
-      const part = data.inventory?.find(p => p.part_id === requiredPartId);
-      const componentName = part?.part_name || "Critical Component";
-
-      // Compute active stage index
-      let approvalState = "Approved";
-      if (order.status === "Pending_Sourcing") {
-        approvalState = "Pending";
-      } else if (order.status === "Rejected") {
-        approvalState = "Rejected";
-      }
-
-      let activeStageIndex = 0;
-      if (approvalState === "Approved") {
-        activeStageIndex = 1;
-        if (order.status === "Dispatched_Sourcing_Active") {
-          activeStageIndex = 1;
-        } else if (order.status === "Approved") {
-          activeStageIndex = machineStatus === "Operational" ? 3 : 2;
-        }
-      }
-
-      const prevStage = prevStages.current[order.id];
-      if (prevStage !== undefined && activeStageIndex !== prevStage) {
-        const stagesNames = [
-          "Sourcing Approval",
-          "Supplier Shipment",
-          "Warehouse Arrival",
-          "Technician Installation"
-        ];
-        
-        const finishedStageName = stagesNames[prevStage];
-        const nextStageName = stagesNames[activeStageIndex];
-        
-        if (activeStageIndex > prevStage) {
-          triggerDeviceNotification(
-            "Milestone Completed",
-            `Component '${componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
-          );
-        } else {
-          triggerDeviceNotification(
-            "Milestone Rolled Back",
-            `Component '${componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
-          );
-        }
-      }
-
-      // Update ref
-      prevStages.current[order.id] = activeStageIndex;
-    });
-  }, [data?.maintenance_orders, data?.machines, data?.inventory, triggerDeviceNotification]);
+  }, [activeProjectId, checkMilestones]);
 
   // Auto scroll console terminal scroll container (non-intrusive)
   useEffect(() => {
@@ -2215,6 +2276,16 @@ Industrial Sector AI Automation Network`;
             <span className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>FLEET PERFORMANCE</span>
             <span className={`${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'} font-bold tracking-widest`}>99.78% RESILIENT</span>
           </div>
+
+          {notificationPermission !== "granted" && (
+            <button
+              onClick={requestNotificationPermission}
+              className="px-3 py-2 font-mono text-xs font-bold rounded bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center space-x-1.5 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+              title="Click to authorize system notifications on milestone events"
+            >
+              <span>🔔 Enable System Notifications</span>
+            </button>
+          )}
 
           <button
             onClick={() => { setTutorialStep(0); setShowTutorial(true); }}

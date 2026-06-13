@@ -8,7 +8,16 @@ export default function SourcingTestPage() {
   const [theme, setTheme] = useState("dark");
   const [workflowsData, setWorkflowsData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notificationPermission, setNotificationPermission] = useState("default");
   const prevStages = useRef({});
+
+  const requestNotificationPermission = () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        setNotificationPermission(permission);
+      });
+    }
+  };
 
   // Native browser notifications helper
   const triggerDeviceNotification = useCallback((title, message) => {
@@ -35,13 +44,16 @@ export default function SourcingTestPage() {
   // Request browser Notification permission on mount or first user interaction click
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationPermission(Notification.permission);
       if (Notification.permission === "default") {
         Notification.requestPermission();
       }
       
       const request = () => {
         if (Notification.permission === "default") {
-          Notification.requestPermission();
+          Notification.requestPermission().then(permission => {
+            setNotificationPermission(permission);
+          });
         }
       };
       window.addEventListener("click", request, { once: true });
@@ -306,6 +318,15 @@ export default function SourcingTestPage() {
           </div>
 
           <div className="flex items-center space-x-3">
+            {notificationPermission !== "granted" && (
+              <button
+                onClick={requestNotificationPermission}
+                className="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs animate-pulse"
+                title="Click to authorize system notifications on milestone events"
+              >
+                🔔 ENABLE SYSTEM NOTIFICATIONS
+              </button>
+            )}
             <button 
               onClick={toggleTheme}
               className={`px-3 py-1.5 rounded border text-xs font-semibold ${
