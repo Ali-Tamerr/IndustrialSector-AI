@@ -470,7 +470,6 @@ export default function Home() {
   const [simulatorDropdownOpen, setSimulatorDropdownOpen] = useState(false);
   const [componentsPopupMachineId, setComponentsPopupMachineId] = useState(null);
   const [graphsPopupMachineId, setGraphsPopupMachineId] = useState(null);
-  const [toasts, setToasts] = useState([]);
   const prevStages = useRef({});
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
@@ -1100,21 +1099,22 @@ export default function Home() {
     };
   }, [activeProjectId]);
 
-  // Toast notifications helper
-  const addToast = useCallback((title, message) => {
-    const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, title, message }]);
-    
-    // Also push a native Web Notification if permission is granted
+  // Native browser notifications helper
+  const triggerDeviceNotification = useCallback((title, message) => {
     if (typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "granted") {
-        new Notification(title, {
-          body: message
-        });
+        try {
+          new Notification(title, {
+            body: message,
+            tag: "sourcing-milestone"
+          });
+        } catch (err) {
+          console.error("Failed to trigger native Notification", err);
+        }
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            new Notification(title, { body: message });
+            new Notification(title, { body: message, tag: "sourcing-milestone" });
           }
         });
       }
@@ -1172,12 +1172,12 @@ export default function Home() {
         const nextStageName = stagesNames[activeStageIndex];
         
         if (activeStageIndex > prevStage) {
-          addToast(
+          triggerDeviceNotification(
             "Milestone Completed",
             `Component '${componentName}' progressed from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
           );
         } else {
-          addToast(
+          triggerDeviceNotification(
             "Milestone Rolled Back",
             `Component '${componentName}' rolled back from '${finishedStageName}' to '${nextStageName}' (Ticket #${order.id}).`
           );
@@ -1187,7 +1187,7 @@ export default function Home() {
       // Update ref
       prevStages.current[order.id] = activeStageIndex;
     });
-  }, [data?.maintenance_orders, data?.machines, data?.inventory, addToast]);
+  }, [data?.maintenance_orders, data?.machines, data?.inventory, triggerDeviceNotification]);
 
   // Auto scroll console terminal scroll container (non-intrusive)
   useEffect(() => {
@@ -3743,58 +3743,6 @@ Industrial Sector AI Automation Network`;
         </div>
       )}
 
-      {/* Toast Notifications Container */}
-      <div className="fixed bottom-5 right-5 flex flex-col space-y-3 z-50 pointer-events-none">
-        <style>{`
-          @keyframes slideIn {
-            from { transform: translateX(120%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-          }
-          .animate-slide-in {
-            animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          }
-        `}</style>
-        {toasts.map(toast => (
-          <div key={toast.id} className="pointer-events-auto">
-            <Toast 
-              toast={toast} 
-              theme={theme}
-              onClose={(id) => setToasts(prev => prev.filter(t => t.id !== id))} 
-            />
-          </div>
-        ))}
-      </div>
-
-    </div>
-  );
-}
-
-// Inline helper component for Toast
-function Toast({ toast, onClose, theme }) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose(toast.id);
-    }, 6000);
-    return () => clearTimeout(timer);
-  }, [toast, onClose]);
-
-  const bgClass = theme === 'dark' ? 'bg-[#0f131c] border-blue-500/30' : 'bg-white border-slate-200 shadow-md';
-  const textClass = theme === 'dark' ? 'text-slate-350' : 'text-slate-600';
-  const titleClass = theme === 'dark' ? 'text-white' : 'text-slate-800';
-
-  return (
-    <div className={`p-4 rounded-xl border flex items-start space-x-3 w-80 animate-slide-in relative overflow-hidden ${bgClass}`}>
-      <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500" />
-      <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
-        <Activity className="h-4 w-4 text-blue-400 animate-pulse" />
-      </div>
-      <div className="flex-1 min-w-0 font-mono text-[10px]">
-        <div className={`font-bold text-xs truncate ${titleClass}`}>{toast.title}</div>
-        <p className={`mt-1 leading-relaxed ${textClass}`}>{toast.message}</p>
-      </div>
-      <button onClick={() => onClose(toast.id)} className="text-slate-500 hover:text-slate-300 text-xs">
-        ✕
-      </button>
     </div>
   );
 }
