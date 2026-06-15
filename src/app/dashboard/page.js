@@ -2244,7 +2244,7 @@ Industrial Sector AI Automation Network`;
                               <div className="flex flex-col space-y-2">
                                 <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
                                   <span>WINDING TEMPERATURE</span>
-                                  <span className={theme === 'dark' ? 'text-red-400' : 'text-red-600'}>{latest?.temperature?.toFixed(1)}°C</span>
+                                  <span style={{ color: health.sparkColor }} className="font-bold">{latest?.temperature?.toFixed(1)}°C</span>
                                 </div>
                                 <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
                                   <Sparkline data={tempHistory} color={health.sparkColor} width={220} height={50} />
