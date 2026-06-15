@@ -584,9 +584,114 @@ export default function Home() {
       updateTabActiveProject(activeProjectId);
     };
     
+    heartbeat(); // Run immediately on mount or active project change
     const interval = setInterval(heartbeat, 5000);
     return () => clearInterval(interval);
   }, [isSetupCompleted, activeProjectId, updateTabActiveProject]);
+
+  // Check if this tab is the leader tab for the active project
+  const isTabLeader = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const tabId = sessionStorage.getItem("tabId");
+      if (!tabId) return false;
+      
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) return false;
+      
+      const raw = localStorage.getItem("active_project_tabs");
+      if (!raw) return true;
+      
+      const tabs = JSON.parse(raw);
+      const now = Date.now();
+      const activeTabsForProject = Object.keys(tabs).filter(id => {
+        return tabs[id] && tabs[id].projectId === activeId && (now - tabs[id].lastActive < 15000);
+      });
+      
+      activeTabsForProject.sort();
+      return activeTabsForProject.length === 0 || activeTabsForProject[0] === tabId;
+    } catch (e) {
+      return true;
+    }
+  }, [activeProjectId]);
+
+  // 1-second interval to simulate live sensor telemetry fluctuations (mean-reverting random walk)
+  useEffect(() => {
+    if (!isSetupCompleted || !activeProjectId) return;
+
+    const interval = setInterval(() => {
+      // Leader election: only the nominated leader tab writes updates to localStorage
+      if (!isTabLeader()) return;
+
+      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+      if (!activeId) return;
+
+      try {
+        const localData = localStorage.getItem(`workspace_data_${activeId}`);
+        if (!localData) return;
+
+        const currentData = JSON.parse(localData);
+        if (!currentData.machines || !currentData.telemetry) return;
+
+        let hasChanges = false;
+        const nowStr = new Date().toISOString();
+
+        currentData.machines.forEach((machine) => {
+          const mTelemetry = currentData.telemetry[machine.id];
+          if (!mTelemetry || mTelemetry.length === 0) return;
+
+          const latest = mTelemetry[mTelemetry.length - 1];
+          const metrics = generateBaselines(machine.id);
+          const thresholds = machine.critical_thresholds || { temperature: 80, vibration: 10, pressure: 3, current: 20 };
+
+          // Define target based on status
+          let tempTarget = metrics.temp;
+          let vibTarget = metrics.vib;
+          let presTarget = metrics.pres;
+          let curTarget = metrics.cur;
+
+          if (machine.status !== "Operational") {
+            // Elevated status: hover near current elevated values or critical boundaries
+            tempTarget = Math.max(latest.temperature, thresholds.temperature || 80.0);
+            vibTarget = Math.max(latest.vibration, thresholds.vibration || 10.0);
+            // Pressure drops in failure scenarios, so use current value as target
+            presTarget = latest.pressure;
+            curTarget = Math.max(latest.current, thresholds.current || 20.0);
+          }
+
+          // Mean-reverting random walk
+          const driftCoeff = 0.15;
+          const nextTemp = latest.temperature + driftCoeff * (tempTarget - latest.temperature) + (Math.random() * 0.4 - 0.2);
+          const nextVib = latest.vibration + driftCoeff * (vibTarget - latest.vibration) + (Math.random() * 0.08 - 0.04);
+          const nextPres = latest.pressure + driftCoeff * (presTarget - latest.pressure) + (Math.random() * 0.04 - 0.02);
+          const nextCur = latest.current + driftCoeff * (curTarget - latest.current) + (Math.random() * 0.12 - 0.06);
+
+          const newReading = {
+            timestamp: nowStr,
+            temperature: parseFloat(Math.max(0, nextTemp).toFixed(2)),
+            vibration: parseFloat(Math.max(0, nextVib).toFixed(2)),
+            pressure: parseFloat(Math.max(0, nextPres).toFixed(2)),
+            current: parseFloat(Math.max(0, nextCur).toFixed(2))
+          };
+
+          // Add and keep last 15 points
+          mTelemetry.push(newReading);
+          currentData.telemetry[machine.id] = mTelemetry.slice(-15);
+          hasChanges = true;
+        });
+
+        if (hasChanges) {
+          localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
+          // Manually trigger local state update so leader tab refreshes immediately
+          setData(currentData);
+        }
+      } catch (err) {
+        console.error("Telemetry simulation failed:", err);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSetupCompleted, activeProjectId, isTabLeader]);
 
   // Load project initialization state & projects list
   useEffect(() => {
