@@ -3,6 +3,23 @@ import { pool, cleanDatabaseUrl } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
+export async function HEAD() {
+  if (!cleanDatabaseUrl) {
+    return new Response(null, { status: 500 });
+  }
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("SELECT 1;");
+    return new Response(null, { status: 200 });
+  } catch (err) {
+    console.error("Database connection check failed during HEAD request:", err);
+    return new Response(null, { status: 500 });
+  } finally {
+    if (client) client.release();
+  }
+}
+
 export async function GET() {
   if (!cleanDatabaseUrl) {
     return NextResponse.json(
