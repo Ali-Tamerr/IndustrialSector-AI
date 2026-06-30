@@ -203,7 +203,7 @@ export default function DeviceClientPage() {
                 className="py-3 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl text-xs transition-all duration-200 shadow-lg shadow-emerald-600/10 border border-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 font-mono"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Forced Broadcast</span>
+                <span>Send</span>
               </button>
             </div>
 
