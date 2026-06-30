@@ -28,7 +28,8 @@ import {
   Moon,
   ChevronDown,
   Menu,
-  X
+  X,
+  Sliders
 } from "lucide-react";
 
 const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
@@ -1954,6 +1955,28 @@ Industrial Sector AI Automation Network`;
               <HelpCircle className="w-3.5 h-3.5" />
               <span>Dashboard Tour</span>
             </button>
+            <a
+              href="/admin"
+              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+                theme === 'dark'
+                  ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin Portal</span>
+            </a>
+            <a
+              href="/device"
+              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+                theme === 'dark'
+                  ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200/85 hover:bg-emerald-600 hover:text-white shadow-sm'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Device Client</span>
+            </a>
             <button
               onClick={() => {
                 if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
@@ -2107,6 +2130,30 @@ Industrial Sector AI Automation Network`;
                   <HelpCircle className="w-3.5 h-3.5" />
                   <span>Dashboard Tour</span>
                 </button>
+
+                <a
+                  href="/admin"
+                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
+                    theme === 'dark'
+                      ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white'
+                      : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Admin Portal</span>
+                </a>
+
+                <a
+                  href="/device"
+                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
+                    theme === 'dark'
+                      ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200/85 hover:bg-emerald-600 hover:text-white shadow-sm'
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Device Client</span>
+                </a>
 
                 <button
                   onClick={() => {
