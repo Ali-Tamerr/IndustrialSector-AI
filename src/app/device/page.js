@@ -32,11 +32,54 @@ export default function DeviceClientPage() {
 
     // Fetch machines with their historical averages
     const fetchAverages = async () => {
+      // 1. Try reading from browser localStorage first
+      if (typeof window !== "undefined") {
+        try {
+          const activeId = localStorage.getItem("activeProjectId");
+          if (activeId) {
+            const localDataRaw = localStorage.getItem(`workspace_data_${activeId}`);
+            if (localDataRaw) {
+              const parsed = JSON.parse(localDataRaw);
+              if (parsed.machines && parsed.machines.length > 0) {
+                const calculated = parsed.machines.map((m) => {
+                  const telemetryList = parsed.telemetry && parsed.telemetry[m.id] ? parsed.telemetry[m.id] : [];
+                  let totalTemp = 0, totalVib = 0, totalPres = 0, totalCur = 0;
+                  telemetryList.forEach((pt) => {
+                    totalTemp += pt.temperature || 0;
+                    totalVib += pt.vibration || 0;
+                    totalPres += pt.pressure || 0;
+                    totalCur += pt.current || 0;
+                  });
+                  const count = telemetryList.length || 1;
+                  return {
+                    id: m.id,
+                    name: m.name,
+                    status: m.status,
+                    avg_temp: parseFloat((totalTemp / count).toFixed(2)),
+                    avg_vib: parseFloat((totalVib / count).toFixed(2)),
+                    avg_pres: parseFloat((totalPres / count).toFixed(2)),
+                    avg_cur: parseFloat((totalCur / count).toFixed(2))
+                  };
+                });
+                setWorkflowMachines(calculated);
+                addLog(`SUCCESS: Loaded ${calculated.length} machines with averages from local storage.`);
+                setLoadingMachines(false);
+                return;
+              }
+            }
+          }
+        } catch (localErr) {
+          console.warn("Failed to load averages from local storage:", localErr);
+        }
+      }
+
+      // 2. Fall back to the backend API if localStorage is empty
       try {
         const res = await fetch("/api/reports?action=averages");
         if (res.ok) {
           const data = await res.json();
           setWorkflowMachines(data.machines || []);
+          addLog("SUCCESS: Loaded fleet averages from Control Tower API.");
         } else {
           addLog("ERROR: Failed to fetch active fleet averages.");
         }
