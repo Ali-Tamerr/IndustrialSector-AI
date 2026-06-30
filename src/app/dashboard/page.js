@@ -1,88 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { 
-  Activity, 
-  Cpu, 
-  Layers, 
-  Settings, 
-  AlertTriangle, 
-  TrendingUp, 
-  CheckCircle2, 
-  ExternalLink, 
-  ShieldCheck, 
-  Clock, 
-  Inbox, 
-  Mail, 
-  HelpCircle,
-  Play,
-  RotateCcw,
-  Plus,
-  Trash,
-  ArrowRight,
-  Sparkles,
-  Building,
-  Database,
-  LayoutGrid,
-  Sun,
-  Moon,
-  ChevronDown,
-  Menu,
-  X,
-  Sliders
-} from "lucide-react";
+import { Activity } from "lucide-react";
+
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import TelemetryLiveMonitor from "@/components/dashboard/TelemetryLiveMonitor";
+import ThoughtsStream from "@/components/dashboard/ThoughtsStream";
+import SourcingRoadmap from "@/components/dashboard/SourcingRoadmap";
+import ActionCenter from "@/components/dashboard/ActionCenter";
+import TutorialTour from "@/components/dashboard/TutorialTour";
+import EmailInspector from "@/components/dashboard/EmailInspector";
+import FleetConfigurator from "@/components/dashboard/FleetConfigurator";
 
 const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
   ? ""
   : (process.env.NEXT_PUBLIC_API_URL || "");
-
-// Inline Sparkline Component using native React SVG paths
-function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
-  if (!data || data.length < 2) return null;
-  
-  const max = Math.max(...data) * 1.05;
-  const min = Math.min(...data) * 0.95;
-  const range = max - min || 1;
-  
-  const points = data.map((val, index) => {
-    const x = (index / (data.length - 1)) * width;
-    const y = height - ((val - min) / range) * height;
-    return `${x},${y}`;
-  }).join(" ");
-
-  const latestVal = data[data.length - 1];
-  const cx = width;
-  const cy = height - ((latestVal - min) / range) * height;
-
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-      <circle 
-        cx={cx - 2} 
-        cy={cy} 
-        r="4" 
-        fill={color}
-        opacity="0.3"
-      >
-        <animate attributeName="r" values="3;6;3" dur="1.5s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite" />
-      </circle>
-      <circle 
-        cx={cx - 2} 
-        cy={cy} 
-        r="2.5" 
-        fill={color}
-      />
-    </svg>
-  );
-}
 
 const PETROCHEMICAL_TEMPLATE = {
   machines: [
@@ -512,7 +444,7 @@ export default function Home() {
     }
   };
 
-  // Setup Portal states to explain project and configure data from scratch
+  // Setup Portal states
   const [isSetupCompleted, setIsSetupCompleted] = useState(false);
   const [activeSetupTab, setActiveSetupTab] = useState("presets");
   const [seeding, setSeeding] = useState(false);
@@ -568,7 +500,7 @@ export default function Home() {
     }
   }, []);
 
-  // Periodically refresh active tabs to clear out stale entries (e.g. from crashed tabs)
+  // Periodically refresh active tabs to clear out stale entries
   useEffect(() => {
     const interval = setInterval(() => {
       try {
@@ -589,7 +521,7 @@ export default function Home() {
       updateTabActiveProject(activeProjectId);
     };
     
-    heartbeat(); // Run immediately on mount or active project change
+    heartbeat();
     const interval = setInterval(heartbeat, 5000);
     return () => clearInterval(interval);
   }, [isSetupCompleted, activeProjectId, updateTabActiveProject]);
@@ -625,7 +557,6 @@ export default function Home() {
     if (!isSetupCompleted || !activeProjectId) return;
 
     const interval = setInterval(() => {
-      // Leader election: only the nominated leader tab writes updates to localStorage
       if (!isTabLeader()) return;
 
       const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
@@ -649,22 +580,18 @@ export default function Home() {
           const metrics = generateBaselines(machine.id);
           const thresholds = machine.critical_thresholds || { temperature: 80, vibration: 10, pressure: 3, current: 20 };
 
-          // Define target based on status
           let tempTarget = metrics.temp;
           let vibTarget = metrics.vib;
           let presTarget = metrics.pres;
           let curTarget = metrics.cur;
 
           if (machine.status !== "Operational") {
-            // Elevated status: hover near current elevated values or critical boundaries
             tempTarget = Math.max(latest.temperature, thresholds.temperature || 80.0);
             vibTarget = Math.max(latest.vibration, thresholds.vibration || 10.0);
-            // Pressure drops in failure scenarios, so use current value as target
             presTarget = latest.pressure;
             curTarget = Math.max(latest.current, thresholds.current || 20.0);
           }
 
-          // Mean-reverting random walk
           const driftCoeff = 0.15;
           const nextTemp = latest.temperature + driftCoeff * (tempTarget - latest.temperature) + (Math.random() * 0.4 - 0.2);
           const nextVib = latest.vibration + driftCoeff * (vibTarget - latest.vibration) + (Math.random() * 0.08 - 0.04);
@@ -679,7 +606,6 @@ export default function Home() {
             current: parseFloat(Math.max(0, nextCur).toFixed(2))
           };
 
-          // Add and keep last 15 points
           mTelemetry.push(newReading);
           currentData.telemetry[machine.id] = mTelemetry.slice(-15);
           hasChanges = true;
@@ -687,7 +613,6 @@ export default function Home() {
 
         if (hasChanges) {
           localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
-          // Manually trigger local state update so leader tab refreshes immediately
           setData(currentData);
         }
       } catch (err) {
@@ -754,7 +679,6 @@ export default function Home() {
         const parsedProjects = JSON.parse(savedProjects);
         setProjects(parsedProjects);
 
-        // Pre-initialize milestone refs for all projects to prevent initial-load notification spam
         parsedProjects.forEach(proj => {
           const localDataRaw = localStorage.getItem(`workspace_data_${proj.id}`);
           if (localDataRaw) {
@@ -795,15 +719,11 @@ export default function Home() {
       }
     }
 
-
     return () => {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("beforeunload", handleUnload);
     };
   }, [updateTabActiveProject]);
-
-
-
 
   const generateDefaultName = (type, templateId) => {
     const customPrefixes = [
@@ -850,11 +770,9 @@ export default function Home() {
       localStorage.setItem("isSetupCompleted", "true");
       setIsSetupCompleted(true);
       updateTabActiveProject(finalProjectId);
-      // No hash push needed since route is /dashboard
       localStorage.setItem("lastSeededProjectId", finalProjectId);
       await refreshData();
       
-      // Trigger tour onboarding only on first creation
       if (isNewProject) {
         localStorage.removeItem("hasSeenTutorial");
         setShowTutorial(true);
@@ -868,66 +786,11 @@ export default function Home() {
     }
   };
 
-  const handleCreateProject = async (type) => {
-    const finalName = projectNameInput.trim() || generateDefaultName(type, selectedTemplateId);
-    const newProject = {
-      id: "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-      name: finalName,
-      type,
-      templateId: type === "template" ? selectedTemplateId : null,
-      customMachines: type === "custom" ? customMachines : [],
-      createdAt: new Date().toISOString()
-    };
-
-    const updatedProjects = [...projects, newProject];
-    setProjects(updatedProjects);
-    localStorage.setItem("projects", JSON.stringify(updatedProjects));
-    
-    setActiveProjectId(newProject.id);
-    localStorage.setItem("activeProjectId", newProject.id);
-    setProjectNameInput("");
-
-    await handleSetup(type, newProject.templateId, newProject.customMachines, true, newProject.id);
-  };
-
-  const handleLaunchProject = async (proj) => {
-    setActiveProjectId(proj.id);
-    localStorage.setItem("activeProjectId", proj.id);
-    localStorage.setItem("isSetupCompleted", "true");
-    setIsSetupCompleted(true);
-    updateTabActiveProject(proj.id);
-    // No hash push needed since route is /dashboard
-
-    const localData = localStorage.getItem(`workspace_data_${proj.id}`);
-    if (!localData) {
-      await handleSetup(proj.type, proj.templateId, proj.customMachines, false, proj.id);
-    } else {
-      await refreshData();
-    }
-  };
-
   const handleRenameProject = (projId, newName) => {
     if (!projId) return;
     const updated = projects.map(p => p.id === projId ? { ...p, name: newName } : p);
     setProjects(updated);
     localStorage.setItem("projects", JSON.stringify(updated));
-  };
-
-  const handleDeleteProject = (projId, e) => {
-    e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this project config?")) return;
-    
-    const updated = projects.filter(p => p.id !== projId);
-    setProjects(updated);
-    localStorage.setItem("projects", JSON.stringify(updated));
-
-    if (activeProjectId === projId) {
-      setActiveProjectId(null);
-      localStorage.removeItem("activeProjectId");
-      localStorage.removeItem("isSetupCompleted");
-      setIsSetupCompleted(false);
-      updateTabActiveProject(null);
-    }
   };
 
   const activeProject = useMemo(() => {
@@ -940,67 +803,6 @@ export default function Home() {
     }
     return { id: "MCH-002", name: "High-Speed Industrial Fan B", status: "Operational" };
   }, [data]);
-
-  // Dynamically map and layout supply chain graph nodes into Column coordinates
-  const layoutNodes = useMemo(() => {
-    if (!data || !data.graph || !data.graph.nodes) return {};
-
-    const nodes = data.graph.nodes;
-    const parts = nodes.filter(n => n.type === 'Part');
-    const suppliers = nodes.filter(n => n.type === 'Supplier');
-    const materials = nodes.filter(n => n.type === 'Material');
-
-    const mapped = {};
-
-    // 1. Add active root machine
-    const firstMachineId = firstMachine?.id || "MCH-001";
-    mapped[firstMachineId] = {
-      id: firstMachineId,
-      name: firstMachine?.name || "Root Asset",
-      type: 'Machine',
-      x: 80,
-      y: 170,
-      details: `Status: ${firstMachine?.status || 'Operational'}. Telemetry source node.`
-    };
-
-    // 2. Layout Parts at x = 220
-    parts.forEach((p, idx) => {
-      const count = parts.length;
-      const spacing = count > 3 ? 60 : 80;
-      const startY = 170 - ((count - 1) * spacing) / 2;
-      mapped[p.id] = {
-        ...p,
-        x: 220,
-        y: startY + idx * spacing
-      };
-    });
-
-    // 3. Layout Suppliers at x = 380
-    suppliers.forEach((s, idx) => {
-      const count = suppliers.length;
-      const spacing = count > 4 ? 50 : 80;
-      const startY = 170 - ((count - 1) * spacing) / 2;
-      mapped[s.id] = {
-        ...s,
-        x: 380,
-        y: startY + idx * spacing
-      };
-    });
-
-    // 4. Layout Materials at x = 520
-    materials.forEach((m, idx) => {
-      const count = materials.length;
-      const spacing = count > 2 ? 60 : 80;
-      const startY = 170 - ((count - 1) * spacing) / 2;
-      mapped[m.id] = {
-        ...m,
-        x: 520,
-        y: startY + idx * spacing
-      };
-    });
-
-    return mapped;
-  }, [data, firstMachine]);
 
   // Load custom presets inside the visual editor
   const handleLoadPreset = (presetType) => {
@@ -1159,80 +961,15 @@ export default function Home() {
     }
   };
 
-  const tutorialSteps = [
-    {
-      title: "Welcome to the Autonomic Control Tower",
-      description: "This dashboard orchestrates an advanced, offline-first multi-agent industrial repair system. When machinery fails, specialized AI agents automatically diagnose the failure, audit spare parts inventories, optimize supply-chain logistics, and prepare supplier purchase orders in seconds.",
-      icon: <Cpu className="w-12 h-12 text-blue-400 animate-pulse" />,
-      selector: null,
-      positionClass: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg",
-      style: {},
-    },
-    {
-      title: "Zone 1: Telemetry Live Monitor",
-      description: "Real-time sensor arrays track Winding Temperature, Radial Vibration, Discharge Pressure, and Coil Current for your factory fleet. Custom SVG sparklines display live 24-hour fluctuations to identify abnormal spikes before they become breakdowns.",
-      icon: <Activity className="w-12 h-12 text-emerald-400" />,
-      selector: "zone-1",
-      positionClass: "fixed w-full max-w-sm",
-      style: { position: "fixed", bottom: "24px", right: "24px", left: "auto", top: "auto", transform: "none" },
-    },
-    {
-      title: "Autonomous Agent Catalyst",
-      description: "Clicking 'Simulate Bearing Failure on Machine 2' injects a live fault in the fleet. This acts as the catalyst for our AI agents to step in, collaborate, and execute emergency procurement actions.",
-      icon: <Play className="w-12 h-12 text-red-400 animate-pulse" />,
-      selector: "simulator-btn",
-      positionClass: "fixed w-full max-w-sm",
-      style: { position: "fixed", top: "96px", left: "24px", right: "auto", bottom: "auto", transform: "none" },
-    },
-    {
-      title: "Zone 2: Multi-Agent Execution Log",
-      description: "Observe the 'Thoughts' stream—the live, step-by-step reasoning logs of collaborating agents. Watch the Anomaly Agent flag the failure, the Diagnostic Agent query technical manuals, and the Sourcing Agent negotiate part routing.",
-      icon: <Layers className="w-12 h-12 text-amber-400" />,
-      selector: "zone-2",
-      positionClass: "fixed w-full max-w-sm",
-      style: { position: "fixed", top: "96px", right: "24px", left: "auto", bottom: "auto", transform: "none" },
-    },
-    {
-      title: "Zone 3: Supply Chain Knowledge Graph",
-      description: "A dynamic semantic graph mapping spare parts and Tier-1 and Tier-2 suppliers. Hover over nodes to inspect real-time logistics. When a bottleneck or failure occurs, the best routing path is automatically highlighted in orange.",
-      icon: <Settings className="w-12 h-12 text-orange-400 animate-spin" />,
-      selector: "zone-3",
-      positionClass: "fixed w-full max-w-sm",
-      style: { position: "fixed", top: "96px", left: "24px", right: "auto", bottom: "auto", transform: "none" },
-    },
-    {
-      title: "Zone 4: Action Center",
-      description: "Here, automated purchase and dispatch tickets are created in PostgreSQL. Click 'Inspect Email Draft' to review professional, AI-crafted supplier procurement contracts complete with lead-time, price, and resilience scores.",
-      icon: <Inbox className="w-12 h-12 text-purple-400" />,
-      selector: "zone-4",
-      positionClass: "fixed w-full max-w-sm",
-      style: { position: "fixed", top: "96px", left: "50%", transform: "translateX(-50%)", right: "auto", bottom: "auto" },
-    }
-  ];
-
   const closeTutorial = () => {
     localStorage.setItem("hasSeenTutorial", "true");
     setShowTutorial(false);
   };
 
-
-
   // Scroll and highlight selector element during step changes
   useEffect(() => {
-    if (showTutorial) {
-      const step = tutorialSteps[tutorialStep];
-      if (step && step.selector) {
-        const element = document.getElementById(step.selector);
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.classList.add("ring-2", "ring-blue-500", "ring-offset-4", "ring-offset-[#06080c]", "scale-[1.015]");
-          return () => {
-            element.classList.remove("ring-2", "ring-blue-500", "ring-offset-4", "ring-offset-[#06080c]", "scale-[1.015]");
-          };
-        }
-      }
-    }
-  }, [tutorialStep, showTutorial]);
+    // This side-effect is handled directly in the TutorialTour component
+  }, []);
 
   // Native browser notifications helper
   const triggerDeviceNotification = useCallback((title, message) => {
@@ -1240,7 +977,6 @@ export default function Home() {
       if (Notification.permission === "granted") {
         try {
           if (document.hidden) {
-            // Tab is in the background: prioritize Service Worker to bypass browser background execution blocks
             if ("serviceWorker" in navigator) {
               navigator.serviceWorker.getRegistration().then(registration => {
                 if (registration) {
@@ -1258,7 +994,6 @@ export default function Home() {
               new Notification(title, { body: message });
             }
           } else {
-            // Tab is in the foreground: standard constructor is fully allowed and faster
             new Notification(title, { body: message });
           }
         } catch (err) {
@@ -1274,7 +1009,7 @@ export default function Home() {
     }
   }, []);
 
-  // Request browser Notification permission on mount or first user interaction click, and register Service Worker
+  // Request browser Notification permission
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js")
@@ -1300,7 +1035,7 @@ export default function Home() {
     }
   }, []);
 
-  // Watcher and notifier for milestone changes (scoped to all projects)
+  // Watcher and notifier for milestone changes
   const checkMilestones = useCallback((projectId, maintenanceOrders, machines, inventory) => {
     if (!maintenanceOrders) return;
 
@@ -1311,7 +1046,6 @@ export default function Home() {
       const part = inventory?.find(p => p.part_id === requiredPartId);
       const componentName = part?.part_name || "Critical Component";
 
-      // Compute active stage index
       let approvalState = "Approved";
       if (order.status === "Pending_Sourcing") {
         approvalState = "Pending";
@@ -1332,7 +1066,6 @@ export default function Home() {
       const refKey = `${projectId}-${order.id}`;
       const prevStage = prevStages.current[refKey];
       if (prevStage !== undefined && activeStageIndex !== prevStage) {
-        // Stage labels that match exactly what the UI displays
         const supplierMatch = order.root_cause?.match(/Selected Supplier:\s*([^\n\r(]+)/) ||
                               order.root_cause?.match(/dispatched to\s*([^\n\r(]+)/i);
         const supplierLabel = supplierMatch ? supplierMatch[1].trim() : "Supplier";
@@ -1362,7 +1095,6 @@ export default function Home() {
         }
       }
 
-      // Update ref
       prevStages.current[refKey] = activeStageIndex;
     });
   }, [triggerDeviceNotification]);
@@ -1380,7 +1112,6 @@ export default function Home() {
       let localData = localStorage.getItem(`workspace_data_${activeId}`);
       if (localData) {
         const parsed = JSON.parse(localData);
-        // Patch missing components from templates for existing workspaces
         let needsSave = false;
         if (parsed.machines) {
           parsed.machines.forEach(machine => {
@@ -1439,7 +1170,7 @@ export default function Home() {
     };
   }, [isSetupCompleted, refreshData]);
 
-  // Listen for storage events to update data instantly across tabs for ALL projects
+  // Listen for storage events
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key && e.key.startsWith("workspace_data_")) {
@@ -1447,11 +1178,7 @@ export default function Home() {
         if (e.newValue) {
           try {
             const parsed = JSON.parse(e.newValue);
-            
-            // 1. Run the milestone check regardless of whether it's active
             checkMilestones(projectId, parsed.maintenance_orders, parsed.machines, parsed.inventory);
-            
-            // 2. If it is the currently active project on this tab, update the state to refresh the UI
             const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
             if (projectId === activeId) {
               setData(parsed);
@@ -1469,7 +1196,7 @@ export default function Home() {
     };
   }, [activeProjectId, checkMilestones]);
 
-  // Auto scroll console terminal scroll container (non-intrusive)
+  // Auto scroll console terminal
   useEffect(() => {
     if (thoughtsContainerRef.current) {
       const container = thoughtsContainerRef.current;
@@ -1814,7 +1541,6 @@ Industrial Sector AI Automation Network`;
     }
   };
 
-  // Status badges configurations
   const getStatusBadges = (status) => {
     const isDark = theme === "dark";
     switch (status) {
@@ -1836,1818 +1562,121 @@ Industrial Sector AI Automation Network`;
         return { 
           label: "Anomaly", 
           bg: isDark ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-55 text-red-700 border-red-300", 
-          dot: "bg-red-500", 
+          dot: "bg-red-555", 
           sparkColor: "#ef4444" 
         };
       default:
         return { 
           label: "Inactive", 
-          bg: isDark ? "bg-slate-500/10 text-slate-400 border-slate-500/20" : "bg-slate-100 text-slate-700 border-slate-200", 
-          dot: "bg-slate-500", 
+          bg: isDark ? "bg-slate-500/10 text-slate-400 border-slate-500/20" : "bg-slate-100 text-slate-700 border-slate-205", 
+          dot: "bg-slate-505", 
           sparkColor: "#64748b" 
         };
     }
   };
 
-  // Helper to extract automated emails from the text fields
-  const getEmailDraftContent = (rootCause) => {
-    if (!rootCause) return null;
-    const emailHeader = "Subject: URGENT:";
-    const idx = rootCause.indexOf(emailHeader);
-    if (idx !== -1) {
-      const emailSection = rootCause.substring(idx);
-      const lines = emailSection.split("\n");
-      const subject = lines[0].replace("Subject: ", "");
-      const to = lines[1].replace("To: ", "");
-      const from = lines[2].replace("From: ", "");
-      const date = lines[3].replace("Date: ", "");
-      const body = lines.slice(5).join("\n");
-      return { to, from, subject, date, body };
-    }
-    return null;
-  };
-
-  // Determine graph states
-  const isM2Anomaly = useMemo(() => {
-    if (!data || !data.machines) return false;
-    return data.machines.some(m => m.status === "Critical" || m.status === "Degraded");
-  }, [data]);
-
-  if (!isSetupCompleted) {
-    return (
-      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'} font-mono`}>
-        <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
-        <div className="animate-pulse tracking-widest text-xs font-bold">REDIRECTING TO PROJECTS PORTAL...</div>
-      </div>
-    );
-  }
-
-
-  if (loading && !data) {
-    return (
-      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'} font-mono`}>
-        <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
-        <div className="animate-pulse tracking-widest text-xs font-bold">SYNCHRONIZING WORKSPACE CONTROL METRICS...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} pb-12 font-sans select-none transition-colors duration-300 relative overflow-hidden`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#030508] text-slate-350' : 'bg-[#f8fafc] text-slate-700'} pb-12 font-sans select-none transition-colors duration-300 relative overflow-hidden`}>
       
-      {/* Prismatic Digital Grid Background for Dashboard */}
+      {/* Prismatic Background Grid */}
       <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none animate-grid-move`}></div>
       
-      {/* Ambient Floating Glow Mesh Spheres */}
+      {/* Glow Mesh Spheres */}
       <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.04]' : 'bg-purple-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow`}></div>
       <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow-alt`}></div>
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
 
-      {/* Dynamic Header */}
-      <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300`}>
-        <div className="flex items-center space-x-3">
-          <div className={`h-8.5 w-8.5 ${theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'} rounded border flex items-center justify-center`}>
-            <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={activeProject?.name || ""}
-                onChange={(e) => handleRenameProject(activeProject?.id, e.target.value)}
-                className={`bg-transparent border-b border-transparent hover:border-slate-500 focus:border-blue-500 outline-none font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-805'} transition-all w-full max-w-[180px] sm:max-w-[240px] md:max-w-[320px]`}
-                placeholder="Unnamed Project"
-              />
-              <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'} border`}>
-                {activeProject?.type === "template" ? `${activeProject?.templateId?.toUpperCase()}_TEMPLATE` : "CUSTOM_FLEET"}
-              </span>
-            </div>
-            <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} font-mono tracking-widest uppercase hidden sm:block`}>Predictive Maintenance & Supply Chain Sourcing Graph</p>
-          </div>
-        </div>
+      <DashboardHeader
+        theme={theme}
+        toggleTheme={toggleTheme}
+        activeProject={activeProject}
+        handleRenameProject={handleRenameProject}
+        notificationPermission={notificationPermission}
+        requestNotificationPermission={requestNotificationPermission}
+        setShowTutorial={setShowTutorial}
+        setTutorialStep={setTutorialStep}
+        updateTabActiveProject={updateTabActiveProject}
+        setEditorMachines={setEditorMachines}
+        setEditorInventory={setEditorInventory}
+        setEditorNodes={setEditorNodes}
+        setEditorEdges={setEditorEdges}
+        setShowEditor={setShowEditor}
+        data={data}
+        simulating={simulating}
+        handleSimulation={handleSimulation}
+        simulatorDropdownOpen={simulatorDropdownOpen}
+        setSimulatorDropdownOpen={setSimulatorDropdownOpen}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        mobileSimDropdownOpen={mobileSimDropdownOpen}
+        setMobileSimDropdownOpen={setMobileSimDropdownOpen}
+      />
 
-        <div className="flex items-center space-x-3.5">
-          <div className="hidden lg:flex flex-col text-right font-mono text-[10px]">
-            <span className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>FLEET PERFORMANCE</span>
-            <span className={`${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'} font-bold tracking-widest`}>99.78% RESILIENT</span>
-          </div>
-
-          {/* Desktop Navigation Buttons */}
-          <div className="hidden lg:flex items-center space-x-3.5">
-            {notificationPermission !== "granted" && (
-              <button
-                onClick={requestNotificationPermission}
-                className="px-3 py-2 font-mono text-xs font-bold rounded bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center space-x-1.5 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.25)]"
-                title="Click to authorize system notifications on milestone events"
-              >
-                <span>🔔 Enable System Notifications</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => { setTutorialStep(0); setShowTutorial(true); }}
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark'
-                  ? 'bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white'
-                  : 'bg-blue-50 text-blue-600 border-blue-200/80 hover:bg-blue-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>Dashboard Tour</span>
-            </button>
-            <a
-              href="/admin"
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark'
-                  ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white'
-                  : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Portal</span>
-            </a>
-            <a
-              href="/device"
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark'
-                  ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200/85 hover:bg-emerald-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Device Client</span>
-            </a>
-            <button
-              onClick={() => {
-                if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
-                  localStorage.removeItem("activeProjectId");
-                  localStorage.removeItem("isSetupCompleted");
-                  updateTabActiveProject(null);
-                  window.location.href = "/";
-                }
-              }}
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark'
-                  ? 'bg-cyan-950/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
-                  : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Projects Portal</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
-                setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
-                setEditorNodes(data?.graph?.nodes ? JSON.parse(JSON.stringify(data.graph.nodes)) : []);
-                setEditorEdges(data?.graph?.links ? JSON.parse(JSON.stringify(data.graph.links)) : []);
-                setShowEditor(true);
-              }}
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark'
-                  ? 'bg-slate-900 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
-                  : 'bg-white text-cyan-700 border-cyan-200/80 hover:bg-cyan-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Configure Fleet & Graph</span>
-            </button>
-
-            <div className="relative">
-              <button
-                id="simulator-btn"
-                onClick={() => {
-                  if (!simulating) setSimulatorDropdownOpen(!simulatorDropdownOpen);
-                }}
-                disabled={simulating}
-                className={`px-4 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-2 ${
-                  simulating
-                    ? "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed"
-                    : (theme === 'dark'
-                        ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
-                        : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
-                }`}
-              >
-                <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
-                <span>{simulating ? "PROCESSING AGENTS..." : "Simulate Failure"}</span>
-                {!simulating && <ChevronDown className="w-3.5 h-3.5 ml-1" />}
-              </button>
-              
-              {simulatorDropdownOpen && (
-                <div className={`absolute right-0 mt-2 w-[340px] rounded-xl shadow-xl z-50 overflow-hidden border ${theme === 'dark' ? 'bg-[#182030] border-[#2b3548] shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)]'}`}>
-                  <div className={`text-[10px] font-mono tracking-widest uppercase px-4 py-3 border-b ${theme === 'dark' ? 'text-slate-500 border-[#2b3548]' : 'text-slate-500 border-slate-200'}`}>
-                    On:
-                  </div>
-                  <ul className="max-h-72 overflow-y-auto">
-                    {data?.machines?.map(machine => (
-                      <li 
-                        key={machine.id}
-                        onClick={() => {
-                          setSimulatorDropdownOpen(false);
-                          handleSimulation(machine.id);
-                        }}
-                        className={`flex justify-between items-center px-4 py-3 cursor-pointer text-xs transition-colors border-b last:border-b-0 ${
-                          theme === 'dark' 
-                            ? 'border-[#2b3548]/50 hover:bg-[#202a3d]' 
-                            : 'border-slate-100 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span className={theme === 'dark' ? 'text-red-400/90 font-medium' : 'text-red-600/90 font-medium'}>{machine.name}</span>
-                        <span className={`font-mono text-[10px] ml-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{machine.id}</span>
-                      </li>
-                    ))}
-                    {(!data?.machines || data.machines.length === 0) && (
-                      <li className={`px-4 py-4 text-center text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                        No machines available
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Theme Toggle Button positioned at the far right of the sticky header */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2.5 rounded-full border transition-all duration-300 flex items-center justify-center ${
-              theme === 'dark'
-                ? 'bg-slate-950/40 border-slate-800 text-yellow-400 hover:bg-slate-900 hover:text-yellow-300 hover:scale-105 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-105'
-            }`}
-            title="Toggle Light/Dark Theme"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-
-          {/* Mobile Menu Toggle Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`p-2.5 rounded-full border transition-all duration-300 flex items-center justify-center lg:hidden ${
-              theme === 'dark'
-                ? 'bg-slate-950/40 border-slate-800 text-slate-350 hover:bg-slate-900 hover:text-white hover:scale-105'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-105'
-            }`}
-            title="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-
-          {/* Mobile Navigation Dropdown Popup */}
-          {mobileMenuOpen && (
-            <div className={`absolute right-6 top-[calc(100%-8px)] mt-2 w-72 rounded-xl shadow-2xl z-50 overflow-hidden border p-4 space-y-3 transition-all duration-300 lg:hidden ${
-              theme === 'dark' 
-                ? 'bg-[#0c0f17]/95 border-[#2a3547] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-lg' 
-                : 'bg-white/95 border-slate-200/80 shadow-[0_10px_40px_rgba(0,0,0,0.15)] backdrop-blur-lg text-slate-800'
-            }`}>
-              <div className="flex flex-col space-y-2.5">
-                {notificationPermission !== "granted" && (
-                  <button
-                    onClick={() => {
-                      requestNotificationPermission();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full px-3 py-2.5 font-mono text-xs font-bold rounded bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center justify-center space-x-1.5 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.25)]"
-                    title="Click to authorize system notifications"
-                  >
-                    <span>🔔 Enable System Notifications</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => { 
-                    setTutorialStep(0); 
-                    setShowTutorial(true); 
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                    theme === 'dark'
-                      ? 'bg-blue-600/10 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white'
-                      : 'bg-blue-50 text-blue-600 border-blue-200/80 hover:bg-blue-600 hover:text-white shadow-sm'
-                  }`}
-                >
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  <span>Dashboard Tour</span>
-                </button>
-
-                <a
-                  href="/admin"
-                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                    theme === 'dark'
-                      ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white'
-                      : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Admin Portal</span>
-                </a>
-
-                <a
-                  href="/device"
-                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                    theme === 'dark'
-                      ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200/85 hover:bg-emerald-600 hover:text-white shadow-sm'
-                  }`}
-                >
-                  <Sliders className="w-3.5 h-3.5" />
-                  <span>Device Client</span>
-                </a>
-
-                <button
-                  onClick={() => {
-                    if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
-                      localStorage.removeItem("activeProjectId");
-                      localStorage.removeItem("isSetupCompleted");
-                      updateTabActiveProject(null);
-                      window.location.href = "/";
-                    }
-                  }}
-                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                    theme === 'dark'
-                      ? 'bg-cyan-950/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
-                      : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white shadow-sm'
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>Projects Portal</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
-                    setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
-                    setEditorNodes(data?.graph?.nodes ? JSON.parse(JSON.stringify(data.graph.nodes)) : []);
-                    setEditorEdges(data?.graph?.links ? JSON.parse(JSON.stringify(data.graph.links)) : []);
-                    setShowEditor(true);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                    theme === 'dark'
-                      ? 'bg-slate-900 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white'
-                      : 'bg-white text-cyan-700 border-cyan-200/80 hover:bg-cyan-600 hover:text-white shadow-sm'
-                  }`}
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Configure Fleet & Graph</span>
-                </button>
-
-                <div className="border-t border-slate-200/20 pt-2.5 mt-1 space-y-1.5">
-                  <button
-                    onClick={() => {
-                      if (!simulating) setMobileSimDropdownOpen(!mobileSimDropdownOpen);
-                    }}
-                    disabled={simulating}
-                    className={`w-full px-4 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-2 ${
-                      simulating
-                        ? "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed"
-                        : (theme === 'dark'
-                            ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
-                            : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
-                    }`}
-                  >
-                    <Play className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
-                    <span>{simulating ? "PROCESSING AGENTS..." : "Simulate Failure"}</span>
-                    {!simulating && <ChevronDown className="w-3.5 h-3.5 ml-1" />}
-                  </button>
-
-                  {mobileSimDropdownOpen && !simulating && (
-                    <div className={`mt-1.5 max-h-40 overflow-y-auto rounded-lg border text-left ${theme === 'dark' ? 'bg-[#182030] border-[#2b3548]' : 'bg-slate-50 border-slate-200'}`}>
-                      <div className={`text-[9px] font-mono tracking-widest uppercase px-3 py-1.5 border-b ${theme === 'dark' ? 'text-slate-500 border-[#2b3548]' : 'text-slate-500 border-slate-200'}`}>
-                        Select Machine:
-                      </div>
-                      <ul>
-                        {data?.machines?.map(machine => (
-                          <li 
-                            key={machine.id}
-                            onClick={() => {
-                              setMobileMenuOpen(false);
-                              setMobileSimDropdownOpen(false);
-                              handleSimulation(machine.id);
-                            }}
-                            className={`flex justify-between items-center px-3 py-2 cursor-pointer text-xs transition-colors border-b last:border-b-0 ${
-                              theme === 'dark' 
-                                ? 'border-[#2b3548]/50 hover:bg-[#202a3d] text-slate-350' 
-                                : 'border-slate-100 hover:bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            <span className="font-medium truncate max-w-[130px]">{machine.name}</span>
-                            <span className="font-mono text-[9px] text-slate-500">{machine.id}</span>
-                          </li>
-                        ))}
-                        {(!data?.machines || data.machines.length === 0) && (
-                          <li className="px-3 py-3 text-center text-xs text-slate-400">
-                            No machines available
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Grid Layout */}
       <main className="p-6 max-w-7xl mx-auto space-y-6">
-        
-        {/* Zone 1: Telemetry Live Monitor */}
-        <section id="zone-1" className="space-y-3 transition-all duration-500">
-          <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
-            <Activity className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-            <span>Zone 1: Telemetry Live Monitor (Fleet Grid)</span>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {data?.machines.map((machine) => {
-              const latest = data.telemetry[machine.id]?.[data.telemetry[machine.id].length - 1];
-              const health = getStatusBadges(machine.status);
-              const tempHistory = data.telemetry[machine.id]?.map(p => p.temperature) || [];
-              const vibHistory = data.telemetry[machine.id]?.map(p => p.vibration) || [];
-              
-              const hasTemp = (machine.critical_thresholds?.temperature ?? 0) > 0;
-              const hasVib = (machine.critical_thresholds?.vibration ?? 0) > 0;
-              const hasPres = (machine.critical_thresholds?.pressure ?? 0) > 0;
-              const hasCurr = (machine.critical_thresholds?.current ?? 0) > 0;
+        <TelemetryLiveMonitor
+          theme={theme}
+          data={data}
+          getStatusBadges={getStatusBadges}
+          graphsPopupMachineId={graphsPopupMachineId}
+          setGraphsPopupMachineId={setGraphsPopupMachineId}
+          componentsPopupMachineId={componentsPopupMachineId}
+          setComponentsPopupMachineId={setComponentsPopupMachineId}
+        />
 
-              return (
-                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group flex flex-col`}>
-                  <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden pointer-events-none">
-                    <div className={`absolute top-2.5 right-[-26px] transform rotate-45 text-center text-[9px] font-mono font-bold uppercase py-0.5 w-[90px] ${
-                      machine.status === "Operational" ? "bg-emerald-500/10 text-emerald-400" :
-                      machine.status === "Degraded" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400"
-                    }`}>
-                      {health.label}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className={`font-mono font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{machine.name}</h3>
-                      <span className="text-[10px] text-slate-500 font-mono tracking-wider">{machine.id} · {machine.location}</span>
-                    </div>
-                    <span className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded-full border ${health.bg} flex items-center space-x-1 mr-6`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${health.dot} ${machine.status !== "Operational" ? "animate-ping" : ""}`}></span>
-                      <span>{machine.status.toUpperCase()}</span>
-                    </span>
-                  </div>
-
-                  {latest ? (
-                    <div className="space-y-4 font-mono">
-                      {/* First Row: Temp & Vibration */}
-                      {(hasTemp || hasVib) && (
-                        <div className={`grid ${hasTemp && hasVib ? 'grid-cols-2' : 'grid-cols-1'} gap-4 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
-                          {hasTemp && (
-                            <div>
-                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Winding Temp</div>
-                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                                {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
-                              </div>
-                            </div>
-                          )}
-                          {hasVib && (
-                            <div>
-                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Radial Vibration</div>
-                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                                {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Second Row: Pressure & Current */}
-                      {(hasPres || hasCurr) && (
-                        <div className={`grid ${hasPres && hasCurr ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
-                          {hasPres && (
-                            <div>
-                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Discharge Pressure</span>
-                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.pressure.toFixed(2)} Bar</span>
-                            </div>
-                          )}
-                          {hasCurr && (
-                            <div>
-                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Coil Amperage</span>
-                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Sparkline trends removed to be in a popup */}
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center text-xs text-slate-500">No active telemetry signal.</div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className={`mt-auto pt-4 border-t flex justify-end items-center space-x-2 z-10 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
-                    <button 
-                      onClick={() => setGraphsPopupMachineId(graphsPopupMachineId === machine.id ? null : machine.id)}
-                      className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${
-                        graphsPopupMachineId === machine.id 
-                          ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_8px_rgba(59,130,246,0.5)]' 
-                          : (theme === 'dark' 
-                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-[#182030]' 
-                              : 'bg-white border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-slate-50 shadow-sm')
-                      }`}
-                      title="View Graphs"
-                    >
-                      <Activity className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Graphs</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setComponentsPopupMachineId(componentsPopupMachineId === machine.id ? null : machine.id)}
-                      className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${
-                        componentsPopupMachineId === machine.id 
-                          ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_0_8px_rgba(6,182,212,0.5)]' 
-                          : (theme === 'dark' 
-                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-[#182030]' 
-                              : 'bg-white border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-300 hover:bg-slate-50 shadow-sm')
-                      }`}
-                      title="View Components"
-                    >
-                      <Cpu className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-mono font-bold tracking-wider uppercase">Parts</span>
-                    </button>
-                  </div>
-
-                  {/* Components Popup Overlay */}
-                  {componentsPopupMachineId === machine.id && (
-                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                          Machine Components
-                        </h4>
-                        <button 
-                          onClick={() => setComponentsPopupMachineId(null)}
-                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}`}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      
-                      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
-                        {machine.components && machine.components.length > 0 ? (
-                          machine.components.map((comp, idx) => {
-                            let displayHealth = comp.health;
-                            if (machine.status !== "Operational" && machine.critical_thresholds?.required_part_id === comp.id) {
-                              displayHealth = machine.status === "Critical" ? 14 : 42;
-                            }
-                            return (
-                            <div key={idx} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
-                              <div className="flex justify-between items-start mb-2">
-                                <div className={`font-semibold text-xs truncate max-w-[80%] ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`} title={comp.name}>{comp.name}</div>
-                                <div className={`text-[10px] font-mono font-bold ${displayHealth >= 90 ? 'text-emerald-500' : displayHealth >= 70 ? 'text-amber-500' : 'text-red-500'}`}>
-                                  {displayHealth}%
-                                </div>
-                              </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
-                                <div className={`h-1.5 rounded-full transition-all duration-1000 ${displayHealth >= 90 ? 'bg-emerald-500' : displayHealth >= 70 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${displayHealth}%` }}></div>
-                              </div>
-                              <div className={`text-[9px] mt-1.5 text-slate-500 font-mono tracking-wider`}>ID: {comp.id}</div>
-                            </div>
-                          )})
-                        ) : (
-                          <div className="text-xs text-slate-500 text-center mt-10">No components data available.</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Graphs Popup Overlay */}
-                  {graphsPopupMachineId === machine.id && (
-                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
-                      <div className="flex justify-between items-center mb-6">
-                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                          <Activity className="w-4 h-4 text-blue-500" />
-                          <span>24H Realtime Telemetry</span>
-                        </h4>
-                        <button 
-                          onClick={() => setGraphsPopupMachineId(null)}
-                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}`}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      
-                      <div className="flex-1 flex flex-col justify-center space-y-8 pb-4">
-                        {(hasTemp || hasVib) ? (
-                          <>
-                            {hasTemp && (
-                              <div className="flex flex-col space-y-2">
-                                <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
-                                  <span>WINDING TEMPERATURE</span>
-                                  <span style={{ color: health.sparkColor }} className="font-bold">{latest?.temperature?.toFixed(1)}°C</span>
-                                </div>
-                                <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
-                                  <Sparkline data={tempHistory} color={health.sparkColor} width={220} height={50} />
-                                </div>
-                              </div>
-                            )}
-                            
-                            {hasVib && (
-                              <div className="flex flex-col space-y-2">
-                                <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
-                                  <span>RADIAL VIBRATION</span>
-                                  <span className="text-blue-500">{latest?.vibration?.toFixed(2)}mm/s</span>
-                                </div>
-                                <div className={`h-16 w-full rounded-lg border flex items-center justify-center p-2 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
-                                  <Sparkline data={vibHistory} color="#3b82f6" width={220} height={50} />
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-xs text-slate-500 text-center">No telemetry graphs available.</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Console / Graph Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* Zone 2: Thoughts Stream Terminal */}
-          <section id="zone-2" className="lg:col-span-5 space-y-3 flex flex-col transition-all duration-500">
-            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
-              <Layers className="w-3.5 h-3.5 text-blue-400" />
-              <span>Zone 2: Multi-Agent Execution Log (Thoughts Stream)</span>
-            </h2>
-            
-            <div className={`bg-[#080a0f] border rounded-xl flex-1 flex flex-col overflow-hidden scanlines shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px] ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-200'}`}>
-              <div className={`border-b px-4 py-2.5 bg-[#0c0f17] flex items-center justify-between font-mono text-[9px] text-slate-500 ${theme === 'dark' ? 'border-[#182030]/80' : 'border-slate-250'}`}>
-                <div className="flex items-center space-x-1.5">
-                  <span className="h-2 w-2 rounded-full bg-red-500/20"></span>
-                  <span className="h-2 w-2 rounded-full bg-yellow-500/20"></span>
-                  <span className="h-2 w-2 rounded-full bg-green-500/20"></span>
-                  <span className="ml-2 text-slate-400 font-bold uppercase tracking-widest text-[9px]">ORCHESTRATOR_EXEC_LOG</span>
-                </div>
-                <div className="flex items-center space-x-2 text-slate-400">
-                  <span className="animate-pulse text-blue-400">● SIGNAL ACTIVE</span>
-                </div>
-              </div>
+          <ThoughtsStream
+            theme={theme}
+            thoughts={thoughts}
+            thoughtsContainerRef={thoughtsContainerRef}
+          />
 
-              {/* Terminal Body */}
-              <div ref={thoughtsContainerRef} className="p-4 flex-1 overflow-y-auto font-mono text-[11px] space-y-3 scroll-smooth leading-relaxed">
-                {thoughts.map((log) => {
-                  let tagColor = "text-slate-400 bg-slate-500/10 border-slate-500/20";
-                  if (log.agent.includes("Anomaly")) tagColor = "text-amber-400 bg-amber-400/10 border-amber-400/20";
-                  else if (log.agent.includes("Diagnostic")) tagColor = "text-blue-400 bg-blue-400/10 border-blue-400/20";
-                  else if (log.agent.includes("Planning") || log.agent.includes("Tool")) tagColor = "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
-                  else if (log.agent.includes("Sourcing") || log.agent.includes("Graph")) tagColor = "text-orange-400 bg-orange-400/10 border-orange-400/20";
-                  else if (log.agent.includes("Simulator")) tagColor = "text-red-400 bg-red-400/10 border-red-400/20";
-
-                  return (
-                    <div key={log.id} className="border-l border-slate-800 pl-3 py-0.5 hover:bg-slate-900/40 rounded transition-colors duration-150">
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold border ${tagColor} mr-2 uppercase tracking-wide`}>
-                        {log.agent}
-                      </span>
-                      <span className="text-slate-300">{log.text}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* Zone 3: Component Sourcing Roadmap */}
-          <section id="zone-3" className="lg:col-span-7 space-y-3 flex flex-col transition-all duration-500 relative">
-            <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <Settings className="w-3.5 h-3.5 text-blue-400" />
-                <span>Zone 3: Component Sourcing Roadmap</span>
-              </div>
-              <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span>
-            </h2>
-
-            <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-4 flex-1 flex flex-col overflow-y-auto min-h-[460px] max-h-[460px] space-y-3`}>
-              {(() => {
-                const orders = data?.maintenance_orders || [];
-                
-                if (orders.length === 0) {
-                  return (
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center font-mono text-xs select-none">
-                      <div className={`p-4 rounded-full border border-dashed mb-3 ${theme === 'dark' ? 'bg-[#0e131f] border-slate-700' : 'bg-slate-50 border-slate-300'}`}>
-                        <ShieldCheck className="h-8 w-8 text-emerald-500" />
-                      </div>
-                      <p className={`font-bold tracking-wider uppercase mb-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>System Standby - Fleet Stable</p>
-                      <p className="text-[10px] text-slate-500 max-w-sm leading-relaxed">
-                        All equipment units are running within standard operational thresholds. No active sourcing or maintenance tickets found.
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-3">
-                    {orders.map((order) => {
-                      const machine = data?.machines?.find(m => m.id === order.machine_id);
-                      const machineId = machine?.id || order.machine_id;
-                      const requiredPartId = machine?.critical_thresholds?.required_part_id;
-                      const part = data?.inventory?.find(p => p.part_id === requiredPartId);
-                      const componentName = part?.part_name || "Critical Component";
-
-                      // Parse supplier
-                      const supplierMatch = order.root_cause?.match(/Selected Supplier:\s*([^\n\r(]+)/) || 
-                                            order.root_cause?.match(/dispatched to\s*([^\n\r(]+)/) || 
-                                            order.root_cause?.match(/order dispatched to\s*([^\n\r(]+)/i);
-                      const supplierName = supplierMatch ? supplierMatch[1].trim() : "Optimal Supplier";
-
-                      let approvalState = "Approved";
-                      let rejectionReason = "";
-                      if (order.status === "Pending_Sourcing") {
-                        approvalState = "Pending";
-                      } else if (order.status === "Rejected") {
-                        approvalState = "Rejected";
-                        rejectionReason = "Supplier risk rating exceeds safety margin (0.15 limit)";
-                      }
-
-                      // Stages: 0: Sourcing Approval, 1: Supplier, 2: Company Warehouse, 3: Machine
-                      let activeStageIndex = 0;
-                      if (approvalState === "Approved") {
-                        activeStageIndex = 1;
-                        if (order.status === "Dispatched_Sourcing_Active") {
-                          activeStageIndex = 1;
-                        } else if (order.status === "Approved") {
-                          activeStageIndex = machine?.status === "Operational" ? 3 : 2;
-                        }
-                      } else if (approvalState === "Rejected") {
-                        activeStageIndex = 0;
-                      }
-
-                      // Details of stages - flipped physically (Machine, Warehouse, Supplier, Approval)
-                      const stages = [
-                        {
-                          id: "machine",
-                          step: 4,
-                          title: `${machineId}`,
-                          subtitle: activeStageIndex >= 3 ? "Applied" : "Pending",
-                          details: activeStageIndex >= 3 ? "Restored to service" : "Awaiting installation",
-                          state: activeStageIndex === 3 ? "completed" : "awaiting"
-                        },
-                        {
-                          id: "warehouse",
-                          step: 3,
-                          title: "Company Warehouse",
-                          subtitle: activeStageIndex >= 2 ? (activeStageIndex === 2 ? "Arrived" : "Completed") : "On Route",
-                          details: activeStageIndex >= 2 ? "Awaiting technician swap" : "Transit in progress",
-                          state: activeStageIndex > 2 ? "completed" : (activeStageIndex === 2 ? "current-active" : "awaiting")
-                        },
-                        {
-                          id: "supplier",
-                          step: 2,
-                          title: supplierName,
-                          subtitle: activeStageIndex >= 1 ? (order.status === "Dispatched_Sourcing_Active" ? "In Transit" : "Completed") : "Awaiting",
-                          details: activeStageIndex >= 1 ? "Priority air courier active" : "Pending approval",
-                          state: activeStageIndex > 1 ? "completed" : (activeStageIndex === 1 ? "current-active" : "awaiting")
-                        },
-                        {
-                          id: "approval",
-                          step: 1,
-                          title: "Sourcing Approval",
-                          subtitle: approvalState === "Approved" ? "Approved" : (approvalState === "Pending" ? "Pending" : "Rejected"),
-                          details: approvalState === "Approved" ? "Purchase order dispatched" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
-                          state: approvalState === "Approved" ? "completed" : (approvalState === "Pending" ? "current-pending" : "blocked")
-                        }
-                      ];
-
-                      const isSelected = order.id === (selectedRoadmapOrderId || orders[0]?.id);
-
-                      return (
-                        <div 
-                          key={order.id} 
-                          onClick={() => setSelectedRoadmapOrderId(order.id)}
-                          className={`border rounded-xl p-3.5 flex flex-col justify-between cursor-pointer transition-all duration-300 min-h-[148px] ${
-                            isSelected 
-                              ? (theme === 'dark' ? 'bg-[#0f131c] border-blue-500/80 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-slate-50 border-blue-400 shadow-sm')
-                              : (theme === 'dark' ? 'bg-[#0f131c]/60 border-[#182030] hover:bg-[#121722]' : 'bg-slate-50/50 border-slate-200 hover:bg-slate-100/30')
-                          }`}
-                        >
-                          {/* Card Header */}
-                          <div className="flex justify-between items-start mb-3 min-w-0">
-                            <div className="min-w-0 mr-4 flex-1">
-                              <h3 className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`} title={componentName}>
-                                {componentName}
-                              </h3>
-                              <p className={`text-[9px] font-mono tracking-widest mt-1 uppercase ${theme === 'dark' ? 'text-indigo-400/90' : 'text-indigo-600/90'}`} title={`${machine?.name || 'Machine'}, ${machineId}`}>
-                                FOR: {machine?.name || "Machine"}, {machineId}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Stepper Progression Container */}
-                          <div className="relative pt-1 pb-3 flex-1 flex flex-col justify-center">
-                            
-                            {/* Connector Line Background */}
-                            <div className={`absolute left-[12.5%] right-[12.5%] top-5 h-[2px] ${theme === 'dark' ? 'bg-[#182030]' : 'bg-slate-200'} pointer-events-none z-0`}></div>
-                            
-                            {/* Connector Line Active Overlay - right-anchored */}
-                            {activeStageIndex > 0 && approvalState !== "Rejected" && (
-                              <div 
-                                className="absolute right-[12.5%] top-5 h-[2px] bg-emerald-500 pointer-events-none z-0 transition-all duration-500"
-                                style={{ 
-                                  width: `${(activeStageIndex / 3) * 75}%`
-                                }}
-                              ></div>
-                            )}
-
-                            {/* Steps Grid */}
-                            <div className="grid grid-cols-4 gap-1 relative z-10">
-                              {stages.map((stage) => {
-                                let nodeStyles = "";
-                                let labelColor = "";
-
-                                if (stage.state === "completed") {
-                                  nodeStyles = theme === 'dark' 
-                                    ? "bg-emerald-500 border-emerald-500 text-[#0c0f17]" 
-                                    : "bg-emerald-600 border-emerald-600 text-white";
-                                  labelColor = theme === 'dark' ? "text-emerald-400" : "text-emerald-700";
-                                } else if (stage.state === "current-active") {
-                                  nodeStyles = theme === 'dark' 
-                                    ? "bg-blue-500 border-blue-500 text-[#0c0f17]" 
-                                    : "bg-blue-600 border-blue-600 text-white";
-                                  labelColor = theme === 'dark' ? "text-blue-400" : "text-blue-700";
-                                } else if (stage.state === "current-pending") {
-                                  nodeStyles = theme === 'dark' 
-                                    ? "bg-amber-500 border-amber-500 text-[#0c0f17]" 
-                                    : "bg-amber-600 border-amber-600 text-white";
-                                  labelColor = theme === 'dark' ? "text-amber-400" : "text-amber-700";
-                                } else if (stage.state === "blocked") {
-                                  nodeStyles = theme === 'dark' 
-                                    ? "bg-red-500 border-red-500 text-[#0c0f17]" 
-                                    : "bg-red-600 border-red-600 text-white";
-                                  labelColor = theme === 'dark' ? "text-red-400" : "text-red-700";
-                                } else {
-                                  nodeStyles = theme === 'dark' 
-                                    ? "bg-[#0e131f] border-slate-700 text-slate-500" 
-                                    : "bg-slate-100 border-slate-300 text-slate-400";
-                                  labelColor = "text-slate-550";
-                                }
-
-                                return (
-                                  <div key={stage.id} className="flex flex-col items-center text-center">
-                                    {/* Circular Node */}
-                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-xs select-none transition-colors duration-300 ${nodeStyles}`}>
-                                      {stage.state === "completed" ? "✓" : stage.step}
-                                    </div>
-
-                                    {/* Info below */}
-                                    <div className="mt-2 max-w-[110px] min-w-0">
-                                      <div className="text-[7.5px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Stage {stage.step}</div>
-                                      <div className={`text-[9.5px] font-bold leading-tight truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`} title={stage.title}>
-                                        {stage.title}
-                                      </div>
-                                      <div className={`text-[8.5px] font-semibold mt-0.5 ${labelColor}`}>
-                                        {stage.subtitle}
-                                      </div>
-                                      <div className="text-[8px] text-slate-500 leading-snug mt-1 max-h-[32px] overflow-hidden">
-                                        {stage.details}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-          </section>
-
+          <SourcingRoadmap
+            theme={theme}
+            data={data}
+            selectedRoadmapOrderId={selectedRoadmapOrderId}
+            setSelectedRoadmapOrderId={setSelectedRoadmapOrderId}
+          />
         </div>
 
-        {/* Zone 4: Action Center */}
-        <section id="zone-4" className="space-y-3 transition-all duration-500">
-          <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
-            <Inbox className="w-3.5 h-3.5 text-blue-400" />
-            <span>Zone 4: Action Center (Active Maintenance Orders)</span>
-          </h2>
-
-          <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl overflow-hidden`}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-xs border-collapse">
-                <thead>
-                  <tr className={`${theme === 'dark' ? 'bg-[#0f131c] border-[#182030]' : 'bg-slate-50 border-slate-100'} text-slate-500 border-b uppercase tracking-widest text-[9px]`}>
-                    <th className="py-3.5 px-5">Ticket ID</th>
-                    <th className="py-3.5 px-4">Equipment</th>
-                    <th className="py-3.5 px-4">Priority</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4">Assigned Specialist</th>
-                    <th className="py-3.5 px-4 text-right">Autonomous Procurement Actions</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${theme === 'dark' ? 'divide-[#182030]/40 text-slate-300' : 'divide-slate-100 text-slate-700'}`}>
-                  {data?.maintenance_orders && data.maintenance_orders.length > 0 ? (
-                    data.maintenance_orders.map((order) => {
-                      const email = getEmailDraftContent(order.root_cause);
-                      
-                      return (
-                        <tr key={order.id} className={`transition-colors duration-150 ${theme === 'dark' ? 'hover:bg-slate-900/40 text-slate-300' : 'hover:bg-slate-50 text-slate-700'}`}>
-                          <td className={`py-3.5 px-5 font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>#{order.id}</td>
-                          <td className="py-3.5 px-4">
-                            <span className={`font-semibold block ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{order.machine_id}</span>
-                            <span className="text-[10px] text-slate-500">Autonomous PdM</span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              order.priority === "Critical" ? "bg-red-500/10 text-red-400" :
-                              order.priority === "High" ? "bg-amber-500/10 text-amber-400" : "bg-slate-700/20 text-slate-400"
-                            }`}>
-                              {order.priority}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              order.status === "Approved" ? "bg-emerald-500/10 text-emerald-400" :
-                              order.status === "Dispatched_Sourcing_Active" ? "bg-orange-500/10 text-orange-400" : "bg-amber-500/10 text-amber-400"
-                            }`}>
-                              {order.status.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className={`py-3.5 px-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>{order.assigned_technician}</td>
-                          <td className="py-3.5 px-4 text-right">
-                            {email ? (
-                              <button
-                                onClick={() => setSelectedEmail(email)}
-                                className="px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-md hover:bg-blue-600 hover:text-white transition-all duration-200"
-                              >
-                                Inspect Email Draft
-                              </button>
-                            ) : (
-                              <span className="text-slate-500 italic text-[11px]">Direct Part Secure / No Sourcing Draft</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="py-12 text-center text-slate-500 italic">
-                        No active maintenance orders processed in Local Storage.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
+        <ActionCenter
+          theme={theme}
+          data={data}
+          setSelectedEmail={setSelectedEmail}
+        />
       </main>
 
-      {/* Tutorial Tour Guide Overlay */}
-      {showTutorial && (
-        <div className={`fixed inset-0 z-50 transition-all duration-300 ${
-          tutorialSteps[tutorialStep].selector 
-            ? "bg-slate-950/20 pointer-events-none" 
-            : "bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4"
-        }`}>
-          <div 
-            style={tutorialSteps[tutorialStep].style}
-            className={`${theme === 'dark' ? 'bg-[#0c0f17]/95 border-[#182030] text-slate-300 shadow-2xl' : 'bg-white/95 border-slate-200 text-slate-700 shadow-[0_10px_40px_rgba(0,0,0,0.12)]'} rounded-2xl overflow-hidden relative p-6 space-y-6 animate-fadeIn font-sans transition-all duration-500 ease-in-out pointer-events-auto ${
-              tutorialSteps[tutorialStep].selector 
-                ? tutorialSteps[tutorialStep].positionClass 
-                : "w-full max-w-lg"
-            }`}
-          >
-            
-            {/* Header / Skip */}
-            <div className="flex justify-between items-start">
-              <span className="text-[9px] font-mono font-bold uppercase py-0.5 px-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
-                STEP {tutorialStep + 1} OF {tutorialSteps.length}
-              </span>
-              <button 
-                onClick={closeTutorial}
-                className={`font-mono text-xs px-2.5 py-1 rounded transition-colors ${theme === 'dark' ? 'text-slate-505 hover:text-white hover:bg-slate-800/60' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
-              >
-                Skip Tour ✕
-              </button>
-            </div>
+      <TutorialTour
+        theme={theme}
+        showTutorial={showTutorial}
+        tutorialStep={tutorialStep}
+        setTutorialStep={setTutorialStep}
+        closeTutorial={closeTutorial}
+      />
 
-            {/* Icon & Title */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className={`p-4 rounded-full border shadow-inner ${theme === 'dark' ? 'bg-slate-900/60 border-[#182030]' : 'bg-slate-50 border-slate-100'}`}>
-                {tutorialSteps[tutorialStep].icon}
-              </div>
-              <h3 className={`text-lg font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
-                {tutorialSteps[tutorialStep].title}
-              </h3>
-              <p className={`text-xs leading-relaxed font-normal max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                {tutorialSteps[tutorialStep].description}
-              </p>
-            </div>
+      <EmailInspector
+        theme={theme}
+        selectedEmail={selectedEmail}
+        setSelectedEmail={setSelectedEmail}
+      />
 
-            {/* Progress Dots */}
-            <div className="flex justify-center space-x-2">
-              {tutorialSteps.map((_, idx) => (
-                <span 
-                  key={idx} 
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === tutorialStep ? "w-6 bg-blue-500" : "w-1.5 bg-slate-700"
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Actions */}
-            <div className={`flex justify-between items-center pt-2 border-t font-mono text-xs ${theme === 'dark' ? 'border-[#182030]/50' : 'border-slate-100'}`}>
-              <button
-                disabled={tutorialStep === 0}
-                onClick={() => setTutorialStep(prev => prev - 1)}
-                className={`px-4 py-2 rounded border transition-colors ${
-                  tutorialStep === 0 
-                    ? (theme === 'dark' ? "text-slate-600 border-slate-900 cursor-not-allowed" : "text-slate-400 border-slate-200 cursor-not-allowed") 
-                    : (theme === 'dark' ? "text-slate-300 border-slate-800 hover:bg-slate-800" : "text-slate-700 border-slate-250 hover:bg-slate-50")
-                }`}
-              >
-                ◀ Back
-              </button>
-              
-              {tutorialStep < tutorialSteps.length - 1 ? (
-                <button
-                  onClick={() => setTutorialStep(prev => prev + 1)}
-                  className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors shadow-[0_0_15px_rgba(37,99,235,0.2)]"
-                >
-                  Next Step ▶
-                </button>
-              ) : (
-                <button
-                  onClick={closeTutorial}
-                  className="px-5 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                >
-                  Get Started ✓
-                </button>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* Slide-over / Modal Inspector */}
-      {selectedEmail && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-300' : 'bg-white border-slate-200 text-slate-700 shadow-2xl'} border rounded-xl w-full max-w-2xl overflow-hidden relative`}>
-            <div className={`border-b px-6 py-4 flex justify-between items-center ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-100 bg-slate-50'}`}>
-              <h3 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
-                <Mail className="w-4 h-4 text-blue-400" />
-                <span>Autonomous Procurement Agent Draft</span>
-              </h3>
-              <button 
-                onClick={() => setSelectedEmail(null)}
-                className={`text-slate-500 transition-colors duration-150 ${theme === 'dark' ? 'hover:text-white' : 'hover:text-slate-800'}`}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className={`rounded-lg p-4 font-mono text-xs space-y-1.5 border ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-                <div><span className="text-slate-500">From:</span> <span className="text-emerald-400">{selectedEmail.from}</span></div>
-                <div><span className="text-slate-500">To:</span> <span className="text-blue-400">{selectedEmail.to}</span></div>
-                <div><span className="text-slate-500">Subject:</span> <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedEmail.subject}</span></div>
-                <div><span className="text-slate-500">Date:</span> <span className="text-slate-400">{selectedEmail.date}</span></div>
-              </div>
-              
-              <div className={`rounded-lg p-4 font-mono text-[11px] max-h-80 overflow-y-auto border leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
-                {selectedEmail.body}
-              </div>
-            </div>
-
-            <div className={`border-t px-6 py-4 flex justify-end space-x-3 font-mono text-xs ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-100 bg-slate-50'}`}>
-              <button 
-                onClick={() => setSelectedEmail(null)}
-                className={`px-4 py-2 rounded transition-colors duration-150 ${theme === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/50'}`}
-              >
-                Dismiss
-              </button>
-              <button 
-                onClick={() => {
-                  alert("Expedited dispatch webhook triggered! Order confirmed.");
-                  setSelectedEmail(null);
-                }}
-                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors duration-150"
-              >
-                Approve & Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Visual Editor Configurator Modal Panel */}
-      {showEditor && (
-        <div className="fixed inset-0 z-55 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`w-full max-w-5xl rounded-2xl border flex flex-col max-h-[90vh] overflow-hidden shadow-2xl transition-all duration-300 ${
-            theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] text-slate-300 shadow-[0_0_50px_rgba(6,182,212,0.15)]' : 'bg-white border-slate-200 text-slate-700'
-          }`}>
-            
-            {/* Modal Header */}
-            <div className={`border-b px-6 py-4 flex justify-between items-center ${
-              theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/80' : 'border-slate-100 bg-slate-50'
-            }`}>
-              <div>
-                <h3 className={`font-mono text-sm font-bold uppercase tracking-wider flex items-center space-x-2 ${
-                  theme === 'dark' ? 'text-white' : 'text-slate-800'
-                }`}>
-                  <Settings className="w-5 h-5 text-cyan-400 animate-spin-slow" />
-                  <span>Visual Fleet & Graph Configurator</span>
-                </h3>
-                <p className="text-[10px] text-slate-500 font-mono mt-0.5">Customize your factory machines, spare parts catalog, and supply chain routing nodes/edges</p>
-              </div>
-              <button 
-                onClick={() => setShowEditor(false)}
-                className={`text-slate-500 hover:text-slate-300 transition-colors p-1.5 rounded-lg ${
-                  theme === 'dark' ? 'hover:bg-slate-800/45' : 'hover:bg-slate-100'
-                }`}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Presets Quick Load Bar inside modal */}
-            <div className={`px-6 py-3.5 border-b flex flex-wrap items-center justify-between gap-3 text-xs font-mono bg-cyan-950/[0.08] ${
-              theme === 'dark' ? 'border-[#182030]/60 text-slate-400' : 'border-slate-150 text-slate-600'
-            }`}>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">LOAD PRESET STRUCTURES:</span>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleLoadPreset("steel")}
-                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-blue-950/20 border-blue-500/30 text-blue-400 hover:bg-blue-900/30'
-                      : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
-                  }`}
-                >
-                  Heavy Steel Mill
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadPreset("petrochemical")}
-                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/30'
-                      : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                >
-                  Petrochemical Refinery
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadPreset("automotive")}
-                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-purple-950/20 border-purple-500/30 text-purple-400 hover:bg-purple-900/30'
-                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
-                  }`}
-                >
-                  Robotics Assembly
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadPreset("empty")}
-                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'
-                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Clear to Empty (Zero)
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Tabs Selector */}
-            <div className={`flex border-b font-mono text-xs p-1 gap-1 ${
-              theme === 'dark' ? 'border-[#182030]/80 bg-[#06080c]' : 'border-slate-200 bg-slate-50'
-            }`}>
-              {[
-                { tabId: "machines", label: "Fleet Assets", icon: <Cpu className="w-3.5 h-3.5" /> },
-                { tabId: "inventory", label: "Spare Inventory", icon: <Database className="w-3.5 h-3.5" /> },
-                { tabId: "nodes", label: "Graph Nodes", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
-                { tabId: "edges", label: "Graph Edges", icon: <Activity className="w-3.5 h-3.5" /> },
-              ].map(t => (
-                <button
-                  key={t.tabId}
-                  onClick={() => setEditorTab(t.tabId)}
-                  className={`flex-1 py-2.5 px-3 rounded-lg font-bold uppercase transition-all duration-200 flex items-center justify-center gap-1.5 ${
-                    editorTab === t.tabId
-                      ? (theme === 'dark' 
-                          ? "text-cyan-400 bg-cyan-950/25 border border-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.05)]" 
-                          : "text-cyan-600 bg-cyan-50 border border-cyan-200/50 shadow-inner") 
-                      : "text-slate-500 hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/20"
-                  }`}
-                >
-                  {t.icon}
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Modal Body / Tab Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              
-              {/* FLEET ASSETS TAB */}
-              {editorTab === "machines" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Fleet Asset System Profiles ({editorMachines.length})</span>
-                    <button
-                      type="button"
-                      onClick={() => setEditorMachines(prev => [
-                        ...prev,
-                        { id: `MCH-10${prev.length + 1}`, name: `Asset ${prev.length + 1}`, location: "Bay 1 Assembly", thresholds: { temperature: 90.0, vibration: 8.0, pressure: 6.5, current: 15.0, required_part_id: "PART-001" } }
-                      ])}
-                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
-                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Fleet Machine
-                    </button>
-                  </div>
-
-                  {editorMachines.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No machines defined in custom fleet database. Click "Add Fleet Machine" or load a preset.</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {editorMachines.map((m, idx) => (
-                        <div key={idx} className={`border p-4 rounded-xl space-y-3 font-mono text-xs relative ${
-                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
-                        }`}>
-                          <div className="flex justify-between items-center border-b pb-2 mb-2 border-slate-700/20">
-                            <span className="text-cyan-500 font-bold">Fleet Asset #{idx + 1} Profile</span>
-                            <button
-                              type="button"
-                              onClick={() => setEditorMachines(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
-                            >
-                              <Trash className="w-3 h-3" /> Remove
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Asset ID</label>
-                              <input
-                                type="text"
-                                value={m.id}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, id: val } : item));
-                                }}
-                                className={`w-full rounded-lg p-2 outline-none text-xs ${
-                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20'
-                                } border`}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Name</label>
-                              <input
-                                type="text"
-                                value={m.name}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
-                                }}
-                                className={`w-full rounded-lg p-2 outline-none text-xs ${
-                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500'
-                                } border`}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Bay Location</label>
-                              <input
-                                type="text"
-                                value={m.location}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, location: val } : item));
-                                }}
-                                className={`w-full rounded-lg p-2 outline-none text-xs ${
-                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                } border`}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Requires Spare Part</label>
-                              <select
-                                value={m.thresholds?.required_part_id || "PART-001"}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, required_part_id: val } } : item));
-                                }}
-                                className={`w-full rounded-lg p-2 outline-none text-xs ${
-                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                } border`}
-                              >
-                                {editorInventory.length === 0 ? (
-                                  <option value="PART-001">PART-001 (Default)</option>
-                                ) : (
-                                  editorInventory.map(part => (
-                                    <option key={part.part_id} value={part.part_id}>{part.part_id} - {part.part_name}</option>
-                                  ))
-                                )}
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="pt-2">
-                            <span className="block text-[9px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Operational Critical Limits Thresholds</span>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div>
-                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Winding Temp limit (°C)</label>
-                                <input
-                                  type="number"
-                                  value={m.thresholds?.temperature || 90.0}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0.0;
-                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, temperature: val } } : item));
-                                  }}
-                                  className={`w-full rounded-lg p-1.5 outline-none ${
-                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                  } border`}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Vibration limit (mm/s)</label>
-                                <input
-                                  type="number"
-                                  value={m.thresholds?.vibration || 8.0}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0.0;
-                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, vibration: val } } : item));
-                                  }}
-                                  className={`w-full rounded-lg p-1.5 outline-none ${
-                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                  } border`}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Discharge Pres limit (Bar)</label>
-                                <input
-                                  type="number"
-                                  value={m.thresholds?.pressure || 6.5}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0.0;
-                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, pressure: val } } : item));
-                                  }}
-                                  className={`w-full rounded-lg p-1.5 outline-none ${
-                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                  } border`}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[8.5px] text-slate-500 mb-0.5">Coil Amps limit (A)</label>
-                                <input
-                                  type="number"
-                                  value={m.thresholds?.current || 15.0}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0.0;
-                                    setEditorMachines(prev => prev.map((item, i) => i === idx ? { ...item, thresholds: { ...item.thresholds, current: val } } : item));
-                                  }}
-                                  className={`w-full rounded-lg p-1.5 outline-none ${
-                                    theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                  } border`}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* SPARE INVENTORY TAB */}
-              {editorTab === "inventory" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Spare Parts Catalog ({editorInventory.length})</span>
-                    <button
-                      type="button"
-                      onClick={() => setEditorInventory(prev => [
-                        ...prev,
-                        { part_id: `PART-10${prev.length + 1}`, part_name: `Spare Part ${prev.length + 1}`, stock_level: 5, reorder_point: 2, cost: 150.00, location: "Warehouse A - Aisle 1" }
-                      ])}
-                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
-                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Spare Part
-                    </button>
-                  </div>
-
-                  {editorInventory.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No spare parts defined. Click "Add Spare Part" or load a preset.</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {editorInventory.map((item, idx) => (
-                        <div key={idx} className={`border p-4 rounded-xl grid grid-cols-1 md:grid-cols-7 gap-3 font-mono text-xs relative ${
-                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
-                        }`}>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Part ID</label>
-                            <input
-                              type="text"
-                              value={item.part_id}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, part_id: val } : p));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Part Name</label>
-                            <input
-                              type="text"
-                              value={item.part_name}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, part_name: val } : p));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Stock Level</label>
-                            <input
-                              type="number"
-                              value={item.stock_level}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value) || 0;
-                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, stock_level: val } : p));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Reorder Pt</label>
-                            <input
-                              type="number"
-                              value={item.reorder_point}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value) || 0;
-                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, reorder_point: val } : p));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Unit Cost ($)</label>
-                            <input
-                              type="number"
-                              value={item.cost}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0.0;
-                                setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, cost: val } : p));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div className="flex items-end justify-between gap-2">
-                            <div className="flex-1">
-                              <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Location</label>
-                              <input
-                                type="text"
-                                value={item.location}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setEditorInventory(prev => prev.map((p, i) => i === idx ? { ...p, location: val } : p));
-                                }}
-                                className={`w-full rounded-lg p-2 outline-none ${
-                                  theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                                } border`}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setEditorInventory(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-red-400 hover:text-red-300 font-bold p-2.5 rounded-lg border border-red-500/10 hover:bg-red-500/10"
-                            >
-                              <Trash className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* GRAPH NODES TAB */}
-              {editorTab === "nodes" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Supply Chain Nodes ({editorNodes.length})</span>
-                    <button
-                      type="button"
-                      onClick={() => setEditorNodes(prev => [
-                        ...prev,
-                        { id: `SUP-10${prev.length + 1}`, name: `Supplier ${prev.length + 1}`, type: "Supplier", risk: 0.15, email: "sales@supplier.com" }
-                      ])}
-                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
-                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Graph Node
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {editorNodes.map((n, idx) => (
-                      <div key={idx} className={`border p-4 rounded-xl space-y-3 font-mono text-xs relative ${
-                        theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
-                      }`}>
-                        <div className="flex justify-between items-center border-b pb-1.5 mb-1.5 border-slate-700/20">
-                          <span className="text-cyan-500 font-bold uppercase text-[10px]">Node #{idx + 1} Profile</span>
-                          <button
-                            type="button"
-                            onClick={() => setEditorNodes(prev => prev.filter((_, i) => i !== idx))}
-                            className="text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5"
-                          >
-                            <Trash className="w-3 h-3" /> Remove
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node ID (Tag)</label>
-                            <input
-                              type="text"
-                              value={n.id}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, id: val } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Name</label>
-                            <input
-                              type="text"
-                              value={n.name}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Type</label>
-                            <select
-                              value={n.type}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, type: val } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            >
-                              <option value="Supplier">Supplier (Tier 1)</option>
-                              <option value="Part">Spare Part Component</option>
-                              <option value="Material">Raw Material (Tier 2)</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Supplier Risk (0.0 to 1.0)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              max="1"
-                              step="0.05"
-                              value={n.risk || 0.0}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0.0;
-                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, risk: val } : item));
-                              }}
-                              disabled={n.type === "Part"}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                n.type === "Part" ? "bg-slate-850/40 text-slate-500 cursor-not-allowed border-slate-800" :
-                                (theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800')
-                              } border`}
-                            />
-                          </div>
-                        </div>
-                        {n.type === "Supplier" && (
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Contact Email</label>
-                            <input
-                              type="email"
-                              value={n.email || ""}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditorNodes(prev => prev.map((item, i) => i === idx ? { ...item, email: val } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                              placeholder="sales@supplier.com"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* GRAPH EDGES TAB */}
-              {editorTab === "edges" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Supplier Graph Routing Edges ({editorEdges.length})</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const defaultSource = editorNodes.find(n => n.type === "Supplier")?.id || "SUP-001";
-                        const defaultTarget = editorNodes.find(n => n.type === "Part")?.id || "PART-001";
-                        setEditorEdges(prev => [
-                          ...prev,
-                          { source: defaultSource, target: defaultTarget, relationship: "SUPPLIES", transit: 5, price: 200.00 }
-                        ]);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-all duration-200 ${
-                        theme === 'dark' ? 'bg-cyan-950/30 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 shadow-[0_0_10px_rgba(6,182,212,0.05)]' : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Graph Connection (Edge)
-                    </button>
-                  </div>
-
-                  {editorEdges.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-slate-500 italic font-mono">No routing connections mapped in the database. Click "Add Graph Connection" or load a preset.</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {editorEdges.map((e, idx) => (
-                        <div key={idx} className={`border p-4 rounded-xl grid grid-cols-1 md:grid-cols-6 gap-3 font-mono text-xs relative ${
-                          theme === 'dark' ? 'border-[#1b2336]/60 bg-[#05070a]/40' : 'border-slate-200 bg-slate-50/50'
-                        }`}>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Source (From)</label>
-                            <select
-                              value={e.source}
-                              onChange={(val) => {
-                                const v = val.target.value;
-                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, source: v } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            >
-                              {editorNodes.map(node => (
-                                <option key={node.id} value={node.id}>{node.id} ({node.name})</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Target (To)</label>
-                            <select
-                              value={e.target}
-                              onChange={(val) => {
-                                const v = val.target.value;
-                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, target: v } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            >
-                              {editorNodes.map(node => (
-                                <option key={node.id} value={node.id}>{node.id} ({node.name})</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Relationship</label>
-                            <select
-                              value={e.relationship}
-                              onChange={(val) => {
-                                const v = val.target.value;
-                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, relationship: v } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            >
-                              <option value="SUPPLIES">SUPPLIES (Supplier &rarr; Part)</option>
-                              <option value="USED_IN">USED_IN (Material &rarr; Part)</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Transit Lead Time (Days)</label>
-                            <input
-                              type="number"
-                              value={e.transit}
-                              onChange={(val) => {
-                                const v = parseInt(val.target.value) || 0;
-                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, transit: v } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Price / Cost ($)</label>
-                            <input
-                              type="number"
-                              value={e.price}
-                              onChange={(val) => {
-                                const v = parseFloat(val.target.value) || 0.0;
-                                setEditorEdges(prev => prev.map((item, i) => i === idx ? { ...item, price: v } : item));
-                              }}
-                              className={`w-full rounded-lg p-2 outline-none ${
-                                theme === 'dark' ? 'bg-[#080b11] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
-                              } border`}
-                            />
-                          </div>
-                          <div className="flex items-end justify-end">
-                            <button
-                              type="button"
-                              onClick={() => setEditorEdges(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-red-400 hover:text-red-300 font-bold p-2.5 rounded-lg border border-red-500/10 hover:bg-red-500/10"
-                            >
-                              <Trash className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-            </div>
-
-            {/* Modal Actions Footer */}
-            <div className={`border-t px-6 py-4 flex justify-between items-center font-mono text-xs ${
-              theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/90' : 'border-slate-100 bg-slate-50'
-            }`}>
-              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                {savingConfig ? "WRITING TO LOCAL STORAGE..." : "STANDING BY TO COMMIT CONFIG"}
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowEditor(false)}
-                  className={`px-4 py-2 rounded-xl transition-all duration-200 border ${
-                    theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200/50'
-                  }`}
-                >
-                  Dismiss
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveConfig}
-                  disabled={savingConfig}
-                  className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.2)] disabled:opacity-50"
-                >
-                  {savingConfig ? "Synchronizing..." : "Apply & Sync to Local Storage"}
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
+      <FleetConfigurator
+        theme={theme}
+        showEditor={showEditor}
+        setShowEditor={setShowEditor}
+        editorTab={editorTab}
+        setEditorTab={setEditorTab}
+        editorMachines={editorMachines}
+        setEditorMachines={setEditorMachines}
+        editorInventory={editorInventory}
+        setEditorInventory={setEditorInventory}
+        editorNodes={editorNodes}
+        setEditorNodes={setEditorNodes}
+        editorEdges={editorEdges}
+        setEditorEdges={setEditorEdges}
+        handleLoadPreset={handleLoadPreset}
+        handleSaveConfig={handleSaveConfig}
+        savingConfig={savingConfig}
+      />
     </div>
   );
 }
