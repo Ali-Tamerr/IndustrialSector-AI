@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Sliders, 
   Cpu, 
@@ -32,10 +32,14 @@ export default function DeviceClientPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [logs, setLogs] = useState([
-    { time: new Date().toLocaleTimeString(), text: "IoT telemetry client initialized." },
-    { time: new Date().toLocaleTimeString(), text: "Ready to transmit to local gateway." }
-  ]);
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    setLogs([
+      { time: new Date().toLocaleTimeString(), text: "IoT telemetry client initialized." },
+      { time: new Date().toLocaleTimeString(), text: "Ready to transmit to local gateway." }
+    ]);
+  }, []);
 
   const addLog = (text) => {
     setLogs(prev => [{ time: new Date().toLocaleTimeString(), text }, ...prev].slice(0, 8));
