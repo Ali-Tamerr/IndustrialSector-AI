@@ -596,14 +596,7 @@ export default function Home() {
       sessionStorage.setItem("tabId", tabId);
     }
 
-    const completed = localStorage.getItem("isSetupCompleted");
-    const savedActiveId = localStorage.getItem("activeProjectId");
-    if (completed === "true" && savedActiveId) {
-      window.location.replace("/dashboard");
-      return;
-    } else {
-      updateTabActiveProject(null);
-    }
+    updateTabActiveProject(null);
 
     const syncActiveTabs = () => {
       try {
