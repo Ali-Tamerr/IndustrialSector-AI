@@ -85,17 +85,31 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Mockup authentication
-    if (email === "admin@industrial.ai" && password === "password123") {
-      setIsLoggedIn(true);
-      localStorage.setItem("adminLoggedIn", "true");
-      localStorage.setItem("adminLinkID", adminId);
-    } else {
-      setError("Invalid email or password. Use mockup details provided below.");
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsLoggedIn(true);
+        setAdminId(data.adminId);
+        localStorage.setItem("adminLoggedIn", "true");
+        localStorage.setItem("adminLinkID", data.adminId);
+      } else {
+        setError(data.error || "Invalid email or password. Use mockup details provided below.");
+      }
+    } catch (err) {
+      console.error("Login request failed:", err);
+      setError("Network or server error during authentication.");
     }
   };
 

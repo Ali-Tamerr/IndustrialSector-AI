@@ -33,4 +33,39 @@ const pool = new Pool({
   ssl: cleanDatabaseUrl && cleanDatabaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
 });
 
-export { pool, cleanDatabaseUrl };
+async function ensureTablesInitialized(client) {
+  // Create admin_accounts table
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS admin_accounts (
+      id VARCHAR(8) PRIMARY KEY,
+      email VARCHAR(100) NOT NULL UNIQUE,
+      password VARCHAR(100) NOT NULL
+    );
+  `);
+
+  // Create machine_reports table
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS machine_reports (
+      id SERIAL PRIMARY KEY,
+      admin_id VARCHAR(8) REFERENCES admin_accounts(id) ON DELETE CASCADE,
+      machine_id VARCHAR(50) NOT NULL,
+      status VARCHAR(50) NOT NULL,
+      temperature DOUBLE PRECISION,
+      vibration DOUBLE PRECISION,
+      pressure DOUBLE PRECISION,
+      current DOUBLE PRECISION,
+      message TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Seed default mockup admin account
+  await client.query(`
+    INSERT INTO admin_accounts (id, email, password)
+    VALUES ('ADM-8A9F', 'admin@industrial.ai', 'password123')
+    ON CONFLICT (email) DO NOTHING;
+  `);
+}
+
+export { pool, cleanDatabaseUrl, ensureTablesInitialized };
+
