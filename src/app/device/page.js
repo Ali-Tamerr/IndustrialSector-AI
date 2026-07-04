@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import InstructionsPanel from "@/components/device/InstructionsPanel";
 import ConsoleOut from "@/components/device/ConsoleOut";
 import GatewayConfig from "@/components/device/GatewayConfig";
@@ -142,6 +144,17 @@ export default function DeviceClientPage() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#090d16_1px,transparent_1px),linear-gradient(to_bottom,#090d16_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-35 pointer-events-none"></div>
       <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-950/10 blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-950/10 blur-[100px] pointer-events-none"></div>
+
+      {/* Back Navigation Button */}
+      <div className="relative max-w-5xl mx-auto z-20 mb-6">
+        <Link 
+          href="/dashboard"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-900/60 border border-slate-800/80 text-[11px] font-mono uppercase tracking-wider font-bold hover:bg-slate-850 hover:text-white text-slate-300 transition-all shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Control Tower</span>
+        </Link>
+      </div>
 
       <div className="relative max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 z-10">
         

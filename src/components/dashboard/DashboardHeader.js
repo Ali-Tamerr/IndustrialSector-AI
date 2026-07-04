@@ -12,6 +12,7 @@ import {
   Menu, 
   X 
 } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardHeader({
   theme,
@@ -90,7 +91,7 @@ export default function DashboardHeader({
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Dashboard Tour</span>
           </button>
-          <a
+          <Link
             href="/admin"
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark'
@@ -100,8 +101,8 @@ export default function DashboardHeader({
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Admin Portal</span>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/device"
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark'
@@ -111,7 +112,7 @@ export default function DashboardHeader({
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Device Client</span>
-          </a>
+          </Link>
           <button
             onClick={() => {
               if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
@@ -192,7 +193,7 @@ export default function DashboardHeader({
                       <span className={`font-mono text-[10px] ml-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{machine.id}</span>
                     </li>
                   ))}
-                  {(!data?.machines || data.machines.length === 0) && (
+                  {(!data?.machines || data?.machines?.length === 0) && (
                     <li className={`px-4 py-4 text-center text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
                       No machines available
                     </li>
@@ -265,8 +266,7 @@ export default function DashboardHeader({
                 <HelpCircle className="w-3.5 h-3.5" />
                 <span>Dashboard Tour</span>
               </button>
-
-              <a
+              <Link
                 href="/admin"
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
                   theme === 'dark'
@@ -276,9 +276,9 @@ export default function DashboardHeader({
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Admin Portal</span>
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/device"
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
                   theme === 'dark'
@@ -288,7 +288,7 @@ export default function DashboardHeader({
               >
                 <Sliders className="w-3.5 h-3.5" />
                 <span>Device Client</span>
-              </a>
+              </Link>
 
               <button
                 onClick={() => {
@@ -371,7 +371,7 @@ export default function DashboardHeader({
                           <span className="font-mono text-[9px] text-slate-500">{machine.id}</span>
                         </li>
                       ))}
-                      {(!data?.machines || data.machines.length === 0) && (
+                      {(!data?.machines || data?.machines?.length === 0) && (
                         <li className="px-3 py-3 text-center text-xs text-slate-400">
                           No machines available
                         </li>

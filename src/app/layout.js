@@ -1,5 +1,4 @@
 import localFont from "next/font/local";
-import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const nowFont = localFont({
@@ -38,10 +37,9 @@ const nowFont = localFont({
   variable: "--font-now",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-});
+const jetbrainsMono = {
+  variable: "font-mono",
+};
 
 export const metadata = {
   title: "Autonomous Industrial Control Tower",

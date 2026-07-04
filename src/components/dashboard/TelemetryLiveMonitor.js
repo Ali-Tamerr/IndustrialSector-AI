@@ -65,11 +65,11 @@ export default function TelemetryLiveMonitor({
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {data?.machines.map((machine) => {
-          const latest = data.telemetry[machine.id]?.[data.telemetry[machine.id].length - 1];
+        {data?.machines?.map((machine) => {
+          const latest = data?.telemetry?.[machine.id]?.[data?.telemetry?.[machine.id]?.length - 1];
           const health = getStatusBadges(machine.status);
-          const tempHistory = data.telemetry[machine.id]?.map(p => p.temperature) || [];
-          const vibHistory = data.telemetry[machine.id]?.map(p => p.vibration) || [];
+          const tempHistory = data?.telemetry?.[machine.id]?.map(p => p.temperature) || [];
+          const vibHistory = data?.telemetry?.[machine.id]?.map(p => p.vibration) || [];
           
           const hasTemp = (machine.critical_thresholds?.temperature ?? 0) > 0;
           const hasVib = (machine.critical_thresholds?.vibration ?? 0) > 0;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { 
   ShieldCheck, 
   Mail, 
@@ -15,7 +16,8 @@ import {
   CheckCircle,
   FileText,
   LogOut,
-  Sliders
+  Sliders,
+  ArrowLeft
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -178,6 +180,21 @@ export default function AdminPage() {
           theme === 'dark' ? 'rgba(255,255,255,0.003)' : 'rgba(0,0,0,0.008)'
         }_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none`}></div>
 
+        {/* Back Navigation Button */}
+        <div className="absolute top-6 left-6 z-20">
+          <Link 
+            href="/dashboard"
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border text-[11px] font-mono uppercase tracking-wider font-bold transition-all shadow-sm ${
+              theme === 'dark'
+                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-300 hover:text-white'
+                : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+            }`}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Dashboard</span>
+          </Link>
+        </div>
+
         {/* Clean, editorial-style Login Panel */}
         <div className={`relative w-full max-w-md border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${
           theme === 'dark' 
@@ -323,9 +340,20 @@ export default function AdminPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <a
+          <Link
+            href="/dashboard"
+            className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-350' 
+                : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+            }`}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Control Tower</span>
+          </Link>
+
+          <Link
             href="/device"
-            target="_blank"
             className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
               theme === 'dark' 
                 ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-350' 
@@ -334,8 +362,7 @@ export default function AdminPage() {
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Device Client</span>
-            <ExternalLink className="w-3 h-3 text-slate-500" />
-          </a>
+          </Link>
 
           <button
             onClick={handleLogout}
