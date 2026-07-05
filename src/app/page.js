@@ -8,8 +8,8 @@ import {
   generateBaselines,
   seedWorkspaceData
 } from "@/lib/templatesData";
-import WorkspaceSidebar from "@/components/landing/WorkspaceSidebar";
-import ProjectConfigurator from "@/components/landing/ProjectConfigurator";
+import WorkspaceSidebar from "@/app/_components/WorkspaceSidebar";
+import ProjectConfigurator from "@/app/_components/ProjectConfigurator";
 
 import { 
   Activity, 

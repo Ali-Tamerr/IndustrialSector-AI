@@ -22,7 +22,9 @@ except ImportError:
     sys.exit(1)
 
 # Load environment variables from the workspace .env file
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+if not os.path.exists(dotenv_path):
+    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path, override=True)
 
 # Retrieve configuration with robust defaults

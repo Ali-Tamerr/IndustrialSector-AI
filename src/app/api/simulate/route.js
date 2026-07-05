@@ -7,8 +7,8 @@ const execPromise = promisify(exec);
 
 export async function POST() {
   try {
-    // Target the current directory where Python files are located
-    const runDir = process.cwd();
+    // Target the backend directory where Python files are located
+    const runDir = path.join(process.cwd(), "backend");
     
     // Command to execute the python script
     // Attempt using .venv python if available, otherwise fallback to system python

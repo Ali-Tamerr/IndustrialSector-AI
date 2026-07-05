@@ -3,14 +3,14 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Activity } from "lucide-react";
 
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import TelemetryLiveMonitor from "@/components/dashboard/TelemetryLiveMonitor";
-import ThoughtsStream from "@/components/dashboard/ThoughtsStream";
-import SourcingRoadmap from "@/components/dashboard/SourcingRoadmap";
-import ActionCenter from "@/components/dashboard/ActionCenter";
-import TutorialTour from "@/components/dashboard/TutorialTour";
-import EmailInspector from "@/components/dashboard/EmailInspector";
-import FleetConfigurator from "@/components/dashboard/FleetConfigurator";
+import DashboardHeader from "@/app/dashboard/_components/DashboardHeader";
+import TelemetryLiveMonitor from "@/app/dashboard/_components/TelemetryLiveMonitor";
+import ThoughtsStream from "@/app/dashboard/_components/ThoughtsStream";
+import SourcingRoadmap from "@/app/dashboard/_components/SourcingRoadmap";
+import ActionCenter from "@/app/dashboard/_components/ActionCenter";
+import TutorialTour from "@/app/dashboard/_components/TutorialTour";
+import EmailInspector from "@/app/dashboard/_components/EmailInspector";
+import FleetConfigurator from "@/app/dashboard/_components/FleetConfigurator";
 
 import {
   PETROCHEMICAL_TEMPLATE,

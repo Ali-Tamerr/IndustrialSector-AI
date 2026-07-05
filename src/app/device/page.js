@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import InstructionsPanel from "@/components/device/InstructionsPanel";
-import ConsoleOut from "@/components/device/ConsoleOut";
-import GatewayConfig from "@/components/device/GatewayConfig";
-import FleetAverages from "@/components/device/FleetAverages";
+import InstructionsPanel from "@/app/device/_components/InstructionsPanel";
+import ConsoleOut from "@/app/device/_components/ConsoleOut";
+import GatewayConfig from "@/app/device/_components/GatewayConfig";
+import FleetAverages from "@/app/device/_components/FleetAverages";
 
 export default function DeviceClientPage() {
   const [adminId, setAdminId] = useState("ADM-8A9F");

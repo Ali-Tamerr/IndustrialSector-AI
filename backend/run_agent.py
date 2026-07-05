@@ -31,7 +31,7 @@ def run_fleet_demo():
         if machine_count == 0:
             print("[System] PostgreSQL is uninitialized. Running 'python init_db.py' first...")
             import subprocess
-            subprocess.run([sys.executable, "init_db.py"], check=True)
+            subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "init_db.py")], check=True)
             # Reconnect
             conn = get_postgres_connection()
         else:
