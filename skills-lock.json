@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "folder-structure-blueprint-generator": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/folder-structure-blueprint-generator/SKILL.md",
+      "computedHash": "418d532c42d0714986e90466e087f6fd8c975e7dc8afddafd1f37558968b639b"
+    }
+  }
+}
