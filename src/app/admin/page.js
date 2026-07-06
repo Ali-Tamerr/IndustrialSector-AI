@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [reports, setReports] = useState([]);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("approved"); // approved or notifications
+  const [adminView, setAdminView] = useState("dashboard"); // dashboard or reports
 
   const handleApproveReport = async (reportId) => {
     try {
@@ -423,7 +424,7 @@ export default function AdminPage() {
   const displayedReports = activeTab === "approved" ? approvedReports : pendingReports;
 
   return (
-    <div className={`min-h-screen flex flex-col overflow-x-hidden font-sans transition-colors duration-300 ${
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
       theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'
     }`}>
       
@@ -455,7 +456,7 @@ export default function AdminPage() {
             href="/dashboard"
             className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
               theme === 'dark' 
-                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-350' 
+                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-355' 
                 : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
             }`}
           >
@@ -467,7 +468,7 @@ export default function AdminPage() {
             href="/device"
             className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
               theme === 'dark' 
-                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-350' 
+                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-355' 
                 : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
             }`}
           >
@@ -479,7 +480,7 @@ export default function AdminPage() {
             onClick={handleLogout}
             className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
               theme === 'dark' 
-                ? 'bg-red-950/20 border-red-900/30 text-red-300 hover:bg-red-950/40' 
+                ? 'bg-red-955/20 border-red-900/30 text-red-305 hover:bg-red-955/40' 
                 : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
             }`}
           >
@@ -489,495 +490,777 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-6">
-
-        {/* KPI Dashboard Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          {/* Critical Machines Card */}
-          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
-            theme === 'dark' 
-              ? 'bg-[#0a0d16] border-[#1b2336]' 
-              : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-            <div className="space-y-1">
-              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}>Critical Assets</span>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-2xl font-bold font-mono ${
-                  criticalMachinesCount > 0
-                    ? (theme === 'dark' ? 'text-red-400' : 'text-red-600')
-                    : (theme === 'dark' ? 'text-white' : 'text-slate-808')
-                }`}>
-                  {criticalMachinesCount}
-                </span>
-                <span className={`text-[10px] font-medium font-sans ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>/ {fleetData?.machines?.length || 0} fleet</span>
-              </div>
-              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Requires active intervention</p>
-            </div>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-              criticalMachinesCount > 0
-                ? (theme === 'dark' ? 'bg-red-955/20 border-red-500/20 text-red-450' : 'bg-red-50 border-red-200 text-red-700')
-                : (theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-400')
-            }`}>
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Component Expenditure Card */}
-          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
-            theme === 'dark' 
-              ? 'bg-[#0a0d16] border-[#1b2336]' 
-              : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-            <div className="space-y-1">
-              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}>Component Capital</span>
-              <div className="flex items-baseline gap-1">
-                <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>
-                  ${totalExpenditure.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Emergency procurement spent</p>
-            </div>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-              theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
-            }`}>
-              <Sliders className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Maintenance Tickets Card */}
-          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
-            theme === 'dark' 
-              ? 'bg-[#0a0d16] border-[#1b2336]' 
-              : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-            <div className="space-y-1">
-              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}>Total Tickets</span>
-              <div className="flex items-baseline gap-1">
-                <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>
-                  {fleetData?.maintenance_orders?.length || 0}
-                </span>
-              </div>
-              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>PdM orders processed</p>
-            </div>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-              theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-            }`}>
-              <Clipboard className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Device Link Status Card */}
-          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
-            theme === 'dark' 
-              ? 'bg-[#0a0d16] border-[#1b2336]' 
-              : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-            <div className="space-y-1">
-              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}>Device Link</span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold font-mono text-emerald-400">ACTIVE</span>
-              </div>
-              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Linked to ID: {adminId}</p>
-            </div>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-              theme === 'dark' ? 'bg-emerald-955/20 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-            }`}>
-              <Cpu className="w-5 h-5" />
-            </div>
-          </div>
-
-        </div>
-
-        {/* Device Sync Info Banner */}
-        <div className={`border rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden transition-all duration-300 ${
-          theme === 'dark' 
-            ? 'bg-[#0a0d16] border-[#1b2336] text-slate-300' 
-            : 'bg-white border-slate-200 text-slate-700'
+      {/* Sidebar + Main Content Layout */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0">
+        
+        {/* Sidebar */}
+        <aside className={`w-full md:w-64 border-b md:border-b-0 md:border-r shrink-0 transition-colors duration-300 ${
+          theme === 'dark' ? 'bg-[#06080e] border-[#1b2336]/60' : 'bg-slate-50 border-slate-200'
         }`}>
-          
-          <div className="space-y-2 relative z-10">
-            <h2 className={`text-base font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Local Device Integration</h2>
-            <p className={`text-xs max-w-2xl leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
-              Any local diagnostic device, IoT node, or monitoring script can report machinery telemetry and logs to your account by using the Link ID below. No account credentials needed on reporting devices.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 relative z-10">
-            <div className={`border rounded-lg px-4 py-2.5 flex items-center justify-between min-w-[240px] ${
-              theme === 'dark' ? 'bg-[#030508] border-[#1b2336]' : 'bg-slate-50 border-slate-200'
-            }`}>
-              <div>
-                <span className={`text-[9px] uppercase tracking-wider font-bold block mb-0.5 ${
-                  theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
-                }`}>Admin Link ID</span>
-                <code className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{adminId}</code>
-              </div>
+          <div className="p-4 space-y-6 md:sticky md:top-24">
+            <div className="space-y-1.5 px-2">
+              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+              }`}>Navigation</span>
+            </div>
+            
+            <nav className="space-y-1">
               <button
-                onClick={copyToClipboard}
-                className={`p-2 rounded-lg transition-colors ${
-                  theme === 'dark' ? 'hover:bg-slate-900 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                onClick={() => setAdminView("dashboard")}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                  adminView === "dashboard"
+                    ? (theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm')
+                    : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent')
                 }`}
-                title="Copy Link ID"
               >
-                {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Clipboard className="w-4 h-4" />}
+                <Sliders className="w-4 h-4" />
+                <span>Admin Dashboard</span>
               </button>
-            </div>
-            
-            <button
-              onClick={() => setShowTestForm(true)}
-              className="py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-mono uppercase font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Simulate Report</span>
-            </button>
-          </div>
-        </div>
 
-        {/* Test Report Generator Modal Form */}
-        {showTestForm && (
-          <div className={`border rounded-xl p-6 relative animate-fadeIn shadow-lg transition-all duration-300 ${
-            theme === 'dark' 
-              ? 'bg-[#0a0d16] border-[#1b2336] text-slate-350' 
-              : 'bg-white border-slate-200 text-slate-700'
-          }`}>
-            <h3 className={`text-xs font-bold font-mono uppercase mb-4 flex items-center gap-2 ${
-              theme === 'dark' ? 'text-white' : 'text-slate-800'
-            }`}>
-              <Cpu className="w-4 h-4 text-cyan-450" />
-              <span>Simulate Local Device Machine Report</span>
-            </h3>
-            
-            {testSuccessMsg && (
-              <div className="mb-4 p-3 rounded-lg bg-emerald-950/20 border border-emerald-900 text-emerald-300 text-xs">
-                {testSuccessMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleSendTestReport} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                  theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                }`}>Machine ID</label>
-                <select
-                  value={testMachineId}
-                  onChange={(e) => setTestMachineId(e.target.value)}
-                  className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
-                    theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white' : 'bg-white border-slate-200 text-slate-808'
-                  }`}
-                >
-                  <option value="MCH-001">MCH-001 (Rotary Gear Pump A)</option>
-                  <option value="MCH-002">MCH-002 (High-Speed Fan B)</option>
-                  <option value="MCH-003">MCH-003 (Heavy-Duty Compressor C)</option>
-                  <option value="Custom">Custom / Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                  theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                }`}>Machine Status</label>
-                <select
-                  value={testStatus}
-                  onChange={(e) => setTestStatus(e.target.value)}
-                  className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
-                    theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white' : 'bg-white border-slate-200 text-slate-808'
-                  }`}
-                >
-                  <option value="Operational">Operational (Healthy)</option>
-                  <option value="Degraded">Degraded (Warning)</option>
-                  <option value="Critical">Critical (Danger)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 md:col-span-2">
-                <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                    theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                  }`}>Temp (°C)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={testTemp}
-                    onChange={(e) => setTestTemp(e.target.value)}
-                    className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                      theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
-                    }`}
-                  />
+              <button
+                onClick={() => setAdminView("reports")}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                  adminView === "reports"
+                    ? (theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm')
+                    : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent')
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Clipboard className="w-4 h-4" />
+                  <span>Received Reports</span>
                 </div>
-                <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                    theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                  }`}>Vib (mm/s)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={testVib}
-                    onChange={(e) => setTestVib(e.target.value)}
-                    className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                      theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                    theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                  }`}>Pres (Bar)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={testPres}
-                    onChange={(e) => setTestPres(e.target.value)}
-                    className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                      theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                    theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                  }`}>Current (A)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={testCur}
-                    onChange={(e) => setTestCur(e.target.value)}
-                    className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                      theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
-                    }`}
-                  />
-                </div>
-              </div>
+                {pendingReports.length > 0 && (
+                  <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                    {pendingReports.length}
+                  </span>
+                )}
+              </button>
+            </nav>
 
-              <div className="md:col-span-3">
-                <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                  theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-                }`}>Diagnostic Message / Log</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Bearing temperature threshold warning. Lubricant level checks required."
-                  value={testMessage}
-                  onChange={(e) => setTestMessage(e.target.value)}
-                  className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
-                    theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-202 text-slate-808'
-                  }`}
-                />
-              </div>
-
-              <div className="flex items-end gap-2">
-                <button
-                  type="submit"
-                  disabled={submittingTest}
-                  className="flex-1 py-2.5 px-3 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono uppercase font-bold rounded-lg transition-colors border-0"
-                >
-                  {submittingTest ? "Sending..." : "Submit Test"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowTestForm(false)}
-                  className={`py-2.5 px-3 border text-xs font-mono uppercase font-bold rounded-lg transition-colors ${
-                    theme === 'dark' 
-                      ? 'bg-slate-900 border-[#1b2336] text-slate-400 hover:text-white' 
-                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
-                  }`}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Reports Panel */}
-        <div className={`border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${
-          theme === 'dark' 
-            ? 'bg-[#0a0d16] border-[#1b2336]' 
-            : 'bg-white border-slate-200 shadow-sm'
-        }`}>
-          {/* Panel Header */}
-          <div className={`p-5 border-b flex items-center justify-between transition-colors duration-300 ${
-            theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e]' : 'border-slate-200 bg-slate-50'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg border transition-all duration-300 ${
-                theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
+            {/* Admin Info Summary inside Sidebar */}
+            <div className={`pt-4 border-t ${theme === 'dark' ? 'border-[#1b2336]/60' : 'border-slate-200'}`}>
+              <div className={`p-3.5 rounded-lg border text-left space-y-2 ${
+                theme === 'dark' ? 'bg-[#090d15]/40 border-[#1b2336]/40' : 'bg-white border-slate-200 shadow-sm'
               }`}>
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className={`font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Received Reports & Logs</h3>
-                <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Real-time alerts submitted by devices linked to this tower</p>
+                <span className={`text-[9px] font-bold font-mono uppercase tracking-wider block ${
+                  theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                }`}>System Operator</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {adminId}
+                  </span>
+                </div>
               </div>
             </div>
-
-            <button
-              onClick={fetchReports}
-              className={`p-2 border rounded-lg transition-all flex items-center gap-1.5 text-[11px] font-mono uppercase font-bold ${
-                theme === 'dark' 
-                  ? 'hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-white' 
-                  : 'hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Refresh</span>
-            </button>
           </div>
+        </aside>
 
-          {/* Tab Navigation */}
-          <div className={`flex border-b text-xs font-mono font-bold uppercase tracking-wider ${
-            theme === 'dark' ? 'border-[#1b2336] bg-[#080b12]' : 'border-slate-200 bg-slate-50/30'
-          }`}>
-            <button
-              onClick={() => setActiveTab("approved")}
-              className={`px-6 py-3 border-b-2 transition-all ${
-                activeTab === "approved"
-                  ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-950/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
-                  : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
-              }`}
-            >
-              Approved Logs ({approvedReports.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("notifications")}
-              className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
-                activeTab === "notifications"
-                  ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-950/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
-                  : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
-              }`}
-            >
-              <Bell className="w-3.5 h-3.5" />
-              <span>Notifications</span>
-              {pendingReports.length > 0 && (
-                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-cyan-500 text-black animate-pulse">
-                  {pendingReports.length}
-                </span>
-              )}
-            </button>
-          </div>
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 md:p-8 space-y-6 overflow-y-auto">
 
-          {/* Table Container */}
-          {displayedReports.length === 0 ? (
-            activeTab === "approved" ? (
-              <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                  <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>No approved reports yet</p>
-                  <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Incoming reports from device clients or IoT sensors first land in the Notifications tab for admin evaluation.
-                  </p>
-                </div>
+          {/* View 1: Admin Dashboard */}
+          {adminView === "dashboard" && (
+            <div className="space-y-6 max-w-7xl mx-auto">
+              
+              {/* Dashboard Title Banner */}
+              <div className="space-y-1">
+                <h2 className={`text-base font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Dashboard Overview</h2>
+                <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
+                  Real-time operational KPIs, critical assets tracking, and capital component expenditure.
+                </p>
               </div>
-            ) : (
-              <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
-                  <Bell className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                  <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>No pending notifications</p>
-                  <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                    All machinery telemetry logs are up-to-date and approved. System is running healthy.
-                  </p>
-                </div>
-              </div>
-            )
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className={`border-b text-[10px] font-mono font-bold uppercase tracking-wider transition-colors duration-300 ${
-                    theme === 'dark' 
-                      ? 'border-[#1b2336] bg-[#0c0f1e] text-slate-400' 
-                      : 'border-slate-200 bg-slate-50/50 text-slate-505'
-                  }`}>
-                    <th className="py-4 px-6">Timestamp</th>
-                    <th className="py-4 px-6">Machine ID</th>
-                    <th className="py-4 px-6">Alert Level</th>
-                    <th className="py-4 px-6">Telemetry readings</th>
-                    <th className="py-4 px-6">Log details / Message</th>
-                    {activeTab === "notifications" && <th className="py-4 px-6 text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className={`divide-y text-xs ${
-                  theme === 'dark' ? 'divide-[#1b2336]/35' : 'divide-slate-200/55'
+
+              {/* KPI Dashboard Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                {/* Critical Machines Card */}
+                <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    : 'bg-white border-slate-200 shadow-sm'
                 }`}>
-                  {displayedReports.map((report) => (
-                    <tr key={report.id} className={`transition-colors duration-300 ${
-                      theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-350' : 'hover:bg-slate-50 text-slate-700'
-                    }`}>
-                      <td className={`py-4 px-6 font-mono whitespace-nowrap ${
-                        theme === 'dark' ? 'text-slate-450' : 'text-slate-500'
+                  <div className="space-y-1">
+                    <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                    }`}>Critical Assets</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-2xl font-bold font-mono ${
+                        criticalMachinesCount > 0
+                          ? (theme === 'dark' ? 'text-red-400' : 'text-red-600')
+                          : (theme === 'dark' ? 'text-white' : 'text-slate-808')
                       }`}>
-                        {new Date(report.created_at).toLocaleString()}
-                      </td>
-                      <td className={`py-4 px-6 font-bold font-mono whitespace-nowrap ${
-                        theme === 'dark' ? 'text-white' : 'text-slate-800'
-                      }`}>
-                        <span className="flex items-center gap-2">
-                          <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                          {report.machine_id}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-bold text-[10px] uppercase border ${
-                          report.status === "Critical" 
-                            ? "bg-red-950/40 border-red-808/30 text-red-300"
-                            : report.status === "Degraded"
-                            ? "bg-amber-950/40 border-amber-808/30 text-amber-300"
-                            : "bg-emerald-950/40 border-emerald-808/30 text-emerald-300"
+                        {criticalMachinesCount}
+                      </span>
+                      <span className={`text-[10px] font-medium font-sans ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>/ {fleetData?.machines?.length || 0} fleet</span>
+                    </div>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Requires active intervention</p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                    criticalMachinesCount > 0
+                      ? (theme === 'dark' ? 'bg-red-955/20 border-red-500/20 text-red-450' : 'bg-red-50 border-red-200 text-red-700')
+                      : (theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-400')
+                  }`}>
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Component Expenditure Card */}
+                <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="space-y-1">
+                    <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                    }`}>Component Capital</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                        ${totalExpenditure.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Emergency procurement spent</p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                    theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
+                  }`}>
+                    <Sliders className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Maintenance Tickets Card */}
+                <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="space-y-1">
+                    <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                    }`}>Total Tickets</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>
+                        {fleetData?.maintenance_orders?.length || 0}
+                      </span>
+                    </div>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>PdM orders processed</p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                    theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+                  }`}>
+                    <Clipboard className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Device Link Status Card */}
+                <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="space-y-1">
+                    <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                    }`}>Device Link</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold font-mono text-emerald-400">ACTIVE</span>
+                    </div>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Linked to ID: {adminId}</p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                    theme === 'dark' ? 'bg-emerald-955/20 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  }`}>
+                    <Cpu className="w-5 h-5" />
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Fleet Critical Alert Desk */}
+              <div className={`border rounded-xl p-6 transition-all duration-300 ${
+                theme === 'dark' ? 'bg-[#0a0d16] border-[#1b2336]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <h3 className={`text-xs font-bold font-mono uppercase mb-4 flex items-center gap-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-slate-800'
+                }`}>
+                  <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />
+                  <span>Fleet Critical Alert Desk</span>
+                </h3>
+
+                {fleetData?.machines?.filter(m => m.status === 'Critical' || m.status === 'Degraded').length === 0 ? (
+                  <div className="py-12 text-center flex flex-col items-center justify-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-950/20 border border-emerald-900/30 flex items-center justify-center text-emerald-400 relative">
+                      <span className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping"></span>
+                      <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className={`text-xs font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>All Systems Green</p>
+                      <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
+                        All machinery is operating within nominal safety thresholds. Zero active anomalies.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {fleetData?.machines?.filter(m => m.status === 'Critical' || m.status === 'Degraded').map(m => {
+                      const telemetryList = fleetData.telemetry?.[m.id] || [];
+                      const latest = telemetryList[telemetryList.length - 1] || {};
+                      const part = fleetData.inventory?.find(p => p.part_id === m.critical_thresholds?.required_part_id);
+                      
+                      return (
+                        <div key={m.id} className={`border rounded-lg p-4 space-y-3 transition-colors ${
+                          theme === 'dark' ? 'bg-[#030508]/60 border-[#1b2336]/65' : 'bg-slate-50 border-slate-200 shadow-sm'
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            report.status === "Critical" ? "bg-red-500" : report.status === "Degraded" ? "bg-amber-500" : "bg-emerald-500"
-                          }`}></span>
-                          {report.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        <div className={`flex items-center gap-3 font-mono text-[11px] ${
-                          theme === 'dark' ? 'text-slate-450' : 'text-slate-550'
-                        }`}>
-                          {report.temperature && <span>T: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.temperature}°C</strong></span>}
-                          {report.vibration && <span>V: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.vibration}mm/s</strong></span>}
-                          {report.pressure && <span>P: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.pressure}Bar</strong></span>}
-                          {report.current && <span>I: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.current}A</strong></span>}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Cpu className="w-4 h-4 text-cyan-450" />
+                              <div>
+                                <h4 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{m.name}</h4>
+                                <span className={`text-[9px] font-mono tracking-wider ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{m.id} • {m.location}</span>
+                              </div>
+                            </div>
+                            <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-bold text-[9px] uppercase border ${
+                              m.status === "Critical" 
+                                ? "bg-red-955/20 border-red-900/30 text-red-400"
+                                : "bg-amber-955/20 border-amber-900/30 text-amber-400"
+                            }`}>
+                              {m.status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
+                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
+                              <span className="text-slate-500 block text-[8px] uppercase">Temp</span>
+                              <strong className={latest.temperature > (m.critical_thresholds?.temperature || 80) ? 'text-red-400 font-bold' : (theme === 'dark' ? 'text-slate-300' : 'text-slate-700')}>
+                                {latest.temperature ? `${latest.temperature}°C` : 'N/A'}
+                              </strong>
+                            </div>
+                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
+                              <span className="text-slate-500 block text-[8px] uppercase">Vib</span>
+                              <strong className={latest.vibration > (m.critical_thresholds?.vibration || 10) ? 'text-red-400 font-bold' : (theme === 'dark' ? 'text-slate-300' : 'text-slate-700')}>
+                                {latest.vibration ? `${latest.vibration}mm/s` : 'N/A'}
+                              </strong>
+                            </div>
+                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
+                              <span className="text-slate-500 block text-[8px] uppercase">Pres</span>
+                              <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>{latest.pressure ? `${latest.pressure}Bar` : 'N/A'}</strong>
+                            </div>
+                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
+                              <span className="text-slate-500 block text-[8px] uppercase">Current</span>
+                              <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>{latest.current ? `${latest.current}A` : 'N/A'}</strong>
+                            </div>
+                          </div>
+
+                          <div className={`pt-2 border-t flex items-center justify-between text-[10px] ${
+                            theme === 'dark' ? 'border-[#1b2336]/40 text-slate-400' : 'border-slate-200 text-slate-500'
+                          }`}>
+                            <span>Required spare component:</span>
+                            <span className={`font-mono font-bold ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-705'}`}>
+                              {part?.part_name || 'Heavy-Duty Bearing'}
+                            </span>
+                          </div>
                         </div>
-                      </td>
-                      <td className={`py-4 px-6 font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                        {report.message || <span className="text-slate-500 italic">No message provided</span>}
-                      </td>
-                      {activeTab === "notifications" && (
-                        <td className="py-4 px-6 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => handleApproveReport(report.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-650 hover:bg-emerald-500 text-white font-mono text-[10px] font-bold tracking-wider uppercase transition-colors active:scale-95 shadow-sm"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            <span>Approve</span>
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Capital Expenditure Audit Trail */}
+              <div className={`border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${
+                theme === 'dark' ? 'bg-[#0a0d16] border-[#1b2336]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className={`p-5 border-b flex items-center justify-between ${
+                  theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e]' : 'border-slate-200 bg-slate-50'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg border transition-all duration-300 ${
+                      theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-705'
+                    }`}>
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className={`font-bold font-mono tracking-wide text-xs ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Spare Components Capital Audit</h3>
+                      <p className={`text-[11px] mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>Transaction trail of replacement components allocated or procured</p>
+                    </div>
+                  </div>
+                </div>
+
+                {!fleetData?.maintenance_orders || fleetData.maintenance_orders.length === 0 ? (
+                  <div className="py-12 px-6 text-center text-slate-500 text-xs">
+                    No components capital transactions detected.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left text-xs">
+                      <thead>
+                        <tr className={`border-b text-[10px] font-mono font-bold uppercase tracking-wider ${
+                          theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e] text-slate-400' : 'border-slate-200 bg-slate-50/50 text-slate-505'
+                        }`}>
+                          <th className="py-3 px-5">Ticket ID</th>
+                          <th className="py-3 px-5">Target Asset</th>
+                          <th className="py-3 px-5">Component Required</th>
+                          <th className="py-3 px-5">Allocation Method</th>
+                          <th className="py-3 px-5 text-right">Capital Cost</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${theme === 'dark' ? 'divide-[#1b2336]/35' : 'divide-slate-200/55'}`}>
+                        {fleetData.maintenance_orders.map(order => {
+                          const machine = fleetData.machines?.find(m => m.id === order.machine_id);
+                          const partId = machine?.critical_thresholds?.required_part_id || 
+                                         (order.machine_id === 'MCH-001' ? 'PART-001' : 
+                                          order.machine_id === 'MCH-002' ? 'PART-004' : 
+                                          order.machine_id === 'MCH-003' ? 'PART-002' : null);
+                          const part = fleetData.inventory?.find(p => p.part_id === partId);
+                          const isSourced = order.status === 'Dispatched_Sourcing_Active' || order.status === 'Pending_Sourcing';
+                          
+                          let finalPrice = part?.cost || 100.00;
+                          let sourcingType = "Warehouse Stock Allocation";
+                          
+                          if (isSourced && fleetData.graph?.links) {
+                            const supplierMatch = order.root_cause?.match(/Supplier:\s*(\w+-\d+)/) || 
+                                                  order.root_cause?.match(/dispatched to\s*([^\n(]+)\s*\((\w+-\d+)\)/i);
+                            const supplierId = supplierMatch ? supplierMatch[2] : null;
+                            const link = supplierId ? fleetData.graph.links.find(l => l.source === supplierId && l.target === partId) : null;
+                            
+                            if (link) {
+                              finalPrice = link.price;
+                              sourcingType = `Emergency Supplier: ${supplierMatch[1] || supplierId}`;
+                            } else {
+                              const fallbackLink = fleetData.graph.links.find(l => l.target === partId);
+                              if (fallbackLink) {
+                                finalPrice = fallbackLink.price;
+                                sourcingType = "Emergency Supplier Procurement";
+                              }
+                            }
+                          }
+
+                          return (
+                            <tr key={order.id} className={theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-355' : 'hover:bg-slate-50 text-slate-700'}>
+                              <td className="py-3 px-5 font-mono font-bold">#{order.id}</td>
+                              <td className="py-3 px-5 font-mono">{order.machine_id}</td>
+                              <td className="py-3 px-5">{part?.part_name || 'Component part'}</td>
+                              <td className="py-3 px-5">
+                                <span className={`inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full font-bold text-[9px] uppercase border ${
+                                  isSourced 
+                                    ? "bg-cyan-950/40 border-cyan-808/30 text-cyan-300"
+                                    : "bg-slate-955/20 border-slate-800/30 text-slate-300"
+                                }`}>
+                                  {sourcingType}
+                                </span>
+                              </td>
+                              <td className="py-3 px-5 text-right font-mono font-bold text-cyan-400">
+                                ${finalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
-        </div>
-      </main>
+
+          {/* View 2: Received Reports & Logs */}
+          {adminView === "reports" && (
+            <div className="space-y-6 max-w-7xl mx-auto animate-fadeIn">
+              
+              {/* Reports Title Banner */}
+              <div className="space-y-1">
+                <h2 className={`text-base font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Received Reports & Logs</h2>
+                <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
+                  Manage device client integrations, review real-time alerts, and verify maintenance log approvals.
+                </p>
+              </div>
+
+              {/* Device Sync Info Banner */}
+              <div className={`border rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden transition-all duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-[#0a0d16] border-[#1b2336] text-slate-300' 
+                  : 'bg-white border-slate-200 text-slate-700'
+              }`}>
+                
+                <div className="space-y-2 relative z-10">
+                  <h2 className={`text-base font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Local Device Integration</h2>
+                  <p className={`text-xs max-w-2xl leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
+                    Any local diagnostic device, IoT node, or monitoring script can report machinery telemetry and logs to your account by using the Link ID below. No account credentials needed on reporting devices.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 relative z-10">
+                  <div className={`border rounded-lg px-4 py-2.5 flex items-center justify-between min-w-[240px] ${
+                    theme === 'dark' ? 'bg-[#030508] border-[#1b2336]' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div>
+                      <span className={`text-[9px] uppercase tracking-wider font-bold block mb-0.5 ${
+                        theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
+                      }`}>Admin Link ID</span>
+                      <code className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{adminId}</code>
+                    </div>
+                    <button
+                      onClick={copyToClipboard}
+                      className={`p-2 rounded-lg transition-colors ${
+                        theme === 'dark' ? 'hover:bg-slate-900 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                      }`}
+                      title="Copy Link ID"
+                    >
+                      {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Clipboard className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowTestForm(true)}
+                    className="py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-mono uppercase font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Simulate Report</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Test Report Generator Modal Form */}
+              {showTestForm && (
+                <div className={`border rounded-xl p-6 relative animate-fadeIn shadow-lg transition-all duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-[#0a0d16] border-[#1b2336] text-slate-350' 
+                    : 'bg-white border-slate-200 text-slate-700'
+                }`}>
+                  <h3 className={`text-xs font-bold font-mono uppercase mb-4 flex items-center gap-2 ${
+                    theme === 'dark' ? 'text-white' : 'text-slate-800'
+                  }`}>
+                    <Cpu className="w-4 h-4 text-cyan-450" />
+                    <span>Simulate Local Device Machine Report</span>
+                  </h3>
+                  
+                  {testSuccessMsg && (
+                    <div className="mb-4 p-3 rounded-lg bg-emerald-955/20 border border-emerald-900 text-emerald-305 text-xs">
+                      {testSuccessMsg}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSendTestReport} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                      }`}>Machine ID</label>
+                      <select
+                        value={testMachineId}
+                        onChange={(e) => setTestMachineId(e.target.value)}
+                        className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
+                          theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white' : 'bg-white border-slate-200 text-slate-808'
+                        }`}
+                      >
+                        <option value="MCH-001">MCH-001 (Rotary Gear Pump A)</option>
+                        <option value="MCH-002">MCH-002 (High-Speed Fan B)</option>
+                        <option value="MCH-003">MCH-003 (Heavy-Duty Compressor C)</option>
+                        <option value="Custom">Custom / Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                      }`}>Machine Status</label>
+                      <select
+                        value={testStatus}
+                        onChange={(e) => setTestStatus(e.target.value)}
+                        className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
+                          theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white' : 'bg-white border-slate-200 text-slate-808'
+                        }`}
+                      >
+                        <option value="Operational">Operational (Healthy)</option>
+                        <option value="Degraded">Degraded (Warning)</option>
+                        <option value="Critical">Critical (Danger)</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2 md:col-span-2">
+                      <div>
+                        <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                        }`}>Temp (°C)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          value={testTemp}
+                          onChange={(e) => setTestTemp(e.target.value)}
+                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                        }`}>Vib (mm/s)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          value={testVib}
+                          onChange={(e) => setTestVib(e.target.value)}
+                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                        }`}>Pres (Bar)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          value={testPres}
+                          onChange={(e) => setTestPres(e.target.value)}
+                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                        }`}>Current (A)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          value={testCur}
+                          onChange={(e) => setTestCur(e.target.value)}
+                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-3">
+                      <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                      }`}>Diagnostic Message / Log</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Bearing temperature threshold warning. Lubricant level checks required."
+                        value={testMessage}
+                        onChange={(e) => setTestMessage(e.target.value)}
+                        className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
+                          theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-202 text-slate-808'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="flex items-end gap-2">
+                      <button
+                        type="submit"
+                        disabled={submittingTest}
+                        className="flex-1 py-2.5 px-3 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono uppercase font-bold rounded-lg transition-colors border-0"
+                      >
+                        {submittingTest ? "Sending..." : "Submit Test"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowTestForm(false)}
+                        className={`py-2.5 px-3 border text-xs font-mono uppercase font-bold rounded-lg transition-colors ${
+                          theme === 'dark' 
+                            ? 'bg-slate-900 border-[#1b2336] text-slate-400 hover:text-white' 
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Reports Panel */}
+              <div className={`border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-[#0a0d16] border-[#1b2336]' 
+                  : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                {/* Panel Header */}
+                <div className={`p-5 border-b flex items-center justify-between transition-colors duration-300 ${
+                  theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e]' : 'border-slate-200 bg-slate-50'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg border transition-all duration-300 ${
+                      theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-705'
+                    }`}>
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className={`font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Received Reports & Logs</h3>
+                      <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Real-time alerts submitted by devices linked to this tower</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={fetchReports}
+                    className={`p-2 border rounded-lg transition-all flex items-center gap-1.5 text-[11px] font-mono uppercase font-bold ${
+                      theme === 'dark' 
+                        ? 'hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-white' 
+                        : 'hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Refresh</span>
+                  </button>
+                </div>
+
+                {/* Tab Navigation */}
+                <div className={`flex border-b text-xs font-mono font-bold uppercase tracking-wider ${
+                  theme === 'dark' ? 'border-[#1b2336] bg-[#080b12]' : 'border-slate-200 bg-slate-50/30'
+                }`}>
+                  <button
+                    onClick={() => setActiveTab("approved")}
+                    className={`px-6 py-3 border-b-2 transition-all ${
+                      activeTab === "approved"
+                        ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-955/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
+                        : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
+                    }`}
+                  >
+                    Approved Logs ({approvedReports.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("notifications")}
+                    className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
+                      activeTab === "notifications"
+                        ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-955/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
+                        : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
+                    }`}
+                  >
+                    <Bell className="w-3.5 h-3.5" />
+                    <span>Notifications</span>
+                    {pendingReports.length > 0 && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-cyan-500 text-black animate-pulse">
+                        {pendingReports.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Table Container */}
+                {displayedReports.length === 0 ? (
+                  activeTab === "approved" ? (
+                    <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>No approved reports yet</p>
+                        <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Incoming reports from device clients or IoT sensors first land in the Notifications tab for admin evaluation.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
+                        <Bell className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>No pending notifications</p>
+                        <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          All machinery telemetry logs are up-to-date and approved. System is running healthy.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left">
+                      <thead>
+                        <tr className={`border-b text-[10px] font-mono font-bold uppercase tracking-wider transition-colors duration-300 ${
+                          theme === 'dark' 
+                            ? 'border-[#1b2336] bg-[#0c0f1e] text-slate-400' 
+                            : 'border-slate-200 bg-slate-50/50 text-slate-505'
+                        }`}>
+                          <th className="py-4 px-6">Timestamp</th>
+                          <th className="py-4 px-6">Machine ID</th>
+                          <th className="py-4 px-6">Alert Level</th>
+                          <th className="py-4 px-6">Telemetry readings</th>
+                          <th className="py-4 px-6">Log details / Message</th>
+                          {activeTab === "notifications" && <th className="py-4 px-6 text-right">Actions</th>}
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y text-xs ${
+                        theme === 'dark' ? 'divide-[#1b2336]/35' : 'divide-slate-200/55'
+                      }`}>
+                        {displayedReports.map((report) => (
+                          <tr key={report.id} className={`transition-colors duration-300 ${
+                            theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-350' : 'hover:bg-slate-50 text-slate-700'
+                          }`}>
+                            <td className={`py-4 px-6 font-mono whitespace-nowrap ${
+                              theme === 'dark' ? 'text-slate-450' : 'text-slate-500'
+                            }`}>
+                              {new Date(report.created_at).toLocaleString()}
+                            </td>
+                            <td className={`py-4 px-6 font-bold font-mono whitespace-nowrap ${
+                              theme === 'dark' ? 'text-white' : 'text-slate-808'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                                {report.machine_id}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-bold text-[10px] uppercase border ${
+                                report.status === "Critical" 
+                                  ? "bg-red-955/20 border-red-900/30 text-red-400"
+                                  : report.status === "Degraded"
+                                  ? "bg-amber-955/20 border-amber-900/30 text-amber-400"
+                                  : "bg-emerald-955/20 border-emerald-900/30 text-emerald-450"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  report.status === "Critical" ? "bg-red-500" : report.status === "Degraded" ? "bg-amber-500" : "bg-emerald-500"
+                                }`}></span>
+                                {report.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 whitespace-nowrap">
+                              <div className={`flex items-center gap-3 font-mono text-[11px] ${
+                                theme === 'dark' ? 'text-slate-450' : 'text-slate-550'
+                              }`}>
+                                {report.temperature && <span>T: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.temperature}°C</strong></span>}
+                                {report.vibration && <span>V: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.vibration}mm/s</strong></span>}
+                                {report.pressure && <span>P: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.pressure}Bar</strong></span>}
+                                {report.current && <span>I: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.current}A</strong></span>}
+                              </div>
+                            </td>
+                            <td className={`py-4 px-6 font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                              {report.message || <span className="text-slate-500 italic">No message provided</span>}
+                            </td>
+                            {activeTab === "notifications" && (
+                              <td className="py-4 px-6 text-right whitespace-nowrap">
+                                <button
+                                  onClick={() => handleApproveReport(report.id)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-650 hover:bg-emerald-500 text-white font-mono text-[10px] font-bold tracking-wider uppercase transition-colors active:scale-95 shadow-sm border-0"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Approve</span>
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
