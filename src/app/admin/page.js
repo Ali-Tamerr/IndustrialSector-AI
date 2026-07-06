@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { 
   ShieldCheck, 
@@ -27,6 +27,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminId, setAdminId] = useState("ADM-8A9F");
+  const [fleetData, setFleetData] = useState(null);
   
   const [reports, setReports] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -106,6 +107,92 @@ export default function AdminPage() {
       console.error("Failed to fetch reports:", err);
     }
   };
+
+  // Fetch fleet stats when logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchFleetData();
+      const interval = setInterval(fetchFleetData, 6000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
+
+  const fetchFleetData = async () => {
+    try {
+      const res = await fetch("/api/data");
+      if (res.ok) {
+        const data = await res.json();
+        setFleetData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch fleet data:", err);
+    }
+  };
+
+  const criticalMachinesCount = useMemo(() => {
+    if (!fleetData || !fleetData.machines) return 0;
+    return fleetData.machines.filter(m => m.status === "Critical").length;
+  }, [fleetData]);
+
+  const totalExpenditure = useMemo(() => {
+    if (!fleetData || !fleetData.maintenance_orders || !fleetData.machines || !fleetData.inventory) return 0;
+    const orders = fleetData.maintenance_orders;
+    const machines = fleetData.machines;
+    const inventory = fleetData.inventory;
+    const graphLinks = fleetData.graph?.links || [];
+    
+    let total = 0;
+    orders.forEach(order => {
+      // Find machine
+      const machine = machines.find(m => m.id === order.machine_id);
+      if (!machine) return;
+      
+      // Get required part
+      const partId = machine.critical_thresholds?.required_part_id || 
+                     (machine.id === 'MCH-001' ? 'PART-001' : 
+                      machine.id === 'MCH-002' ? 'PART-004' : 
+                      machine.id === 'MCH-003' ? 'PART-002' : null);
+      if (!partId) return;
+      
+      // Check if it went to a supplier sourcing flow (status is 'Dispatched_Sourcing_Active' or 'Pending_Sourcing')
+      const isSourced = order.status === 'Dispatched_Sourcing_Active' || order.status === 'Pending_Sourcing';
+      
+      if (isSourced && graphLinks.length > 0) {
+        // Try to find the edge price.
+        // We can parse the winning supplier from root_cause text
+        const supplierMatch = order.root_cause?.match(/Supplier:\s*(\w+-\d+)/) || 
+                              order.root_cause?.match(/dispatched to\s*([^\n(]+)\s*\((\w+-\d+)\)/i);
+        const supplierId = supplierMatch ? supplierMatch[2] : null;
+        
+        if (supplierId) {
+          const link = graphLinks.find(l => l.source === supplierId && l.target === partId);
+          if (link) {
+            total += link.price;
+            return;
+          }
+        }
+        
+        // Fallback sourcing price
+        const firstSupplierLink = graphLinks.find(l => l.target === partId);
+        if (firstSupplierLink) {
+          total += firstSupplierLink.price;
+          return;
+        }
+      }
+      
+      // If in-stock or default, use the baseline inventory cost
+      const part = inventory.find(p => p.part_id === partId);
+      if (part) {
+        total += part.cost;
+      } else {
+        // Default fallback costs if inventory isn't loaded
+        const defaults = { 'PART-001': 120.50, 'PART-002': 45.00, 'PART-003': 350.00, 'PART-004': 850.00 };
+        total += defaults[partId] || 100.00;
+      }
+    });
+    
+    return total;
+  }, [fleetData]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -404,7 +491,113 @@ export default function AdminPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-6">
-        
+
+        {/* KPI Dashboard Overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Critical Machines Card */}
+          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+            theme === 'dark' 
+              ? 'bg-[#0a0d16] border-[#1b2336]' 
+              : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <div className="space-y-1">
+              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+              }`}>Critical Assets</span>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-2xl font-bold font-mono ${
+                  criticalMachinesCount > 0
+                    ? (theme === 'dark' ? 'text-red-400' : 'text-red-600')
+                    : (theme === 'dark' ? 'text-white' : 'text-slate-808')
+                }`}>
+                  {criticalMachinesCount}
+                </span>
+                <span className={`text-[10px] font-medium font-sans ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>/ {fleetData?.machines?.length || 0} fleet</span>
+              </div>
+              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Requires active intervention</p>
+            </div>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+              criticalMachinesCount > 0
+                ? (theme === 'dark' ? 'bg-red-955/20 border-red-500/20 text-red-450' : 'bg-red-50 border-red-200 text-red-700')
+                : (theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-400')
+            }`}>
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Component Expenditure Card */}
+          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+            theme === 'dark' 
+              ? 'bg-[#0a0d16] border-[#1b2336]' 
+              : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <div className="space-y-1">
+              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+              }`}>Component Capital</span>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                  ${totalExpenditure.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Emergency procurement spent</p>
+            </div>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+              theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
+            }`}>
+              <Sliders className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Maintenance Tickets Card */}
+          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+            theme === 'dark' 
+              ? 'bg-[#0a0d16] border-[#1b2336]' 
+              : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <div className="space-y-1">
+              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+              }`}>Total Tickets</span>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>
+                  {fleetData?.maintenance_orders?.length || 0}
+                </span>
+              </div>
+              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>PdM orders processed</p>
+            </div>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+              theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+            }`}>
+              <Clipboard className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Device Link Status Card */}
+          <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
+            theme === 'dark' 
+              ? 'bg-[#0a0d16] border-[#1b2336]' 
+              : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <div className="space-y-1">
+              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+              }`}>Device Link</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold font-mono text-emerald-400">ACTIVE</span>
+              </div>
+              <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Linked to ID: {adminId}</p>
+            </div>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+              theme === 'dark' ? 'bg-emerald-955/20 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            }`}>
+              <Cpu className="w-5 h-5" />
+            </div>
+          </div>
+
+        </div>
+
         {/* Device Sync Info Banner */}
         <div className={`border rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden transition-all duration-300 ${
           theme === 'dark' 
