@@ -18,7 +18,9 @@ import {
   LogOut,
   Sliders,
   ArrowLeft,
-  Bell
+  Bell,
+  User,
+  ChevronDown
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -33,6 +35,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("approved"); // approved or notifications
   const [adminView, setAdminView] = useState("dashboard"); // dashboard or reports
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const handleApproveReport = async (reportId) => {
     try {
@@ -81,9 +84,11 @@ export default function AdminPage() {
   useEffect(() => {
     const logged = localStorage.getItem("adminLoggedIn");
     const savedId = localStorage.getItem("adminLinkID");
+    const savedEmail = localStorage.getItem("adminEmail");
     if (logged === "true") {
       setIsLoggedIn(true);
       if (savedId) setAdminId(savedId);
+      if (savedEmail) setEmail(savedEmail);
     }
   }, []);
 
@@ -214,6 +219,7 @@ export default function AdminPage() {
         setAdminId(data.adminId);
         localStorage.setItem("adminLoggedIn", "true");
         localStorage.setItem("adminLinkID", data.adminId);
+        localStorage.setItem("adminEmail", email);
       } else {
         setError(data.error || "Invalid email or password. Use mockup details provided below.");
       }
@@ -226,6 +232,8 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("adminEmail");
+    localStorage.removeItem("adminLinkID");
   };
 
 
@@ -483,17 +491,51 @@ export default function AdminPage() {
             <span>Simulate Report</span>
           </button>
 
-          <button
-            onClick={handleLogout}
-            className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
-              theme === 'dark' 
-                ? 'bg-red-955/20 border-red-900/30 text-red-305 hover:bg-red-955/40' 
-                : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
-            }`}
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
-          </button>
+          {/* User Account Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className={`flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-all active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-900 border-[#1b2336] text-slate-300 hover:bg-slate-800' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <User className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{email || adminId || "Admin"}</span>
+              <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showUserDropdown && (
+              <>
+                {/* Overlay to close the dropdown when clicking outside */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowUserDropdown(false)}
+                />
+                
+                {/* Dropdown Menu */}
+                <div className={`absolute right-0 mt-2 w-48 rounded-lg border shadow-xl z-50 transition-all duration-300 animate-fadeIn ${
+                  theme === 'dark' 
+                    ? 'bg-[#0c101b] border-[#1b2336] text-slate-300' 
+                    : 'bg-white border-slate-200 text-slate-700'
+                }`}>
+                  <div className="p-1">
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-red-400 hover:bg-red-500/10 rounded-md transition-colors text-left"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
