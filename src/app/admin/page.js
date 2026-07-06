@@ -30,7 +30,6 @@ export default function AdminPage() {
   const [fleetData, setFleetData] = useState(null);
   
   const [reports, setReports] = useState([]);
-  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("approved"); // approved or notifications
   const [adminView, setAdminView] = useState("dashboard"); // dashboard or reports
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -229,11 +228,6 @@ export default function AdminPage() {
     localStorage.removeItem("adminLoggedIn");
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(adminId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleSendTestReport = async (e) => {
     e.preventDefault();
@@ -476,6 +470,18 @@ export default function AdminPage() {
             <Sliders className="w-3.5 h-3.5" />
             <span>Device Client</span>
           </Link>
+
+          <button
+            onClick={() => setShowTestForm(true)}
+            className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-all active:scale-95 ${
+              theme === 'dark' 
+                ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400 hover:bg-cyan-955/40' 
+                : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+            }`}
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Simulate Report</span>
+          </button>
 
           <button
             onClick={handleLogout}
@@ -829,51 +835,6 @@ export default function AdminPage() {
                 <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
                   Manage device client integrations, review real-time alerts, and verify maintenance log approvals.
                 </p>
-              </div>
-
-              {/* Device Sync Info Banner */}
-              <div className={`border rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden transition-all duration-300 ${
-                theme === 'dark' 
-                  ? 'bg-[#0a0d16] border-[#1b2336] text-slate-300' 
-                  : 'bg-white border-slate-200 text-slate-700'
-              }`}>
-                
-                <div className="space-y-2 relative z-10">
-                  <h2 className={`text-base font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Local Device Integration</h2>
-                  <p className={`text-xs max-w-2xl leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
-                    Any local diagnostic device, IoT node, or monitoring script can report machinery telemetry and logs to your account by using the Link ID below. No account credentials needed on reporting devices.
-                  </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 relative z-10">
-                  <div className={`border rounded-lg px-4 py-2.5 flex items-center justify-between min-w-[240px] ${
-                    theme === 'dark' ? 'bg-[#030508] border-[#1b2336]' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    <div>
-                      <span className={`text-[9px] uppercase tracking-wider font-bold block mb-0.5 ${
-                        theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
-                      }`}>Admin Link ID</span>
-                      <code className={`text-sm font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{adminId}</code>
-                    </div>
-                    <button
-                      onClick={copyToClipboard}
-                      className={`p-2 rounded-lg transition-colors ${
-                        theme === 'dark' ? 'hover:bg-slate-900 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
-                      }`}
-                      title="Copy Link ID"
-                    >
-                      {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Clipboard className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  
-                  <button
-                    onClick={() => setShowTestForm(true)}
-                    className="py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-mono uppercase font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Simulate Report</span>
-                  </button>
-                </div>
               </div>
 
               {/* Test Report Generator Modal Form */}
