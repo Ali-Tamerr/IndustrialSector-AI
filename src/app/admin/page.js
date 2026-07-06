@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("approved"); // approved or notifications
   const [adminView, setAdminView] = useState("dashboard"); // dashboard or reports
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleApproveReport = async (reportId) => {
     try {
@@ -494,43 +495,76 @@ export default function AdminPage() {
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         
         {/* Sidebar */}
-        <aside className={`w-full md:w-64 border-b md:border-b-0 md:border-r shrink-0 transition-colors duration-300 ${
+        {/* ponytail: collapsible navigation sidebar to maximize main screen workspace area */}
+        <aside className={`w-full ${sidebarCollapsed ? 'md:w-20' : 'md:w-64'} border-b md:border-b-0 md:border-r shrink-0 transition-all duration-300 ${
           theme === 'dark' ? 'bg-[#06080e] border-[#1b2336]/60' : 'bg-slate-50 border-slate-200'
         }`}>
           <div className="p-4 space-y-6 md:sticky md:top-24">
-            <div className="space-y-1.5 px-2">
-              <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
-              }`}>Navigation</span>
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-2`}>
+              {!sidebarCollapsed && (
+                <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
+                  theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                }`}>Navigation</span>
+              )}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className={`p-1.5 rounded-lg border transition-all active:scale-95 ${
+                  theme === 'dark' 
+                    ? 'border-[#1b2336] bg-[#0c101b] hover:bg-[#151c2d] text-slate-400 hover:text-white' 
+                    : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                }`}
+                title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`}
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
             </div>
             
             <nav className="space-y-1">
               <button
                 onClick={() => setAdminView("dashboard")}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                className={`w-full flex items-center rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                  sidebarCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2.5'
+                } ${
                   adminView === "dashboard"
                     ? (theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm')
                     : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent')
                 }`}
+                title={sidebarCollapsed ? "Admin Dashboard" : ""}
               >
-                <Sliders className="w-4 h-4" />
-                <span>Admin Dashboard</span>
+                <Sliders className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && <span>Admin Dashboard</span>}
               </button>
 
               <button
                 onClick={() => setAdminView("reports")}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                className={`w-full relative flex items-center rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                  sidebarCollapsed ? 'justify-center px-2 py-3' : 'justify-between px-3 py-2.5'
+                } ${
                   adminView === "reports"
                     ? (theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm')
                     : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent')
                 }`}
+                title={sidebarCollapsed ? "Received Reports" : ""}
               >
                 <div className="flex items-center gap-3">
-                  <Clipboard className="w-4 h-4" />
-                  <span>Received Reports</span>
+                  <Clipboard className="w-4 h-4 shrink-0" />
+                  {!sidebarCollapsed && <span>Received Reports</span>}
                 </div>
                 {pendingReports.length > 0 && (
-                  <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                  <span className={`bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse ${
+                    sidebarCollapsed ? 'absolute -top-1 -right-1' : ''
+                  }`}>
                     {pendingReports.length}
                   </span>
                 )}
@@ -539,19 +573,29 @@ export default function AdminPage() {
 
             {/* Admin Info Summary inside Sidebar */}
             <div className={`pt-4 border-t ${theme === 'dark' ? 'border-[#1b2336]/60' : 'border-slate-200'}`}>
-              <div className={`p-3.5 rounded-lg border text-left space-y-2 ${
-                theme === 'dark' ? 'bg-[#090d15]/40 border-[#1b2336]/40' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <span className={`text-[9px] font-bold font-mono uppercase tracking-wider block ${
-                  theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
-                }`}>System Operator</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {adminId}
-                  </span>
+              {sidebarCollapsed ? (
+                <div className="flex justify-center">
+                  <div className={`w-8 h-8 rounded-full border flex items-center justify-center relative ${
+                    theme === 'dark' ? 'bg-[#090d15]/40 border-[#1b2336]/40' : 'bg-white border-slate-200 shadow-sm'
+                  }`} title={`System Operator: ${adminId}`}>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className={`p-3.5 rounded-lg border text-left space-y-2 ${
+                  theme === 'dark' ? 'bg-[#090d15]/40 border-[#1b2336]/40' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <span className={`text-[9px] font-bold font-mono uppercase tracking-wider block ${
+                    theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                  }`}>System Operator</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {adminId}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </aside>
@@ -675,96 +719,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-              </div>
-
-              {/* Fleet Critical Alert Desk */}
-              <div className={`border rounded-xl p-6 transition-all duration-300 ${
-                theme === 'dark' ? 'bg-[#0a0d16] border-[#1b2336]' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <h3 className={`text-xs font-bold font-mono uppercase mb-4 flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-white' : 'text-slate-800'
-                }`}>
-                  <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />
-                  <span>Fleet Critical Alert Desk</span>
-                </h3>
-
-                {fleetData?.machines?.filter(m => m.status === 'Critical' || m.status === 'Degraded').length === 0 ? (
-                  <div className="py-12 text-center flex flex-col items-center justify-center space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-emerald-950/20 border border-emerald-900/30 flex items-center justify-center text-emerald-400 relative">
-                      <span className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping"></span>
-                      <CheckCircle className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className={`text-xs font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>All Systems Green</p>
-                      <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
-                        All machinery is operating within nominal safety thresholds. Zero active anomalies.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {fleetData?.machines?.filter(m => m.status === 'Critical' || m.status === 'Degraded').map(m => {
-                      const telemetryList = fleetData.telemetry?.[m.id] || [];
-                      const latest = telemetryList[telemetryList.length - 1] || {};
-                      const part = fleetData.inventory?.find(p => p.part_id === m.critical_thresholds?.required_part_id);
-                      
-                      return (
-                        <div key={m.id} className={`border rounded-lg p-4 space-y-3 transition-colors ${
-                          theme === 'dark' ? 'bg-[#030508]/60 border-[#1b2336]/65' : 'bg-slate-50 border-slate-200 shadow-sm'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Cpu className="w-4 h-4 text-cyan-450" />
-                              <div>
-                                <h4 className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{m.name}</h4>
-                                <span className={`text-[9px] font-mono tracking-wider ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{m.id} • {m.location}</span>
-                              </div>
-                            </div>
-                            <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-bold text-[9px] uppercase border ${
-                              m.status === "Critical" 
-                                ? "bg-red-955/20 border-red-900/30 text-red-400"
-                                : "bg-amber-955/20 border-amber-900/30 text-amber-400"
-                            }`}>
-                              {m.status}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
-                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
-                              <span className="text-slate-500 block text-[8px] uppercase">Temp</span>
-                              <strong className={latest.temperature > (m.critical_thresholds?.temperature || 80) ? 'text-red-400 font-bold' : (theme === 'dark' ? 'text-slate-300' : 'text-slate-700')}>
-                                {latest.temperature ? `${latest.temperature}°C` : 'N/A'}
-                              </strong>
-                            </div>
-                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
-                              <span className="text-slate-500 block text-[8px] uppercase">Vib</span>
-                              <strong className={latest.vibration > (m.critical_thresholds?.vibration || 10) ? 'text-red-400 font-bold' : (theme === 'dark' ? 'text-slate-300' : 'text-slate-700')}>
-                                {latest.vibration ? `${latest.vibration}mm/s` : 'N/A'}
-                              </strong>
-                            </div>
-                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
-                              <span className="text-slate-500 block text-[8px] uppercase">Pres</span>
-                              <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>{latest.pressure ? `${latest.pressure}Bar` : 'N/A'}</strong>
-                            </div>
-                            <div className={`p-1.5 rounded border ${theme === 'dark' ? 'bg-slate-900/40 border-[#1b2336]/40' : 'bg-white border-slate-200'}`}>
-                              <span className="text-slate-500 block text-[8px] uppercase">Current</span>
-                              <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>{latest.current ? `${latest.current}A` : 'N/A'}</strong>
-                            </div>
-                          </div>
-
-                          <div className={`pt-2 border-t flex items-center justify-between text-[10px] ${
-                            theme === 'dark' ? 'border-[#1b2336]/40 text-slate-400' : 'border-slate-200 text-slate-500'
-                          }`}>
-                            <span>Required spare component:</span>
-                            <span className={`font-mono font-bold ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-705'}`}>
-                              {part?.part_name || 'Heavy-Duty Bearing'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Capital Expenditure Audit Trail */}
