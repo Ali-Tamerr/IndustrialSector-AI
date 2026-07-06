@@ -830,12 +830,7 @@ export default function AdminPage() {
             <div className="space-y-6 max-w-7xl mx-auto animate-fadeIn">
               
               {/* Reports Title Banner */}
-              <div className="space-y-1">
-                <h2 className={`text-base font-bold font-mono uppercase tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Received Reports & Logs</h2>
-                <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
-                  Manage device client integrations, review real-time alerts, and verify maintenance log approvals.
-                </p>
-              </div>
+             
 
               {/* Test Report Generator Modal Form */}
               {showTestForm && (
