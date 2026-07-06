@@ -55,8 +55,14 @@ async function ensureTablesInitialized(client) {
       pressure DOUBLE PRECISION,
       current DOUBLE PRECISION,
       message TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      approved BOOLEAN DEFAULT FALSE
     );
+  `);
+
+  // Retrofit check: ensure approved column exists in case the table was already created
+  await client.query(`
+    ALTER TABLE machine_reports ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT FALSE;
   `);
 
   // Seed default mockup admin account

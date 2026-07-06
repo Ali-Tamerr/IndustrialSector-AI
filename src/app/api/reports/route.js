@@ -59,7 +59,7 @@ export async function GET(request) {
 
     // Fetch reports for the given admin ID
     const reportsRes = await client.query(
-      `SELECT id, machine_id, status, temperature, vibration, pressure, current, message, created_at
+      `SELECT id, machine_id, status, temperature, vibration, pressure, current, message, created_at, approved
        FROM machine_reports
        WHERE admin_id = $1
        ORDER BY created_at DESC;`,
@@ -129,16 +129,8 @@ export async function POST(request) {
         ]
       );
 
-      // Optionally update the status of the machine if it exists in the main machines table
-      try {
-        await client.query(
-          "UPDATE machines SET status = $1, updated_at = NOW() WHERE id = $2;",
-          [status, machineId]
-        );
-      } catch (e) {
-        console.warn(`Failed to update machine status for ${machineId}: ${e.message}`);
-      }
-
+      // Machine status is NOT updated immediately anymore.
+      // The update is instead triggered when the admin approves the report via the PUT endpoint.
       return NextResponse.json({
         success: true,
         reportId: insertRes.rows[0].id,
@@ -157,6 +149,80 @@ export async function POST(request) {
     }
   } catch (err) {
     console.error("Database execution in POST /api/reports failed:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request) {
+  if (!cleanDatabaseUrl) {
+    return NextResponse.json(
+      { error: "DATABASE_URL environment variable is missing." },
+      { status: 500 }
+    );
+  }
+
+  let client;
+  try {
+    const body = await request.json();
+    const { reportId, approved } = body;
+
+    if (!reportId) {
+      return NextResponse.json(
+        { error: "Missing reportId parameter" },
+        { status: 400 }
+      );
+    }
+
+    try {
+      client = await pool.connect();
+      await ensureTablesInitialized(client);
+
+      // Update the report's approval status
+      const updateRes = await client.query(
+        `UPDATE machine_reports
+         SET approved = $1
+         WHERE id = $2
+         RETURNING id, approved, machine_id, status;`,
+        [approved !== false, reportId]
+      );
+
+      if (updateRes.rows.length === 0) {
+        return NextResponse.json(
+          { error: `Report with ID ${reportId} not found.` },
+          { status: 404 }
+        );
+      }
+
+      const report = updateRes.rows[0];
+
+      // If approved, update the corresponding machine status in the machines table
+      if (report.approved) {
+        try {
+          await client.query(
+            "UPDATE machines SET status = $1, updated_at = NOW() WHERE id = $2;",
+            [report.status, report.machine_id]
+          );
+        } catch (machineUpdateErr) {
+          console.warn(`Failed to update machine status for ${report.machine_id}: ${machineUpdateErr.message}`);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        report
+      });
+    } catch (dbErr) {
+      console.warn("Database connection failed during report update, using offline mock success:", dbErr.message);
+      return NextResponse.json({
+        success: true,
+        report: { id: reportId, approved: approved !== false },
+        offlineMode: true
+      });
+    } finally {
+      if (client) client.release();
+    }
+  } catch (err) {
+    console.error("Database execution in PUT /api/reports failed:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -17,7 +17,8 @@ import {
   FileText,
   LogOut,
   Sliders,
-  ArrowLeft
+  ArrowLeft,
+  Bell
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -29,6 +30,25 @@ export default function AdminPage() {
   
   const [reports, setReports] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState("approved"); // approved or notifications
+
+  const handleApproveReport = async (reportId) => {
+    try {
+      const res = await fetch("/api/reports", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId, approved: true })
+      });
+
+      if (res.ok) {
+        setReports(prev => 
+          prev.map(r => r.id === reportId ? { ...r, approved: true } : r)
+        );
+      }
+    } catch (err) {
+      console.error("Failed to approve report:", err);
+    }
+  };
 
   // Test report modal/form states
   const [showTestForm, setShowTestForm] = useState(false);
@@ -310,6 +330,10 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const pendingReports = reports.filter(r => !r.approved);
+  const approvedReports = reports.filter(r => r.approved);
+  const displayedReports = activeTab === "approved" ? approvedReports : pendingReports;
 
   return (
     <div className={`min-h-screen flex flex-col overflow-x-hidden font-sans transition-colors duration-300 ${
@@ -619,19 +643,65 @@ export default function AdminPage() {
             </button>
           </div>
 
+          {/* Tab Navigation */}
+          <div className={`flex border-b text-xs font-mono font-bold uppercase tracking-wider ${
+            theme === 'dark' ? 'border-[#1b2336] bg-[#080b12]' : 'border-slate-200 bg-slate-50/30'
+          }`}>
+            <button
+              onClick={() => setActiveTab("approved")}
+              className={`px-6 py-3 border-b-2 transition-all ${
+                activeTab === "approved"
+                  ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-950/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
+                  : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
+              }`}
+            >
+              Approved Logs ({approvedReports.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("notifications")}
+              className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
+                activeTab === "notifications"
+                  ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-950/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
+                  : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
+              }`}
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>Notifications</span>
+              {pendingReports.length > 0 && (
+                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-cyan-500 text-black animate-pulse">
+                  {pendingReports.length}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Table Container */}
-          {reports.length === 0 ? (
-            <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
-                <Terminal className="w-6 h-6" />
+          {displayedReports.length === 0 ? (
+            activeTab === "approved" ? (
+              <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>No approved reports yet</p>
+                  <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Incoming reports from device clients or IoT sensors first land in the Notifications tab for admin evaluation.
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>No reports received yet</p>
-                <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Send reports using the device emulator page or via the API. Once a device submits log metrics using Link ID <code className="text-cyan-300 font-mono">{adminId}</code>, they will appear here.
-                </p>
+            ) : (
+              <div className="py-16 px-6 text-center flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-600">
+                  <Bell className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>No pending notifications</p>
+                  <p className={`text-xs max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                    All machinery telemetry logs are up-to-date and approved. System is running healthy.
+                  </p>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
@@ -646,12 +716,13 @@ export default function AdminPage() {
                     <th className="py-4 px-6">Alert Level</th>
                     <th className="py-4 px-6">Telemetry readings</th>
                     <th className="py-4 px-6">Log details / Message</th>
+                    {activeTab === "notifications" && <th className="py-4 px-6 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className={`divide-y text-xs ${
                   theme === 'dark' ? 'divide-[#1b2336]/35' : 'divide-slate-200/55'
                 }`}>
-                  {reports.map((report) => (
+                  {displayedReports.map((report) => (
                     <tr key={report.id} className={`transition-colors duration-300 ${
                       theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-350' : 'hover:bg-slate-50 text-slate-700'
                     }`}>
@@ -671,10 +742,10 @@ export default function AdminPage() {
                       <td className="py-4 px-6 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-bold text-[10px] uppercase border ${
                           report.status === "Critical" 
-                            ? "bg-red-950/40 border-red-800 text-red-300"
+                            ? "bg-red-950/40 border-red-808/30 text-red-300"
                             : report.status === "Degraded"
-                            ? "bg-amber-950/40 border-amber-800 text-amber-300"
-                            : "bg-emerald-950/40 border-emerald-800 text-emerald-300"
+                            ? "bg-amber-950/40 border-amber-808/30 text-amber-300"
+                            : "bg-emerald-950/40 border-emerald-808/30 text-emerald-300"
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             report.status === "Critical" ? "bg-red-500" : report.status === "Degraded" ? "bg-amber-500" : "bg-emerald-500"
@@ -695,6 +766,17 @@ export default function AdminPage() {
                       <td className={`py-4 px-6 font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                         {report.message || <span className="text-slate-500 italic">No message provided</span>}
                       </td>
+                      {activeTab === "notifications" && (
+                        <td className="py-4 px-6 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleApproveReport(report.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-650 hover:bg-emerald-500 text-white font-mono text-[10px] font-bold tracking-wider uppercase transition-colors active:scale-95 shadow-sm"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
