@@ -1149,21 +1149,7 @@ export default function AdminPage() {
         </main>
       </div>
 
-      {/* Floating back-and-forth toggle button in the bottom-left corner */}
-      <div className="fixed bottom-6 left-20 z-[9999]">
-        <Link
-          href="/c-home"
-          className={`w-10 h-10 rounded-full border transition-all duration-300 flex items-center justify-center font-mono font-bold text-sm hover:scale-110 ${
-            theme === 'dark'
-              ? 'bg-slate-950/60 border-slate-800 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
-              : 'bg-white/80 border-slate-200 text-slate-700 hover:text-cyan-600 hover:border-cyan-300 shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
-          }`}
-          title="Go to Machine Workspaces Page"
-        >
-          K
-        </Link>
-      </div>
-
+     
     </div>
   );
 }
