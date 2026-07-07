@@ -47,11 +47,13 @@ export const metadata = {
   manifest: "/manifest.json",
 };
 
+import { Providers } from "./providers";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`dark ${nowFont.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased text-slate-200 bg-[#06080c] min-h-screen">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
