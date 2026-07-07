@@ -92,7 +92,7 @@ export default function DashboardHeader({
             <span>Dashboard Tour</span>
           </button>
           <Link
-            href="/admin"
+            href="/"
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark'
                 ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white'
@@ -119,7 +119,7 @@ export default function DashboardHeader({
                 localStorage.removeItem("activeProjectId");
                 localStorage.removeItem("isSetupCompleted");
                 updateTabActiveProject(null);
-                window.location.href = "/";
+                window.location.href = "/c-home";
               }
             }}
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
@@ -267,7 +267,7 @@ export default function DashboardHeader({
                 <span>Dashboard Tour</span>
               </button>
               <Link
-                href="/admin"
+                href="/"
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
                   theme === 'dark'
                     ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white'
@@ -296,7 +296,7 @@ export default function DashboardHeader({
                     localStorage.removeItem("activeProjectId");
                     localStorage.removeItem("isSetupCompleted");
                     updateTabActiveProject(null);
-                    window.location.href = "/";
+                    window.location.href = "/c-home";
                   }
                 }}
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${

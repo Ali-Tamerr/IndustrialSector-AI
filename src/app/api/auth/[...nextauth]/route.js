@@ -52,8 +52,8 @@ export const authOptions = {
     },
   },
   pages: {
-    signIn: "/admin",
-    error: "/admin",
+    signIn: "/",
+    error: "/",
   },
 };
 
