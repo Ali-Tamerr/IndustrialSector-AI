@@ -8,9 +8,7 @@ import {
   generateBaselines,
   seedWorkspaceData
 } from "@/lib/templatesData";
-import WorkspaceSidebar from "@/app/_components/WorkspaceSidebar";
-import ProjectConfigurator from "@/app/_components/ProjectConfigurator";
-
+// We moved to a unified grid view for workspaces, so WorkspaceSidebar and ProjectConfigurator are not rendered directly.
 import { 
   Activity, 
   Cpu, 
@@ -36,7 +34,12 @@ import {
   LayoutGrid,
   Sun,
   Moon,
-  ChevronDown
+  ChevronDown,
+  Search,
+  Share2,
+  X,
+  Pencil,
+  FileText
 } from "lucide-react";
 
 const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
@@ -169,6 +172,13 @@ export default function Home() {
   const [projectNameInput, setProjectNameInput] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("steel");
   const [activeProjectTabs, setActiveProjectTabs] = useState({});
+
+  // Workspaces View UI filter, search and modal states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all"); // "all", "presets", "recent"
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [projectDescriptionInput, setProjectDescriptionInput] = useState("");
+  const [projectTemplateInput, setProjectTemplateInput] = useState("steel");
 
   // Helper to update this tab's active project in localStorage
   const updateTabActiveProject = useCallback((projectId) => {
@@ -386,14 +396,19 @@ export default function Home() {
     }
   };
 
-  const handleCreateProject = async (type) => {
-    const finalName = projectNameInput.trim() || generateDefaultName(type, selectedTemplateId);
+  const handleCreateProject = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const type = projectTemplateInput === "empty" ? "custom" : "template";
+    const templateId = type === "template" ? projectTemplateInput : null;
+    const finalName = projectNameInput.trim() || generateDefaultName(type, templateId);
+    
     const newProject = {
       id: "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
       name: finalName,
+      description: projectDescriptionInput.trim(),
       type,
-      templateId: type === "template" ? selectedTemplateId : null,
-      customMachines: type === "custom" ? customMachines : [],
+      templateId,
+      customMachines: type === "custom" ? [] : [],
       createdAt: new Date().toISOString()
     };
 
@@ -403,7 +418,11 @@ export default function Home() {
     
     setActiveProjectId(newProject.id);
     localStorage.setItem("activeProjectId", newProject.id);
+    
     setProjectNameInput("");
+    setProjectDescriptionInput("");
+    setProjectTemplateInput("steel");
+    setShowCreateModal(false);
 
     await handleSetup(type, newProject.templateId, newProject.customMachines, true, newProject.id);
   };
@@ -1397,10 +1416,106 @@ Industrial Sector AI Automation Network`;
     );
   }
 
+  // Preset list for presentation
+  const presets = [
+    {
+      id: "steel",
+      name: "Heavy Steel Rolling Mill",
+      desc: "Baseline fleet consisting of Rotary Gear Pumps, Industrial Exhaust Fans, and Pneumatic Compressors. Optimized for testing ball-bearing degradation.",
+      details: "3 PDMs • Bearings • Real-time telemetry",
+      typeTag: "STEEL_MILL"
+    },
+    {
+      id: "petrochemical",
+      name: "Petrochemical Refinery",
+      desc: "Gas turbines, high-pressure gaskets, and transfer pumps. Features specialized oil & gas RAG manuals and Houston fast seal logistics routing.",
+      details: "3 PDMs • Stator Overload • RAG manuals",
+      typeTag: "PETROCHEMICAL"
+    },
+    {
+      id: "automotive",
+      name: "6-Axis Assembly Robotics",
+      desc: "Robot joint gearboxes, painting line drives, and assembly cells. Optimized for testing high-precision harmonic gear fault diagnostic routines.",
+      details: "3 PDMs • Harmonic Gear • Dynamic torque",
+      typeTag: "AUTOMOTIVE"
+    },
+    {
+      id: "empty",
+      name: "Truly Empty Workspace",
+      desc: "Initialize a completely blank dashboard. No pre-seeded machinery, telemetry streams, or graphs. Build your entire fleet from scratch.",
+      details: "0 PDMs • Blank Slate • Complete control",
+      typeTag: "CUSTOM_FLEET"
+    }
+  ];
+
+  const getPresetIcon = (presetId) => {
+    switch (presetId) {
+      case "steel": return <Building className="w-5 h-5 text-amber-500" />;
+      case "petrochemical": return <Activity className="w-5 h-5 text-blue-500" />;
+      case "automotive": return <Cpu className="w-5 h-5 text-purple-500" />;
+      default: return <LayoutGrid className="w-5 h-5 text-slate-500" />;
+    }
+  };
+
+  const filteredProjects = useMemo(() => {
+    let result = [...projects];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        (p.description && p.description.toLowerCase().includes(q))
+      );
+    }
+    if (activeTab === "recent") {
+      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    return result;
+  }, [projects, searchQuery, activeTab]);
+
+  const filteredPresets = useMemo(() => {
+    if (!searchQuery.trim()) return presets;
+    const q = searchQuery.toLowerCase();
+    return presets.filter(p => 
+      p.name.toLowerCase().includes(q) || 
+      p.desc.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const handleOpenNewWorkspace = () => {
+    setProjectTemplateInput("steel");
+    setProjectNameInput(generateDefaultName("template", "steel"));
+    setProjectDescriptionInput("");
+    setShowCreateModal(true);
+  };
+
+  const handleOpenPresetCreate = (templateId) => {
+    setProjectTemplateInput(templateId);
+    const defaultName = generateDefaultName(templateId === "empty" ? "custom" : "template", templateId === "empty" ? null : templateId);
+    setProjectNameInput(defaultName);
+    setProjectDescriptionInput("");
+    setShowCreateModal(true);
+  };
+
+  const handleRenameClick = (e, projId, currentName) => {
+    e.stopPropagation();
+    const newName = prompt("Rename workspace:", currentName);
+    if (newName && newName.trim()) {
+      handleRenameProject(projId, newName.trim());
+    }
+  };
+
+  const handleShareClick = (e, projId) => {
+    e.stopPropagation();
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(projId);
+      alert(`Workspace ID copied to clipboard: ${projId}`);
+    }
+  };
+
   return (
     <div className={`h-screen overflow-hidden ${theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'} font-sans p-4 md:p-6 lg:p-6 flex flex-col items-center justify-start relative select-none selection:bg-cyan-500/30 transition-colors duration-300`}>
         
-        {/* Prismatic Digital Grid Background */}
+        {/* Prismatic Grid Background */}
         <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none animate-grid-move`}></div>
         <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,${theme === 'dark' ? '#030508' : '#f8fafc'}_10%,${theme === 'dark' ? '#030508' : '#f8fafc'}_100%)] pointer-events-none`}></div>
 
@@ -1409,7 +1524,7 @@ Industrial Sector AI Automation Network`;
         <div className={`absolute bottom-[-15%] right-[-15%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.045]' : 'bg-cyan-400/[0.06]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow-alt`}></div>
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[580px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.035]'} rounded-full blur-[150px] pointer-events-none`}></div>
 
-        {/* Theme Toggle Button positioned absolute in the top-right corner */}
+        {/* Theme Toggle Button */}
         <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
           <button
             onClick={toggleTheme}
@@ -1423,34 +1538,378 @@ Industrial Sector AI Automation Network`;
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
-        <div className="w-full flex-1 min-h-0 z-10 animate-fadeIn grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch p-2 pb-4">
-             <WorkspaceSidebar
-            projects={projects}
-            activeProjectId={activeProjectId}
-            activeProjectTabs={activeProjectTabs}
-            theme={theme}
-            handleLaunchProject={handleLaunchProject}
-            handleDeleteProject={handleDeleteProject}
-            setActiveProjectId={setActiveProjectId}
-            updateTabActiveProject={updateTabActiveProject}
-            setProjectNameInput={setProjectNameInput}
-          />
 
-          <ProjectConfigurator
-            theme={theme}
-            projectNameInput={projectNameInput}
-            setProjectNameInput={setProjectNameInput}
-            generateDefaultName={generateDefaultName}
-            activeSetupTab={activeSetupTab}
-            setActiveSetupTab={setActiveSetupTab}
-            selectedTemplateId={selectedTemplateId}
-            setSelectedTemplateId={setSelectedTemplateId}
-            customMachines={customMachines}
-            setCustomMachines={setCustomMachines}
-            handleCreateProject={handleCreateProject}
-            seeding={seeding}
-          />
+        {/* Core workspaces list layout container */}
+        <div className="w-full max-w-6xl flex-1 flex flex-col min-h-0 z-10 animate-fadeIn p-2 pb-4">
+          
+          {/* Top Title & Quick Action bar */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div>
+              <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-3`}>
+                <Database className={`w-7 h-7 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'} animate-pulse`} />
+                <span>Workspaces</span>
+              </h1>
+              <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} font-sans`}>
+                Manage and monitor your predictive maintenance IoT fleets
+              </p>
+            </div>
+            
+            <button
+              onClick={handleOpenNewWorkspace}
+              className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
+                theme === 'dark'
+                  ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
+                  : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-md shadow-cyan-100/50'
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              <span>NEW WORKSPACE</span>
+            </button>
+          </div>
+
+          {/* Search bar & filter tabs navigation */}
+          <div className={`flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 border-b pb-4 ${
+            theme === 'dark' ? 'border-[#1b2336]/40' : 'border-slate-200'
+          }`}>
+            {/* Filter tabs */}
+            <div className="flex gap-1.5 bg-slate-900/10 dark:bg-slate-950/40 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/60 max-w-fit">
+              {[
+                { id: "all", label: "All Workspaces" },
+                { id: "presets", label: "Presets" },
+                { id: "recent", label: "Recent" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all duration-300 ${
+                    activeTab === tab.id
+                      ? (theme === 'dark' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-300')
+                      : (theme === 'dark' ? 'text-slate-400 hover:text-slate-200 border border-transparent' : 'text-slate-600 hover:text-slate-900 border border-transparent')
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative flex-1 md:max-w-xs">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Search className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`} />
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={activeTab === "presets" ? "Search presets..." : "Search workspaces..."}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
+                  theme === 'dark'
+                    ? 'bg-[#080b11]/60 border-[#1b2336] text-slate-200 placeholder-slate-500 focus:border-cyan-500/80'
+                    : 'bg-white border-slate-200 text-slate-700 placeholder-slate-400 focus:border-cyan-500'
+                }`}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:scale-110 transition"
+                >
+                  <X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Grid of workspace cards */}
+          <div className="flex-1 overflow-y-auto pr-1 pb-6 custom-scrollbar">
+            {activeTab === "presets" ? (
+              filteredPresets.length === 0 ? (
+                <div className="text-center py-20 opacity-60 space-y-3 border border-dashed rounded-2xl p-6 border-slate-800">
+                  <LayoutGrid className="w-12 h-12 mx-auto text-cyan-400/30 animate-pulse" />
+                  <p className="font-mono text-xs font-bold uppercase tracking-wider">No Presets Found</p>
+                  <p className="text-xs font-sans">Try clearing your search query filter.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+                  {filteredPresets.map((preset) => (
+                    <div
+                      key={preset.id}
+                      onClick={() => handleOpenPresetCreate(preset.id)}
+                      className={`border cursor-pointer transition-all duration-300 p-6 rounded-2xl relative group flex flex-col justify-between hover:scale-[1.015] hover:shadow-lg ${
+                        theme === 'dark'
+                          ? 'border-[#1b2336]/60 bg-[#0a0d16]/50 hover:border-cyan-500/60 hover:bg-[#0c0f1e]/60 shadow-[0_0_20px_rgba(0,0,0,0.1)]'
+                          : 'bg-white border-slate-200 hover:border-cyan-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] shadow-sm'
+                      }`}
+                    >
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className={`text-[8px] font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                            theme === 'dark' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-600 bg-amber-50 border-amber-200'
+                          } border`}>
+                            {preset.typeTag}
+                          </span>
+                          {getPresetIcon(preset.id)}
+                        </div>
+
+                        <h3 className={`text-sm font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-cyan-400 transition-colors`}>
+                          {preset.name}
+                        </h3>
+
+                        <p className={`text-[11px] leading-relaxed font-sans ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {preset.desc}
+                        </p>
+                      </div>
+
+                      <div className={`mt-5 pt-4 border-t flex justify-between items-center font-mono text-[10px] ${
+                        theme === 'dark' ? 'border-[#1b2336]/40 text-slate-400' : 'border-slate-150 text-slate-500'
+                      }`}>
+                        <span className="font-bold">{preset.details}</span>
+                        <span className="text-cyan-400 group-hover:text-cyan-300 font-bold flex items-center gap-1">
+                          <span>BUILD</span>
+                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              filteredProjects.length === 0 ? (
+                <div className={`text-center py-24 rounded-2xl border border-dashed p-8 ${
+                  theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-205 bg-slate-50/50'
+                } space-y-4`}>
+                  <LayoutGrid className={`w-12 h-12 mx-auto ${theme === 'dark' ? 'text-cyan-400/30' : 'text-cyan-600/30'} animate-pulse`} />
+                  <div className="space-y-1">
+                    <p className="font-mono text-xs font-bold uppercase tracking-wider">No Saved Workspaces</p>
+                    <p className="text-[11px] font-sans opacity-70">
+                      {searchQuery ? "No workspaces matched your search term." : "Select + New Workspace to configure your first predictive maintenance fleet."}
+                    </p>
+                  </div>
+                  {!searchQuery && (
+                    <button
+                      onClick={handleOpenNewWorkspace}
+                      className={`py-2 px-4 rounded-xl font-mono text-[10px] font-bold tracking-wider transition-all duration-300 border hover:scale-[1.01] ${
+                        theme === 'dark'
+                          ? 'bg-cyan-950/30 border-cyan-500/20 text-cyan-400 hover:bg-cyan-900/30'
+                          : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-sm'
+                      }`}
+                    >
+                      CREATE WORKSPACE
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+                  {filteredProjects.map((proj) => {
+                    const isProjActive = Object.values(activeProjectTabs).some(entry => entry && entry.projectId === proj.id && (Date.now() - entry.lastActive < 15000)) || activeProjectId === proj.id;
+                    let typeLabel = proj.type === "template" ? (proj.templateId || "steel").toUpperCase() : "CUSTOM_FLEET";
+
+                    return (
+                      <div
+                        key={proj.id}
+                        onClick={() => handleLaunchProject(proj)}
+                        className={`border cursor-pointer transition-all duration-300 p-6 rounded-2xl relative group flex flex-col justify-between hover:scale-[1.015] hover:shadow-lg ${
+                          isProjActive
+                            ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-950/20 shadow-[0_0_24px_rgba(6,182,212,0.15)]' : 'border-cyan-500 bg-cyan-50/30 shadow-md')
+                            : (theme === 'dark' ? 'border-[#1b2336]/60 bg-[#0a0d16]/50 hover:border-cyan-500/60 hover:bg-[#0c0f1e]/60 shadow-[0_0_20px_rgba(0,0,0,0.1)]'
+                                                : 'bg-white border-slate-200 hover:border-cyan-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] shadow-sm')
+                        }`}
+                      >
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span className={`text-[8px] font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                              proj.type === "template"
+                                ? (theme === 'dark' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-600 bg-blue-50 border-blue-200')
+                                : (theme === 'dark' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-purple-600 bg-purple-50 border-purple-200')
+                            } border`}>
+                              {typeLabel}
+                            </span>
+                            <span className={`text-[9px] font-mono ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                              {new Date(proj.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+
+                          <h3 className={`text-sm font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'} group-hover:text-cyan-400 transition-colors truncate`}>
+                            {proj.name}
+                          </h3>
+
+                          <p className={`text-[11px] leading-relaxed font-sans ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} line-clamp-2 min-h-[32px]`}>
+                            {proj.description || `Autonomous control tower workspace built on ${proj.type === "template" ? (proj.templateId || "steel") : "custom"} asset parameters.`}
+                          </p>
+                        </div>
+
+                        <div className={`mt-5 pt-4 border-t flex justify-between items-center font-mono text-[10px] ${
+                          theme === 'dark' ? 'border-[#1b2336]/40 text-slate-400' : 'border-slate-150 text-slate-500'
+                        }`}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleLaunchProject(proj); }}
+                            className={`font-bold flex items-center gap-1 transition-all ${
+                              isProjActive
+                                ? 'text-emerald-400'
+                                : 'text-cyan-400 group-hover:text-cyan-300'
+                            }`}
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            <span>{isProjActive ? "ACTIVE" : "LAUNCH"}</span>
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => handleShareClick(e, proj.id)}
+                              className="hover:text-cyan-400 p-1.5 rounded hover:bg-cyan-500/10 transition-all text-slate-500"
+                              title="Copy Workspace ID"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => handleRenameClick(e, proj.id, proj.name)}
+                              className="hover:text-cyan-400 p-1.5 rounded hover:bg-cyan-500/10 transition-all text-slate-500"
+                              title="Rename Workspace"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteProject(proj.id, e)}
+                              className="text-red-400 hover:text-red-505 p-1.5 rounded hover:bg-red-500/10 transition-all"
+                              title="Delete Workspace"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
         </div>
+
+        {/* Modal: Create new workspace dialog layout */}
+        {showCreateModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
+            <div className={`w-full max-w-lg border rounded-2xl p-6 relative flex flex-col max-h-[90vh] overflow-y-auto shadow-2xl transition-all duration-300 ${
+              theme === 'dark'
+                ? 'bg-[#0a0d16] border-[#1b2336] text-slate-200 shadow-cyan-900/10'
+                : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/40'
+            }`}>
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-slate-500/10 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="mb-5">
+                <h2 className={`text-base font-bold font-mono tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+                  Create new workspace
+                </h2>
+                <p className={`text-[11px] mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Start building your predictive maintenance fleet
+                </p>
+              </div>
+
+              <form onSubmit={handleCreateProject} className="space-y-4">
+                {/* Workspace Name Input */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
+                    Workspace Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={projectNameInput}
+                    onChange={(e) => setProjectNameInput(e.target.value)}
+                    placeholder="My Factory Fleet"
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
+                      theme === 'dark'
+                        ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
+                    }`}
+                  />
+                </div>
+
+                {/* Workspace Description Textarea */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
+                    Description (optional)
+                  </label>
+                  <textarea
+                    value={projectDescriptionInput}
+                    onChange={(e) => setProjectDescriptionInput(e.target.value)}
+                    placeholder="A brief description of your workspace..."
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border min-h-[70px] max-h-[140px] resize-y ${
+                      theme === 'dark'
+                        ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
+                    }`}
+                  />
+                </div>
+
+                {/* Fleet Template Selector Grid */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
+                    Select Fleet Template
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: "steel", name: "Steel Mill", desc: "Rotary pumps & fans" },
+                      { id: "petrochemical", name: "Petrochemical", desc: "Gas turbines & pipes" },
+                      { id: "automotive", name: "Automotive", desc: "6-axis robotic arms" },
+                      { id: "empty", name: "Custom Blank", desc: "Start from scratch" }
+                    ].map((t) => (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          setProjectTemplateInput(t.id);
+                          const defaultNames = ["Heavy Steel Mill", "Titanium Smelter", "Vulcan Ironworks", "Forge Nexus", "Hydrocracker Hub", "Refinery Grid", "Petrochemical Nexus", "Octane Transfer Complex", "6-Axis Assembly Sector", "Welding Line Beta", "Precision Motion Base", "Robotics Assembly Grid", "Quantum Factory", "Cyber-Physical Grid", "Hyperion Facility", "Apex Assembly"];
+                          if (!projectNameInput || defaultNames.some(dn => projectNameInput.startsWith(dn))) {
+                            setProjectNameInput(generateDefaultName(t.id === "empty" ? "custom" : "template", t.id === "empty" ? null : t.id));
+                          }
+                        }}
+                        className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 select-none hover:scale-[1.01] ${
+                          projectTemplateInput === t.id
+                            ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-500/10 text-white' : 'border-cyan-600 bg-cyan-50 text-slate-900')
+                            : (theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f17] hover:border-slate-800 text-slate-400 hover:text-slate-350' : 'border-slate-200 bg-slate-50 hover:border-slate-300 text-slate-650 hover:text-slate-900')
+                        }`}
+                      >
+                        <div className="font-mono text-xs font-bold">{t.name}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5 font-sans leading-tight">{t.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="flex justify-end gap-3 pt-3 border-t border-slate-500/10 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className={`px-4 py-2 rounded-xl font-mono text-[10px] font-bold tracking-wider transition-all border ${
+                      theme === 'dark'
+                        ? 'border-slate-750 bg-transparent text-slate-400 hover:bg-slate-900'
+                        : 'border-slate-300 bg-transparent text-slate-650 hover:bg-slate-105'
+                    }`}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 rounded-xl font-mono text-[10px] font-bold tracking-wider transition-all border ${
+                      theme === 'dark'
+                        ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30'
+                        : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-sm'
+                    }`}
+                  >
+                    CREATE WORKSPACE
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {seeding && (
           <div className={`fixed inset-0 z-50 ${
