@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import Link from "next/link";
 import {
   PETROCHEMICAL_TEMPLATE,
   AUTOMOTIVE_TEMPLATE,
@@ -1921,6 +1922,9 @@ Industrial Sector AI Automation Network`;
             </div>
           </div>
         )}
+
+       
+
       </div>
     );
 }

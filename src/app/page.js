@@ -316,7 +316,7 @@ export default function AdminPage() {
             </div>
 
             <div className={`pt-4 border-t ${theme === 'dark' ? 'border-[#1b2336]/60' : 'border-slate-150'}`}>
-              <div className={`space-y-1.5 text-[10px] font-mono leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`space-y-1.5 text-[10px] font-mono leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
                 <p>• Only authorized Google Accounts are allowed access.</p>
                 <p>• Sourced admin account profiles will be synchronized automatically.</p>
               </div>
@@ -324,6 +324,22 @@ export default function AdminPage() {
 
           </div>
         </div>
+
+        {/* Floating back-and-forth toggle button in the bottom-left corner */}
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <Link
+            href="/c-home"
+            className={`px-5 h-10 rounded-full border transition-all duration-300 flex items-center justify-center font-mono font-bold text-sm hover:scale-110 ${
+              theme === 'dark'
+                ? 'bg-black/80 border-slate-200 text-slate-200 hover:text-cyan-600 hover:border-cyan-300 shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
+                : 'bg-black/80 border-slate-200 text-slate-700 hover:text-cyan-600 hover:border-cyan-300 shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
+            }`}
+            title="Go to Machine Workspaces Page"
+          >
+            Machine Workspaces
+          </Link>
+        </div>
+
       </div>
     );
   }
@@ -1132,6 +1148,22 @@ export default function AdminPage() {
           )}
         </main>
       </div>
+
+      {/* Floating back-and-forth toggle button in the bottom-left corner */}
+      <div className="fixed bottom-6 left-20 z-[9999]">
+        <Link
+          href="/c-home"
+          className={`w-10 h-10 rounded-full border transition-all duration-300 flex items-center justify-center font-mono font-bold text-sm hover:scale-110 ${
+            theme === 'dark'
+              ? 'bg-slate-950/60 border-slate-800 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+              : 'bg-white/80 border-slate-200 text-slate-700 hover:text-cyan-600 hover:border-cyan-300 shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
+          }`}
+          title="Go to Machine Workspaces Page"
+        >
+          K
+        </Link>
+      </div>
+
     </div>
   );
 }
