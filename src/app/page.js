@@ -255,6 +255,22 @@ export default function AdminPage() {
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className={`relative min-h-screen flex flex-col items-center justify-center font-mono transition-colors duration-300 ${
+        theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'
+      }`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-t-cyan-500 animate-spin"></div>
+          </div>
+          <span className="text-xs uppercase tracking-[0.2em] animate-pulse">Verifying Session...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <div className={`relative min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-300 ${
