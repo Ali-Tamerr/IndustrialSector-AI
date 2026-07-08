@@ -35,12 +35,17 @@ export default function AdminPage() {
 
   const { data: session, status } = useSession();
 
+  const [name, setName] = useState("");
+  const [image, setImage] = useState("");
+
   // Sync Google session with local state variables
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       setIsLoggedIn(true);
       if (session.user.adminId) setAdminId(session.user.adminId);
       if (session.user.email) setEmail(session.user.email);
+      if (session.user.name) setName(session.user.name);
+      if (session.user.image) setImage(session.user.image);
     } else if (status === "unauthenticated") {
       setIsLoggedIn(false);
     }
@@ -423,8 +428,17 @@ export default function AdminPage() {
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <User className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{email || adminId || "Admin"}</span>
+              {image ? (
+                <img 
+                  src={image} 
+                  alt={name || "Admin"} 
+                  className="w-4 h-4 rounded-full object-cover border border-cyan-500/30"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <User className="w-3.5 h-3.5 text-cyan-400" />
+              )}
+              <span>{name || email || adminId || "Admin"}</span>
               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''}`} />
             </button>
 
