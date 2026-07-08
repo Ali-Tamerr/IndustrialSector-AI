@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Activity } from "lucide-react";
 
-import DashboardHeader from "@/app/dashboard/_components/DashboardHeader";
+import Navbar from "@/app/_components/Navbar";
 import TelemetryLiveMonitor from "@/app/dashboard/_components/TelemetryLiveMonitor";
 import ThoughtsStream from "@/app/dashboard/_components/ThoughtsStream";
 import SourcingRoadmap from "@/app/dashboard/_components/SourcingRoadmap";
@@ -1223,7 +1223,8 @@ Industrial Sector AI Automation Network`;
       <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none animate-pulse-slow-alt`}></div>
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
 
-      <DashboardHeader
+      <Navbar
+        pageType="dashboard"
         theme={theme}
         toggleTheme={toggleTheme}
         activeProject={activeProject}

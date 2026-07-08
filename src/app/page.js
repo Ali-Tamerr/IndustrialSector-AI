@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
+import Navbar from "@/app/_components/Navbar";
 import { 
   ShieldCheck, 
   Mail, 
@@ -11,20 +12,12 @@ import {
   Terminal, 
   Cpu, 
   RefreshCw, 
-  PlusCircle, 
   Clipboard,
   ExternalLink,
   CheckCircle,
   FileText,
-  LogOut,
-  Sliders,
-  ArrowLeft,
   Bell,
-  User,
-  ChevronDown,
-  LayoutGrid,
-  Sun,
-  Moon
+  LayoutGrid
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -58,6 +51,7 @@ export default function AdminPage() {
   const [adminView, setAdminView] = useState("dashboard"); // dashboard or reports
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleApproveReport = async (reportId) => {
     try {
@@ -394,135 +388,21 @@ export default function AdminPage() {
       <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.04]' : 'bg-purple-400/[0.05]'} rounded-full blur-[130px] pointer-events-none`}></div>
       <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none`}></div>
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
-         {/* Header */}
-      <header className={`border-b backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-40 transition-all duration-300 ${
-        theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className={`h-8.5 w-8.5 rounded border flex items-center justify-center transition-all duration-300 ${
-            theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600'
-          }`}>
-            <ShieldCheck className="w-5 h-5 text-blue-400 animate-pulse" />
-          </div>
-          <div>
-            <h1 className={`text-[16px] font-mono font-extrabold tracking-wider ${
-              theme === 'dark' ? 'text-white' : 'text-slate-800'
-            }`}>Control Tower</h1>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <p className={`text-[10px] font-mono tracking-widest uppercase ${
-                theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
-              }`}>Predictive Maintenance & Reports Admin</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-              theme === 'dark' 
-                ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white' 
-                : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
-            }`}
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Control Tower</span>
-          </Link>
-
-          <Link
-            href="/device"
-            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-              theme === 'dark' 
-                ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white' 
-                : 'bg-emerald-50 text-emerald-700 border-emerald-202/85 hover:bg-emerald-600 hover:text-white shadow-sm'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>Device Client</span>
-          </Link>
-
-          <button
-            onClick={() => setShowTestForm(true)}
-            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-              theme === 'dark' 
-                ? 'bg-cyan-950/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white' 
-                : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white shadow-sm'
-            }`}
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Simulate Report</span>
-          </button>
-
-          {/* User Account Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserDropdown(!showUserDropdown)}
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 active:scale-95 ${
-                theme === 'dark' 
-                  ? 'bg-slate-900 border-[#182030] text-slate-300 hover:bg-slate-800' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
-              }`}
-            >
-              {image ? (
-                <img 
-                  src={image} 
-                  alt={name || "Admin"} 
-                  className="w-4 h-4 rounded-full object-cover border border-cyan-500/30"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <User className="w-3.5 h-3.5 text-cyan-400" />
-              )}
-              <span>{name || email || adminId || "Admin"}</span>
-              <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showUserDropdown && (
-              <>
-                {/* Overlay to close the dropdown when clicking outside */}
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowUserDropdown(false)}
-                />
-                
-                {/* Dropdown Menu */}
-                <div className={`absolute right-0 mt-2 w-48 rounded border shadow-xl z-50 transition-all duration-300 animate-fadeIn ${
-                  theme === 'dark' 
-                    ? 'bg-[#0c0f17] border-[#182030] text-slate-300' 
-                    : 'bg-white border-slate-200 text-slate-700'
-                }`}>
-                  <div className="p-1">
-                    <button
-                      onClick={() => {
-                        setShowUserDropdown(false);
-                        handleLogout();
-                      }}
-                      className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-red-400 hover:bg-red-500/10 rounded transition-colors text-left"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded border transition-all duration-300 flex items-center justify-center active:scale-95 ${
-              theme === 'dark'
-                ? 'bg-slate-900 border-[#182030] text-yellow-400 hover:bg-slate-800'
-                : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 shadow-sm'
-            }`}
-            title="Toggle Light/Dark Theme"
-          >
-            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      </header>
+      <Navbar
+        pageType="admin"
+        theme={theme}
+        toggleTheme={toggleTheme}
+        setShowTestForm={setShowTestForm}
+        showUserDropdown={showUserDropdown}
+        setShowUserDropdown={setShowUserDropdown}
+        handleLogout={handleLogout}
+        image={image}
+        name={name}
+        email={email}
+        adminId={adminId}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
 
       {/* Sidebar + Main Content Layout */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
