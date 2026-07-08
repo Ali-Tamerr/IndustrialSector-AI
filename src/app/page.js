@@ -22,7 +22,9 @@ import {
   Bell,
   User,
   ChevronDown,
-  LayoutGrid
+  LayoutGrid,
+  Sun,
+  Moon
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -88,7 +90,7 @@ export default function AdminPage() {
   const [testSuccessMsg, setTestSuccessMsg] = useState("");
 
   const [theme, setTheme] = useState("dark");
-
+  
   // Load and apply theme globally
   useEffect(() => {
     const savedTheme = localStorage.getItem("appTheme") || "dark";
@@ -99,6 +101,17 @@ export default function AdminPage() {
       document.documentElement.classList.remove("dark");
     }
   }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("appTheme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
 
 
   // Fetch reports when logged in
@@ -257,10 +270,12 @@ export default function AdminPage() {
 
   if (status === "loading") {
     return (
-      <div className={`relative min-h-screen flex flex-col items-center justify-center font-mono transition-colors duration-300 ${
+      <div className={`relative min-h-screen flex flex-col items-center justify-center font-mono transition-colors duration-300 overflow-hidden ${
         theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'
       }`}>
-        <div className="flex flex-col items-center gap-4">
+        {/* Prismatic Background Grid */}
+        <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none`}></div>
+        <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="relative w-12 h-12">
             <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20"></div>
             <div className="absolute inset-0 rounded-full border-2 border-t-cyan-500 animate-spin"></div>
@@ -273,38 +288,36 @@ export default function AdminPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className={`relative min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-300 ${
-        theme === 'dark' ? 'bg-[#030508] text-slate-200' : 'bg-[#f8fafc] text-slate-800'
+      <div className={`relative min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-300 overflow-hidden ${
+        theme === 'dark' ? 'bg-[#030508] text-slate-205' : 'bg-[#f8fafc] text-slate-800'
       }`}>
         
-        {/* Subtle non-AI neutral grids */}
-        <div className={`absolute inset-0 bg-[linear-gradient(to_right,${
-          theme === 'dark' ? 'rgba(255,255,255,0.003)' : 'rgba(0,0,0,0.008)'
-        }_1px,transparent_1px),linear-gradient(to_bottom,${
-          theme === 'dark' ? 'rgba(255,255,255,0.003)' : 'rgba(0,0,0,0.008)'
-        }_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none`}></div>
+        {/* Prismatic Background Grid */}
+        <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none`}></div>
 
-
+        {/* Glow Mesh Spheres */}
+        <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.04]' : 'bg-purple-400/[0.05]'} rounded-full blur-[130px] pointer-events-none`}></div>
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none`}></div>
 
         {/* Clean, editorial-style Login Panel */}
-        <div className={`relative w-full max-w-md border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${
+        <div className={`relative w-full max-w-md border rounded-xl overflow-hidden shadow-sm transition-all duration-300 z-10 ${
           theme === 'dark' 
-            ? 'bg-[#0a0d16] border-[#1b2336]' 
+            ? 'bg-[#0c0f17] border-[#182030]' 
             : 'bg-white border-slate-200'
         }`}>
           
           {/* Card Header (solid color, clean typography) */}
           <div className={`px-8 py-6 border-b flex items-center gap-4 ${
-            theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e]' : 'border-slate-200 bg-slate-50'
+            theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-200 bg-slate-50'
           }`}>
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-              theme === 'dark' ? 'bg-cyan-955/40 text-cyan-400 border border-cyan-900/30' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+              theme === 'dark' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
             }`}>
-              <ShieldCheck className="w-5 h-5" />
+              <ShieldCheck className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <h1 className={`text-base font-bold font-mono tracking-tight ${
-                theme === 'dark' ? 'text-white' : 'text-slate-900'
+                theme === 'dark' ? 'text-white' : 'text-slate-905'
               }`}>Control Tower Admin</h1>
               <p className={`text-[11px] font-sans font-normal mt-0.5 ${
                 theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
@@ -314,9 +327,9 @@ export default function AdminPage() {
 
           <div className="p-8 space-y-6">
             {error && (
-              <div className="p-3.5 rounded-lg bg-red-955/20 border border-red-900/30 flex items-start gap-2.5">
+              <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2.5">
                 <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                <p className="text-red-200 text-xs leading-relaxed">{error}</p>
+                <p className="text-red-202 text-xs leading-relaxed">{error}</p>
               </div>
             )}
 
@@ -336,8 +349,8 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <div className={`pt-4 border-t ${theme === 'dark' ? 'border-[#1b2336]/60' : 'border-slate-150'}`}>
-              <div className={`space-y-1.5 text-[10px] font-mono leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-505'}`}>
+            <div className={`pt-4 border-t ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-150'}`}>
+              <div className={`space-y-1.5 text-[10px] font-mono leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                 <p>• Only authorized Google Accounts are allowed access.</p>
                 <p>• Sourced admin account profiles will be synchronized automatically.</p>
               </div>
@@ -370,29 +383,36 @@ export default function AdminPage() {
   const displayedReports = activeTab === "approved" ? approvedReports : pendingReports;
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-[#030508] text-slate-300' : 'bg-[#f8fafc] text-slate-700'
+    <div className={`min-h-screen flex flex-col font-sans select-none transition-colors duration-300 relative overflow-hidden ${
+      theme === 'dark' ? 'bg-[#030508] text-slate-350' : 'bg-[#f8fafc] text-slate-700'
     }`}>
       
-      {/* Header */}
-      <header className={`border-b backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300 ${
-        theme === 'dark' ? 'border-[#1b2336]/60 bg-[#080b11]/90' : 'border-slate-200 bg-white/90'
+      {/* Prismatic Background Grid */}
+      <div className={`absolute inset-0 bg-[linear-gradient(${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px),linear-gradient(90deg,${theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.015)'}_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none`}></div>
+      
+      {/* Glow Mesh Spheres */}
+      <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-purple-600/[0.04]' : 'bg-purple-400/[0.05]'} rounded-full blur-[130px] pointer-events-none`}></div>
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] ${theme === 'dark' ? 'bg-cyan-500/[0.04]' : 'bg-cyan-400/[0.05]'} rounded-full blur-[130px] pointer-events-none`}></div>
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] ${theme === 'dark' ? 'bg-blue-600/[0.02]' : 'bg-blue-500/[0.03]'} rounded-full blur-[150px] pointer-events-none`}></div>
+         {/* Header */}
+      <header className={`border-b backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-40 transition-all duration-300 ${
+        theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'
       }`}>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-all duration-300 ${
-            theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
+          <div className={`h-8.5 w-8.5 rounded border flex items-center justify-center transition-all duration-300 ${
+            theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600'
           }`}>
-            <ShieldCheck className="w-5 h-5" />
+            <ShieldCheck className="w-5 h-5 text-blue-400 animate-pulse" />
           </div>
           <div>
-            <h1 className={`text-base font-bold font-mono tracking-tight ${
+            <h1 className={`text-[16px] font-mono font-extrabold tracking-wider ${
               theme === 'dark' ? 'text-white' : 'text-slate-800'
             }`}>Control Tower</h1>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <p className={`text-[9px] uppercase font-bold font-mono tracking-wider ${
-                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}>Reports Admin Hub</p>
+              <p className={`text-[10px] font-mono tracking-widest uppercase ${
+                theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+              }`}>Predictive Maintenance & Reports Admin</p>
             </div>
           </div>
         </div>
@@ -400,10 +420,10 @@ export default function AdminPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark' 
-                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-355' 
-                : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white' 
+                : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -412,10 +432,10 @@ export default function AdminPage() {
 
           <Link
             href="/device"
-            className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-colors ${
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark' 
-                ? 'bg-slate-900 border-[#1b2336] hover:bg-slate-800 text-slate-355' 
-                : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white' 
+                : 'bg-emerald-50 text-emerald-700 border-emerald-202/85 hover:bg-emerald-600 hover:text-white shadow-sm'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -424,10 +444,10 @@ export default function AdminPage() {
 
           <button
             onClick={() => setShowTestForm(true)}
-            className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-all active:scale-95 ${
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark' 
-                ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400 hover:bg-cyan-955/40' 
-                : 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                ? 'bg-cyan-950/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white' 
+                : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white shadow-sm'
             }`}
           >
             <PlusCircle className="w-3.5 h-3.5" />
@@ -438,10 +458,10 @@ export default function AdminPage() {
           <div className="relative">
             <button
               onClick={() => setShowUserDropdown(!showUserDropdown)}
-              className={`flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold border rounded-lg transition-all active:scale-95 ${
+              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 active:scale-95 ${
                 theme === 'dark' 
-                  ? 'bg-slate-900 border-[#1b2336] text-slate-300 hover:bg-slate-800' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                  ? 'bg-slate-900 border-[#182030] text-slate-300 hover:bg-slate-800' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
               }`}
             >
               {image ? (
@@ -467,9 +487,9 @@ export default function AdminPage() {
                 />
                 
                 {/* Dropdown Menu */}
-                <div className={`absolute right-0 mt-2 w-48 rounded-lg border shadow-xl z-50 transition-all duration-300 animate-fadeIn ${
+                <div className={`absolute right-0 mt-2 w-48 rounded border shadow-xl z-50 transition-all duration-300 animate-fadeIn ${
                   theme === 'dark' 
-                    ? 'bg-[#0c101b] border-[#1b2336] text-slate-300' 
+                    ? 'bg-[#0c0f17] border-[#182030] text-slate-300' 
                     : 'bg-white border-slate-200 text-slate-700'
                 }`}>
                   <div className="p-1">
@@ -478,7 +498,7 @@ export default function AdminPage() {
                         setShowUserDropdown(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-red-400 hover:bg-red-500/10 rounded-md transition-colors text-left"
+                      className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-red-400 hover:bg-red-500/10 rounded transition-colors text-left"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Sign Out</span>
@@ -488,6 +508,19 @@ export default function AdminPage() {
               </>
             )}
           </div>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded border transition-all duration-300 flex items-center justify-center active:scale-95 ${
+              theme === 'dark'
+                ? 'bg-slate-900 border-[#182030] text-yellow-400 hover:bg-slate-800'
+                : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 shadow-sm'
+            }`}
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
         </div>
       </header>
 
@@ -495,9 +528,8 @@ export default function AdminPage() {
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         
         {/* Sidebar */}
-        {/* ponytail: collapsible navigation sidebar to maximize main screen workspace area */}
         <aside className={`w-full ${sidebarCollapsed ? 'md:w-20' : 'md:w-64'} border-b md:border-b-0 md:border-r shrink-0 transition-all duration-300 ${
-          theme === 'dark' ? 'bg-[#06080e] border-[#1b2336]/60' : 'bg-slate-50 border-slate-200'
+          theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-slate-50 border-slate-200'
         }`}>
           <div className="p-4 space-y-6 md:sticky md:top-24">
             <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-2`}>
@@ -508,9 +540,9 @@ export default function AdminPage() {
               )}
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className={`p-1.5 rounded-lg border transition-all active:scale-95 ${
+                className={`p-1.5 rounded border transition-all active:scale-95 ${
                   theme === 'dark' 
-                    ? 'border-[#1b2336] bg-[#0c101b] hover:bg-[#151c2d] text-slate-400 hover:text-white' 
+                    ? 'border-[#182030] bg-[#182030]/50 hover:bg-[#182030] text-slate-400 hover:text-white' 
                     : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900'
                 }`}
                 title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -533,11 +565,11 @@ export default function AdminPage() {
             <nav className="space-y-1">
               <button
                 onClick={() => setAdminView("dashboard")}
-                className={`w-full flex items-center rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                className={`w-full flex items-center rounded text-xs font-mono uppercase tracking-wider font-semibold transition-all text-left ${
                   sidebarCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2.5'
                 } ${
                   adminView === "dashboard"
-                    ? (theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm')
+                    ? (theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm')
                     : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent')
                 }`}
                 title={sidebarCollapsed ? "Admin Dashboard" : ""}
@@ -548,11 +580,11 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setAdminView("reports")}
-                className={`w-full relative flex items-center rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                className={`w-full relative flex items-center rounded text-xs font-mono uppercase tracking-wider font-semibold transition-all text-left ${
                   sidebarCollapsed ? 'justify-center px-2 py-3' : 'justify-between px-3 py-2.5'
                 } ${
                   adminView === "reports"
-                    ? (theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm')
+                    ? (theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm')
                     : (theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent')
                 }`}
                 title={sidebarCollapsed ? "Received Reports" : ""}
@@ -572,7 +604,7 @@ export default function AdminPage() {
 
               <Link
                 href="/c-home"
-                className={`w-full flex items-center rounded-lg text-xs font-mono uppercase tracking-wider font-bold transition-all text-left ${
+                className={`w-full flex items-center rounded text-xs font-mono uppercase tracking-wider font-semibold transition-all text-left ${
                   sidebarCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2.5'
                 } ${
                   theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
@@ -590,7 +622,7 @@ export default function AdminPage() {
                 <div className="flex justify-center">
                   <div className={`w-8 h-8 rounded-full border flex items-center justify-center relative ${
                     theme === 'dark' ? 'bg-[#090d15]/40 border-[#1b2336]/40' : 'bg-white border-slate-200 shadow-sm'
-                  }`} title={`System Operator: ${adminId}`}>
+                  }`} title={`Admin ID: ${adminId}`}>
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   </div>
                 </div>
@@ -600,7 +632,7 @@ export default function AdminPage() {
                 }`}>
                   <span className={`text-[9px] font-bold font-mono uppercase tracking-wider block ${
                     theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
-                  }`}>System Operator</span>
+                  }`}>Admin ID</span>
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -634,18 +666,18 @@ export default function AdminPage() {
                 {/* Critical Machines Card */}
                 <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
                   theme === 'dark' 
-                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    ? 'bg-[#0c0f17] border-[#182030]' 
                     : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div className="space-y-1">
                     <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                     }`}>Critical Assets</span>
                     <div className="flex items-baseline gap-2">
                       <span className={`text-2xl font-bold font-mono ${
                         criticalMachinesCount > 0
-                          ? (theme === 'dark' ? 'text-red-400' : 'text-red-600')
-                          : (theme === 'dark' ? 'text-white' : 'text-slate-808')
+                          ? (theme === 'dark' ? 'text-red-400' : 'text-red-650')
+                          : (theme === 'dark' ? 'text-white' : 'text-slate-800')
                       }`}>
                         {criticalMachinesCount}
                       </span>
@@ -655,8 +687,8 @@ export default function AdminPage() {
                   </div>
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
                     criticalMachinesCount > 0
-                      ? (theme === 'dark' ? 'bg-red-955/20 border-red-500/20 text-red-450' : 'bg-red-50 border-red-200 text-red-700')
-                      : (theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-400')
+                      ? (theme === 'dark' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-200 text-red-700')
+                      : (theme === 'dark' ? 'bg-[#182030]/50 border-[#182030] text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-400')
                   }`}>
                     <AlertTriangle className="w-5 h-5" />
                   </div>
@@ -665,22 +697,22 @@ export default function AdminPage() {
                 {/* Component Expenditure Card */}
                 <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
                   theme === 'dark' 
-                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    ? 'bg-[#0c0f17] border-[#182030]' 
                     : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div className="space-y-1">
                     <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                     }`}>Component Capital</span>
                     <div className="flex items-baseline gap-1">
-                      <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                      <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-605'}`}>
                         ${totalExpenditure.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Emergency procurement spent</p>
                   </div>
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-                    theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
+                    theme === 'dark' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
                   }`}>
                     <Sliders className="w-5 h-5" />
                   </div>
@@ -689,46 +721,24 @@ export default function AdminPage() {
                 {/* Maintenance Tickets Card */}
                 <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
                   theme === 'dark' 
-                    ? 'bg-[#0a0d16] border-[#1b2336]' 
+                    ? 'bg-[#0c0f17] border-[#182030]' 
                     : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div className="space-y-1">
                     <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                     }`}>Total Tickets</span>
                     <div className="flex items-baseline gap-1">
-                      <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>
+                      <span className={`text-2xl font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                         {fleetData?.maintenance_orders?.length || 0}
                       </span>
                     </div>
                     <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>PdM orders processed</p>
                   </div>
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-                    theme === 'dark' ? 'bg-slate-900 border-[#1b2336] text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+                    theme === 'dark' ? 'bg-[#182030]/50 border-[#182030] text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-505'
                   }`}>
                     <Clipboard className="w-5 h-5" />
-                  </div>
-                </div>
-
-                {/* Device Link Status Card */}
-                <div className={`border rounded-xl p-5 flex items-center justify-between transition-all duration-300 ${
-                  theme === 'dark' 
-                    ? 'bg-[#0a0d16] border-[#1b2336]' 
-                    : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <div className="space-y-1">
-                    <span className={`text-[10px] font-bold font-mono uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
-                    }`}>Device Link</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold font-mono text-emerald-400">ACTIVE</span>
-                    </div>
-                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Linked to ID: {adminId}</p>
-                  </div>
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-                    theme === 'dark' ? 'bg-emerald-955/20 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                  }`}>
-                    <Cpu className="w-5 h-5" />
                   </div>
                 </div>
 
@@ -736,14 +746,14 @@ export default function AdminPage() {
 
               {/* Capital Expenditure Audit Trail */}
               <div className={`border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${
-                theme === 'dark' ? 'bg-[#0a0d16] border-[#1b2336]' : 'bg-white border-slate-200 shadow-sm'
+                theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'
               }`}>
                 <div className={`p-5 border-b flex items-center justify-between ${
-                  theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e]' : 'border-slate-200 bg-slate-50'
+                  theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-200 bg-slate-50'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg border transition-all duration-300 ${
-                      theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-705'
+                    <div className={`p-2 rounded border transition-all duration-300 ${
+                      theme === 'dark' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
                     }`}>
                       <FileText className="w-4 h-4" />
                     </div>
@@ -763,16 +773,16 @@ export default function AdminPage() {
                     <table className="w-full border-collapse text-left text-xs">
                       <thead>
                         <tr className={`border-b text-[10px] font-mono font-bold uppercase tracking-wider ${
-                          theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e] text-slate-400' : 'border-slate-200 bg-slate-50/50 text-slate-505'
+                          theme === 'dark' ? 'border-[#182030] bg-[#0c0f17] text-slate-400' : 'border-slate-200 bg-slate-50/50 text-slate-500'
                         }`}>
-                          <th className="py-3 px-5">Ticket ID</th>
-                          <th className="py-3 px-5">Target Asset</th>
+                          <th className="py-3 px-5">Order ID</th>
+                          <th className="py-3 px-5">Machine ID</th>
                           <th className="py-3 px-5">Component Required</th>
                           <th className="py-3 px-5">Allocation Method</th>
                           <th className="py-3 px-5 text-right">Capital Cost</th>
                         </tr>
                       </thead>
-                      <tbody className={`divide-y ${theme === 'dark' ? 'divide-[#1b2336]/35' : 'divide-slate-200/55'}`}>
+                      <tbody className={`divide-y ${theme === 'dark' ? 'divide-[#182030]/50' : 'divide-slate-200/55'}`}>
                         {fleetData.maintenance_orders.map(order => {
                           const machine = fleetData.machines?.find(m => m.id === order.machine_id);
                           const partId = machine?.critical_thresholds?.required_part_id || 
@@ -804,15 +814,15 @@ export default function AdminPage() {
                           }
 
                           return (
-                            <tr key={order.id} className={theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-355' : 'hover:bg-slate-50 text-slate-700'}>
+                            <tr key={order.id} className={theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-350' : 'hover:bg-slate-50 text-slate-700'}>
                               <td className="py-3 px-5 font-mono font-bold">#{order.id}</td>
                               <td className="py-3 px-5 font-mono">{order.machine_id}</td>
                               <td className="py-3 px-5">{part?.part_name || 'Component part'}</td>
                               <td className="py-3 px-5">
                                 <span className={`inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full font-bold text-[9px] uppercase border ${
                                   isSourced 
-                                    ? "bg-cyan-950/40 border-cyan-808/30 text-cyan-300"
-                                    : "bg-slate-955/20 border-slate-800/30 text-slate-300"
+                                    ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-350"
+                                    : "bg-slate-500/10 border-slate-500/20 text-slate-300"
                                 }`}>
                                   {sourcingType}
                                 </span>
@@ -837,24 +847,22 @@ export default function AdminPage() {
             <div className="space-y-6 max-w-7xl mx-auto animate-fadeIn">
               
               {/* Reports Title Banner */}
-             
-
-              {/* Test Report Generator Modal Form */}
+                         {/* Test Report Generator Modal Form */}
               {showTestForm && (
                 <div className={`border rounded-xl p-6 relative animate-fadeIn shadow-lg transition-all duration-300 ${
                   theme === 'dark' 
-                    ? 'bg-[#0a0d16] border-[#1b2336] text-slate-350' 
+                    ? 'bg-[#0c0f17] border-[#182030] text-slate-350' 
                     : 'bg-white border-slate-200 text-slate-700'
                 }`}>
                   <h3 className={`text-xs font-bold font-mono uppercase mb-4 flex items-center gap-2 ${
-                    theme === 'dark' ? 'text-white' : 'text-slate-800'
+                    theme === 'dark' ? 'text-white' : 'text-slate-805'
                   }`}>
-                    <Cpu className="w-4 h-4 text-cyan-450" />
+                    <Cpu className="w-4 h-4 text-cyan-450 animate-pulse" />
                     <span>Simulate Local Device Machine Report</span>
                   </h3>
                   
                   {testSuccessMsg && (
-                    <div className="mb-4 p-3 rounded-lg bg-emerald-955/20 border border-emerald-900 text-emerald-305 text-xs">
+                    <div className="mb-4 p-3 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
                       {testSuccessMsg}
                     </div>
                   )}
@@ -862,13 +870,13 @@ export default function AdminPage() {
                   <form onSubmit={handleSendTestReport} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                        theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                       }`}>Machine ID</label>
                       <select
                         value={testMachineId}
                         onChange={(e) => setTestMachineId(e.target.value)}
-                        className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
-                          theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white' : 'bg-white border-slate-200 text-slate-808'
+                        className={`w-full border rounded p-2.5 text-xs outline-none transition-all duration-300 ${
+                          theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                         }`}
                       >
                         <option value="MCH-001">MCH-001 (Rotary Gear Pump A)</option>
@@ -880,13 +888,13 @@ export default function AdminPage() {
 
                     <div>
                       <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                        theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                       }`}>Machine Status</label>
                       <select
                         value={testStatus}
                         onChange={(e) => setTestStatus(e.target.value)}
-                        className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
-                          theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white' : 'bg-white border-slate-200 text-slate-808'
+                        className={`w-full border rounded p-2.5 text-xs outline-none transition-all duration-300 ${
+                          theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                         }`}
                       >
                         <option value="Operational">Operational (Healthy)</option>
@@ -898,7 +906,7 @@ export default function AdminPage() {
                     <div className="grid grid-cols-4 gap-2 md:col-span-2">
                       <div>
                         <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                          theme === 'dark' ? 'text-slate-400' : 'text-slate-505'
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                         }`}>Temp (°C)</label>
                         <input
                           type="number"
@@ -906,14 +914,14 @@ export default function AdminPage() {
                           required
                           value={testTemp}
                           onChange={(e) => setTestTemp(e.target.value)}
-                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          className={`w-full border rounded p-2 text-xs outline-none transition-all duration-300 ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                           }`}
                         />
                       </div>
                       <div>
                         <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                          theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                         }`}>Vib (mm/s)</label>
                         <input
                           type="number"
@@ -921,14 +929,14 @@ export default function AdminPage() {
                           required
                           value={testVib}
                           onChange={(e) => setTestVib(e.target.value)}
-                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          className={`w-full border rounded p-2 text-xs outline-none transition-all duration-300 ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                           }`}
                         />
                       </div>
                       <div>
                         <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                          theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                         }`}>Pres (Bar)</label>
                         <input
                           type="number"
@@ -936,14 +944,14 @@ export default function AdminPage() {
                           required
                           value={testPres}
                           onChange={(e) => setTestPres(e.target.value)}
-                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          className={`w-full border rounded p-2 text-xs outline-none transition-all duration-300 ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                           }`}
                         />
                       </div>
                       <div>
                         <label className={`block text-[9px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                          theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                          theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                         }`}>Current (A)</label>
                         <input
                           type="number"
@@ -951,8 +959,8 @@ export default function AdminPage() {
                           required
                           value={testCur}
                           onChange={(e) => setTestCur(e.target.value)}
-                          className={`w-full border rounded-lg p-2 text-xs outline-none ${
-                            theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-808'
+                          className={`w-full border rounded p-2 text-xs outline-none transition-all duration-300 ${
+                            theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                           }`}
                         />
                       </div>
@@ -960,15 +968,15 @@ export default function AdminPage() {
 
                     <div className="md:col-span-3">
                       <label className={`block text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                        theme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
                       }`}>Diagnostic Message / Log</label>
                       <input
                         type="text"
                         placeholder="e.g. Bearing temperature threshold warning. Lubricant level checks required."
                         value={testMessage}
                         onChange={(e) => setTestMessage(e.target.value)}
-                        className={`w-full border rounded-lg p-2.5 text-xs outline-none ${
-                          theme === 'dark' ? 'bg-[#030508] border-[#1b2336] text-white focus:border-cyan-500' : 'bg-white border-slate-202 text-slate-808'
+                        className={`w-full border rounded p-2.5 text-xs outline-none transition-all duration-300 ${
+                          theme === 'dark' ? 'bg-[#030508] border-[#182030] text-white focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800'
                         }`}
                       />
                     </div>
@@ -977,16 +985,16 @@ export default function AdminPage() {
                       <button
                         type="submit"
                         disabled={submittingTest}
-                        className="flex-1 py-2.5 px-3 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono uppercase font-bold rounded-lg transition-colors border-0"
+                        className="flex-1 py-2.5 px-3 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono uppercase font-bold rounded transition-colors border-0"
                       >
                         {submittingTest ? "Sending..." : "Submit Test"}
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowTestForm(false)}
-                        className={`py-2.5 px-3 border text-xs font-mono uppercase font-bold rounded-lg transition-colors ${
+                        className={`py-2.5 px-3 border text-xs font-mono uppercase font-bold rounded transition-colors ${
                           theme === 'dark' 
-                            ? 'bg-slate-900 border-[#1b2336] text-slate-400 hover:text-white' 
+                            ? 'bg-slate-900 border-[#182030] text-slate-400 hover:text-white' 
                             : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                         }`}
                       >
@@ -1000,31 +1008,31 @@ export default function AdminPage() {
               {/* Reports Panel */}
               <div className={`border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${
                 theme === 'dark' 
-                  ? 'bg-[#0a0d16] border-[#1b2336]' 
+                  ? 'bg-[#0c0f17] border-[#182030]' 
                   : 'bg-white border-slate-200 shadow-sm'
               }`}>
                 {/* Panel Header */}
                 <div className={`p-5 border-b flex items-center justify-between transition-colors duration-300 ${
-                  theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f1e]' : 'border-slate-200 bg-slate-50'
+                  theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-200 bg-slate-50'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg border transition-all duration-300 ${
-                      theme === 'dark' ? 'bg-cyan-955/20 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-705'
+                    <div className={`p-2 rounded border transition-all duration-300 ${
+                      theme === 'dark' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : 'bg-cyan-50 border-cyan-200 text-cyan-700'
                     }`}>
                       <FileText className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className={`font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-808'}`}>Received Reports & Logs</h3>
+                      <h3 className={`font-bold font-mono tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Received Reports & Logs</h3>
                       <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Real-time alerts submitted by devices linked to this tower</p>
                     </div>
                   </div>
 
                   <button
                     onClick={fetchReports}
-                    className={`p-2 border rounded-lg transition-all flex items-center gap-1.5 text-[11px] font-mono uppercase font-bold ${
+                    className={`p-2 border rounded transition-all flex items-center gap-1.5 text-[11px] font-mono uppercase font-semibold ${
                       theme === 'dark' 
-                        ? 'hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-white' 
-                        : 'hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-800'
+                        ? 'bg-slate-900 border-[#182030] text-slate-400 hover:text-white hover:bg-slate-800' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50 shadow-sm'
                     }`}
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -1033,14 +1041,14 @@ export default function AdminPage() {
                 </div>
 
                 {/* Tab Navigation */}
-                <div className={`flex border-b text-xs font-mono font-bold uppercase tracking-wider ${
-                  theme === 'dark' ? 'border-[#1b2336] bg-[#080b12]' : 'border-slate-200 bg-slate-50/30'
+                <div className={`flex border-b text-xs font-mono font-semibold uppercase tracking-wider ${
+                  theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/50' : 'border-slate-200 bg-slate-50/30'
                 }`}>
                   <button
                     onClick={() => setActiveTab("approved")}
                     className={`px-6 py-3 border-b-2 transition-all ${
                       activeTab === "approved"
-                        ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-955/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
+                        ? (theme === 'dark' ? 'border-blue-500 text-blue-400 bg-blue-500/5' : 'border-blue-600 text-blue-700 bg-blue-50/30')
                         : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
                     }`}
                   >
@@ -1050,14 +1058,14 @@ export default function AdminPage() {
                     onClick={() => setActiveTab("notifications")}
                     className={`px-6 py-3 border-b-2 transition-all flex items-center gap-2 ${
                       activeTab === "notifications"
-                        ? (theme === 'dark' ? 'border-cyan-500 text-cyan-400 bg-cyan-955/10' : 'border-cyan-600 text-cyan-700 bg-cyan-50/30')
+                        ? (theme === 'dark' ? 'border-blue-500 text-blue-400 bg-blue-500/5' : 'border-blue-600 text-blue-700 bg-blue-50/30')
                         : (theme === 'dark' ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/10' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/30')
                     }`}
                   >
                     <Bell className="w-3.5 h-3.5" />
                     <span>Notifications</span>
                     {pendingReports.length > 0 && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-cyan-500 text-black animate-pulse">
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-blue-500 text-black animate-pulse">
                         {pendingReports.length}
                       </span>
                     )}
@@ -1097,8 +1105,8 @@ export default function AdminPage() {
                       <thead>
                         <tr className={`border-b text-[10px] font-mono font-bold uppercase tracking-wider transition-colors duration-300 ${
                           theme === 'dark' 
-                            ? 'border-[#1b2336] bg-[#0c0f1e] text-slate-400' 
-                            : 'border-slate-200 bg-slate-50/50 text-slate-505'
+                            ? 'border-[#182030] bg-[#0c0f17] text-slate-400' 
+                            : 'border-slate-200 bg-slate-50/50 text-slate-500'
                         }`}>
                           <th className="py-4 px-6">Timestamp</th>
                           <th className="py-4 px-6">Machine ID</th>
@@ -1109,14 +1117,14 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody className={`divide-y text-xs ${
-                        theme === 'dark' ? 'divide-[#1b2336]/35' : 'divide-slate-200/55'
+                        theme === 'dark' ? 'divide-[#182030]/50' : 'divide-slate-200/55'
                       }`}>
                         {displayedReports.map((report) => (
                           <tr key={report.id} className={`transition-colors duration-300 ${
                             theme === 'dark' ? 'hover:bg-slate-900/20 text-slate-350' : 'hover:bg-slate-50 text-slate-700'
                           }`}>
                             <td className={`py-4 px-6 font-mono whitespace-nowrap ${
-                              theme === 'dark' ? 'text-slate-450' : 'text-slate-500'
+                              theme === 'dark' ? 'text-slate-500' : 'text-slate-500'
                             }`}>
                               {new Date(report.created_at).toLocaleString()}
                             </td>
@@ -1129,12 +1137,12 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td className="py-4 px-6 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-bold text-[10px] uppercase border ${
+                              <span className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded font-bold text-[10px] uppercase border ${
                                 report.status === "Critical" 
-                                  ? "bg-red-955/20 border-red-900/30 text-red-400"
+                                  ? "bg-red-500/10 border-red-500/20 text-red-400"
                                   : report.status === "Degraded"
-                                  ? "bg-amber-955/20 border-amber-900/30 text-amber-400"
-                                  : "bg-emerald-955/20 border-emerald-900/30 text-emerald-450"
+                                  ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                                  : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                               }`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${
                                   report.status === "Critical" ? "bg-red-500" : report.status === "Degraded" ? "bg-amber-500" : "bg-emerald-500"
@@ -1144,12 +1152,12 @@ export default function AdminPage() {
                             </td>
                             <td className="py-4 px-6 whitespace-nowrap">
                               <div className={`flex items-center gap-3 font-mono text-[11px] ${
-                                theme === 'dark' ? 'text-slate-450' : 'text-slate-550'
+                                theme === 'dark' ? 'text-slate-500' : 'text-slate-500'
                               }`}>
-                                {report.temperature && <span>T: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.temperature}°C</strong></span>}
-                                {report.vibration && <span>V: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.vibration}mm/s</strong></span>}
-                                {report.pressure && <span>P: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.pressure}Bar</strong></span>}
-                                {report.current && <span>I: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-705'}>{report.current}A</strong></span>}
+                                {report.temperature && <span>T: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-707'}>{report.temperature}°C</strong></span>}
+                                {report.vibration && <span>V: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-707'}>{report.vibration}mm/s</strong></span>}
+                                {report.pressure && <span>P: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-707'}>{report.pressure}Bar</strong></span>}
+                                {report.current && <span>I: <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-707'}>{report.current}A</strong></span>}
                               </div>
                             </td>
                             <td className={`py-4 px-6 font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -1159,7 +1167,7 @@ export default function AdminPage() {
                               <td className="py-4 px-6 text-right whitespace-nowrap">
                                 <button
                                   onClick={() => handleApproveReport(report.id)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-650 hover:bg-emerald-500 text-white font-mono text-[10px] font-bold tracking-wider uppercase transition-colors active:scale-95 shadow-sm border-0"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] font-semibold tracking-wider uppercase transition-colors active:scale-95 shadow-sm border-0"
                                 >
                                   <CheckCircle className="w-3.5 h-3.5" />
                                   <span>Approve</span>
