@@ -16,9 +16,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("IndustrialOrchestrator")
 
-# Load environment variables
 from dotenv import load_dotenv
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+if not os.path.exists(dotenv_path):
+    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path, override=True)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -41,21 +42,8 @@ try:
 except ImportError:
     logger.warning("google-generativeai package not found.")
 
-# Attempt importing vertexai for GCP Vertex AI support
-GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
-HAS_VERTEX_AI = False
-if GCP_PROJECT_ID and not GEMINI_API_KEY: # Prioritize Gemini API Key over Vertex locally to prevent credentials hang
-    try:
-        import vertexai
-        vertexai.init(project=GCP_PROJECT_ID, location=GCP_LOCATION)
-        HAS_VERTEX_AI = True
-        logger.info(f"Vertex AI SDK configured successfully for project: {GCP_PROJECT_ID} in {GCP_LOCATION}")
-    except Exception as e:
-        logger.warning(f"Failed to configure Vertex AI: {e}")
-
-if not HAS_GEMINI_SDK and not HAS_VERTEX_AI:
-    logger.warning("Neither Google AI Studio nor Vertex AI SDK is configured. Running in Smart LLM Emulator fallback mode.")
+if not HAS_GEMINI_SDK or not GEMINI_API_KEY:
+    logger.warning("Google AI Studio SDK is not fully configured (missing package or API key). Running in Smart LLM Emulator fallback mode.")
 
 # Import psycopg2
 try:
@@ -151,6 +139,45 @@ def verify_schema_constraints():
             conn.close()
 
 
+def run_diagnostic_mapping(temp: float, vib: float, pres: float, cur: float, thresholds: Dict[str, float]) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """
+    Returns (diagnosed_component, anomaly_signature, required_part_id) based on combinations:
+    1. High Winding Temp + High Coil Amperage -> Flag 'Stator Winding Insulation Breakdown' (PART-004)
+    2. High Radial Vibration alone or with Temperature -> Flag 'Rotor Shaft Bearing Failure' (PART-001)
+    3. Low/Fluctuating Discharge Pressure + High Coil Amperage -> Flag 'Compression Cylinder Seal Blowby' (PART-002)
+    4. Erratic Coil Amperage Spikes -> Flag 'Electrical Commutator Fault' (PART-004)
+    """
+    t_limit = thresholds.get("temperature", 80.0)
+    v_limit = thresholds.get("vibration", 8.0)
+    p_limit = thresholds.get("pressure", 5.0)
+    c_limit = thresholds.get("current", 15.0)
+    
+    high_temp = t_limit > 0.0 and temp > t_limit
+    high_vib = v_limit > 0.0 and vib > v_limit
+    high_curr = c_limit > 0.0 and cur > c_limit
+    low_pres = p_limit > 0.0 and pres < p_limit
+    
+    # Check combinations
+    if high_temp and high_curr:
+        return "Stator Winding Insulation Breakdown", "High Winding Temp + High Coil Amperage", "PART-004"
+    elif high_vib:
+        return "Rotor Shaft Bearing Failure", "High Radial Vibration alone or with Temperature", "PART-001"
+    elif low_pres and high_curr:
+        return "Compression Cylinder Seal Blowby", "Low/Fluctuating Discharge Pressure + High Coil Amperage", "PART-002"
+    elif high_curr and cur > c_limit * 1.25: # Erratic spike
+        return "Electrical Commutator Fault", "Erratic Coil Amperage Spikes", "PART-004"
+    
+    # Default fallbacks if it's general anomalies
+    if high_temp:
+        return "Stator Winding Insulation Breakdown", "High Winding Temp", "PART-004"
+    if low_pres:
+        return "Compression Cylinder Seal Blowby", "Low Discharge Pressure", "PART-002"
+    if high_curr:
+        return "Electrical Commutator Fault", "High Coil Amperage", "PART-004"
+        
+    return None, None, None
+
+
 # ==============================================================================
 # SMART LLM EMULATOR FALLBACK
 # ==============================================================================
@@ -164,13 +191,32 @@ class SmartLLMEmulator:
     @staticmethod
     def evaluate_anomaly(machine_id: str, machine_name: str, telemetry: List[Dict[str, Any]], thresholds: Dict[str, float]) -> Dict[str, Any]:
         """Mimics the Anomaly Detection Agent's LLM analysis."""
-        # Calculate trends
         temps = [t['temperature'] for t in telemetry]
         vibs = [t['vibration'] for t in telemetry]
         pressures = [t['pressure'] for t in telemetry]
         currents = [t['current'] for t in telemetry]
         
-        # Calculate delta
+        latest_temp = temps[-1] if temps else 0.0
+        latest_vib = vibs[-1] if vibs else 0.0
+        latest_pres = pressures[-1] if pressures else 0.0
+        latest_cur = currents[-1] if currents else 0.0
+        
+        # Run diagnostic mapping to check for threshold breach
+        diag_comp, anom_sig, part_needed = run_diagnostic_mapping(latest_temp, latest_vib, latest_pres, latest_cur, thresholds)
+        
+        if diag_comp:
+            explanation = f"Empirical telemetry analysis for '{machine_name}' confirms operating anomaly: {anom_sig}. Localized component breakdown: {diag_comp}."
+            return {
+                "is_anomaly": True,
+                "machine_id": machine_id,
+                "severity": "Critical" if (latest_temp > thresholds.get("temperature", 80.0)*1.15 or latest_vib > thresholds.get("vibration", 8.0)*1.15) else "Degraded",
+                "explanation": explanation,
+                "diagnosed_component": diag_comp,
+                "anomaly_signature": anom_sig,
+                "required_replacement_part": part_needed
+            }
+            
+        # Delta calculations for trends
         temp_delta = temps[-1] - temps[0] if temps else 0
         vib_delta = vibs[-1] - vibs[0] if vibs else 0
         
@@ -178,71 +224,69 @@ class SmartLLMEmulator:
         reasons = []
         severity = "Healthy"
         
-        # Rule checks
-        for metric, val in [('temperature', temps[-1]), ('vibration', vibs[-1]), ('current', currents[-1])]:
-            limit = thresholds.get(metric, 999.0)
-            if limit > 0.0 and val > limit:
-                is_anomaly = True
-                severity = "Critical" if val > limit * 1.15 else "Degraded"
-                reasons.append(f"Metric '{metric}' crossed critical limit: {val:.2f} > {limit:.2f}")
-                
-        for metric, val in [('pressure', pressures[-1])]:
-            limit = thresholds.get(metric, 0.0)
-            if limit > 0.0 and val < limit:
-                is_anomaly = True
-                severity = "Critical" if val < limit * 0.7 else "Degraded"
-                reasons.append(f"Metric '{metric}' dropped below safety limit: {val:.2f} < {limit:.2f}")
-                
-        # Statistical Trend analysis (statistical anomaly)
-        if not is_anomaly:
-            t_limit = thresholds.get('temperature', 0.0)
-            if t_limit > 0.0 and temp_delta > 15.0 and temps[-1] > t_limit * 0.8:
-                is_anomaly = True
-                severity = "Degraded"
-                reasons.append(f"Statistical Anomaly: High thermal ramp rate detected (+{temp_delta:.2f}°C over last 10 readings).")
+        # Trend checks
+        t_limit = thresholds.get('temperature', 0.0)
+        if t_limit > 0.0 and temp_delta > 15.0 and temps[-1] > t_limit * 0.8:
+            is_anomaly = True
+            severity = "Degraded"
+            reasons.append(f"Statistical Anomaly: High thermal ramp rate detected (+{temp_delta:.2f}°C).")
+            diag_comp = "Stator Winding Insulation Breakdown"
+            anom_sig = "High thermal ramp rate detected"
+            part_needed = "PART-004"
+        
+        v_limit = thresholds.get('vibration', 0.0)
+        if not is_anomaly and v_limit > 0.0 and vib_delta > 3.0 and vibs[-1] > v_limit * 0.7:
+            is_anomaly = True
+            severity = "Degraded"
+            reasons.append(f"Statistical Anomaly: High vibration acceleration slope detected (+{vib_delta:.2f} mm/s).")
+            diag_comp = "Rotor Shaft Bearing Failure"
+            anom_sig = "High vibration acceleration slope detected"
+            part_needed = "PART-001"
             
-            v_limit = thresholds.get('vibration', 0.0)
-            if v_limit > 0.0 and vib_delta > 3.0 and vibs[-1] > v_limit * 0.7:
-                is_anomaly = True
-                severity = "Degraded"
-                reasons.append(f"Statistical Anomaly: High vibration acceleration slope detected (+{vib_delta:.2f} mm/s trend).")
-                
         if is_anomaly:
-            explanation = f"Empirical and statistical telemetry analysis for '{machine_name}' confirms operating anomaly. " + " ".join(reasons)
+            explanation = f"Statistical telemetry analysis for '{machine_name}' confirms operating anomaly. " + " ".join(reasons)
             return {
                 "is_anomaly": True,
                 "machine_id": machine_id,
                 "severity": severity,
-                "explanation": explanation
+                "explanation": explanation,
+                "diagnosed_component": diag_comp,
+                "anomaly_signature": anom_sig,
+                "required_replacement_part": part_needed
             }
         else:
             return {
                 "is_anomaly": False,
                 "machine_id": machine_id,
                 "severity": "Healthy",
-                "explanation": f"All readings within nominal standard operating limits. Temperature mean: {sum(temps)/len(temps):.1f}°C."
+                "explanation": f"All readings within nominal limits."
             }
 
     @staticmethod
-    def diagnose_fault(machine_id: str, telemetry: List[Dict[str, Any]], rag_context: str) -> Dict[str, Any]:
+    def diagnose_fault(machine_id: str, telemetry: List[Dict[str, Any]], rag_context: str, diagnosed_component: Optional[str] = None, required_replacement_part: Optional[str] = None) -> Dict[str, Any]:
         """Mimics the Diagnostic & Root Cause Agent's LLM analysis over manual RAG text."""
-        # Map specific machine IDs to their corresponding RAG faults to prevent context parsing priority bugs
-        if machine_id == "MCH-001":
-            detected_fault = "Rotary gear pump main bearing cage wear and localized race friction"
-            part_needed = "PART-001"  # Heavy-Duty Bearing Assembly (In stock: 15)
-            rul = 36
-        elif machine_id == "MCH-002":
-            detected_fault = "AC stator winding thermal overload and structural blade imbalance"
-            part_needed = "PART-004"  # 3-Phase Electric Motor Winding (Out of stock: 1)
-            rul = 48
-        elif machine_id == "MCH-003":
-            detected_fault = "Centrifugal impeller cavitation leading to hydraulic seal fracture"
-            part_needed = "PART-002"  # High-Pressure Hydraulic Seal (Out of stock: 3)
-            rul = 24
+        if diagnosed_component and required_replacement_part:
+            detected_fault = diagnosed_component
+            part_needed = required_replacement_part
+            rul = 12 if "Bearing" in diagnosed_component else (24 if "Seal" in diagnosed_component else 36)
         else:
-            detected_fault = "Standard mechanical wear and operating friction"
-            part_needed = "PART-001"
-            rul = 72
+            # Map specific machine IDs to their corresponding RAG faults
+            if machine_id == "MCH-001":
+                detected_fault = "Rotary gear pump main bearing cage wear and localized race friction"
+                part_needed = "PART-001"
+                rul = 36
+            elif machine_id == "MCH-002":
+                detected_fault = "AC stator winding thermal overload and structural blade imbalance"
+                part_needed = "PART-004"
+                rul = 48
+            elif machine_id == "MCH-003":
+                detected_fault = "Centrifugal impeller cavitation leading to hydraulic seal fracture"
+                part_needed = "PART-002"
+                rul = 24
+            else:
+                detected_fault = "Standard mechanical wear and operating friction"
+                part_needed = "PART-001"
+                rul = 72
             
         # Refine remaining useful life based on telemetry severity (e.g. vibration magnitude)
         max_vib = max([t['vibration'] for t in telemetry]) if telemetry else 0.0
@@ -268,7 +312,7 @@ class AnomalyDetectionAgent:
     if a machine has crossed rules or shows statistical anomaly trends.
     Uses structured reasoning combining rules and LLM validation.
     """
-    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
         self.agent_name = "AnomalyDetectionAgent (Evaluator)"
 
@@ -283,22 +327,33 @@ class AnomalyDetectionAgent:
             cursor.execute("SELECT id, name, location, status, critical_thresholds FROM machines;")
             machines = cursor.fetchall()
             
+        # Batch load latest 10 telemetry points for all machines
+        telemetry_by_machine = {}
+        logger.info(f"[{self.agent_name}] Batch loading telemetry records for the fleet...")
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT id, machine_id, timestamp, temperature, vibration, pressure, current 
+                FROM (
+                    SELECT id, machine_id, timestamp, temperature, vibration, pressure, current,
+                           ROW_NUMBER() OVER (PARTITION BY machine_id ORDER BY timestamp DESC) as rn
+                    FROM sensor_telemetry
+                ) t
+                WHERE rn <= 10;
+            """)
+            rows = cursor.fetchall()
+            for r in rows:
+                m_id = r['machine_id']
+                if m_id not in telemetry_by_machine:
+                    telemetry_by_machine[m_id] = []
+                telemetry_by_machine[m_id].append(r)
+            
         for m in machines:
             machine_id = m['id']
             machine_name = m['name']
             thresholds = m['critical_thresholds']
             
-            # Fetch latest 10 telemetry points for this machine (composite index utilized here!)
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
-                    SELECT timestamp, temperature, vibration, pressure, current 
-                    FROM sensor_telemetry 
-                    WHERE machine_id = %s 
-                    ORDER BY timestamp DESC 
-                    LIMIT 10;
-                """, (machine_id,))
-                telemetry = cursor.fetchall()
-                
+            telemetry = list(telemetry_by_machine.get(machine_id, []))
+            
             if not telemetry:
                 logger.warning(f"[{self.agent_name}] No telemetry found for machine {machine_id}.")
                 continue
@@ -315,6 +370,22 @@ class AnomalyDetectionAgent:
             else:
                 evaluation = SmartLLMEmulator.evaluate_anomaly(machine_id, machine_name, telemetry, thresholds)
                 
+            # Ensure programmatic physical combinations (Task 2) override and map correctly
+            latest_point = telemetry[-1]
+            d_comp, a_sig, p_needed = run_diagnostic_mapping(
+                latest_point['temperature'], 
+                latest_point['vibration'], 
+                latest_point['pressure'], 
+                latest_point['current'], 
+                thresholds
+            )
+            if d_comp:
+                evaluation['is_anomaly'] = True
+                evaluation['severity'] = evaluation.get('severity') if evaluation.get('severity') != 'Healthy' else 'Degraded'
+                evaluation['diagnosed_component'] = d_comp
+                evaluation['anomaly_signature'] = a_sig
+                evaluation['required_replacement_part'] = p_needed
+                
             logger.info(f"[{self.agent_name}] Machine {machine_id} Evaluation: Anomaly={evaluation['is_anomaly']}, Severity={evaluation['severity']}")
             
             if evaluation['is_anomaly']:
@@ -324,8 +395,18 @@ class AnomalyDetectionAgent:
                         "UPDATE machines SET status = %s, updated_at = NOW() WHERE id = %s;",
                         (evaluation['severity'], machine_id)
                     )
+                    
+                    # Update diagnosed_component and anomaly_signature in sensor_telemetry
+                    latest_id = telemetry[-1]['id']
+                    diag_comp = evaluation.get("diagnosed_component")
+                    anom_sig = evaluation.get("anomaly_signature")
+                    if diag_comp:
+                        cursor.execute(
+                            "UPDATE sensor_telemetry SET diagnosed_component = %s, anomaly_signature = %s WHERE id = %s;",
+                            (diag_comp, anom_sig, latest_id)
+                        )
                 conn.commit()
-                logger.info(f"[{self.agent_name}] Updated PostgreSQL machine '{machine_id}' status to '{evaluation['severity']}'.")
+                logger.info(f"[{self.agent_name}] Updated PostgreSQL machine '{machine_id}' status to '{evaluation['severity']}' and latest telemetry row.")
                 
                 # Add context for next agent handoff
                 evaluation['telemetry_context'] = telemetry
@@ -356,13 +437,11 @@ class AnomalyDetectionAgent:
         - "machine_id": string (must match "{machine_id}")
         - "severity": string ("Healthy", "Degraded", or "Critical")
         - "explanation": string (detailed technical reasoning explaining the statistical anomalies, ramps, and alerts)
+        - "diagnosed_component": string or null (if is_anomaly is true, map it to: "Stator Winding Insulation Breakdown", "Rotor Shaft Bearing Failure", "Compression Cylinder Seal Blowby", or "Electrical Commutator Fault")
+        - "anomaly_signature": string or null (if is_anomaly is true, describe the combination signature e.g. "High Winding Temp + High Coil Amperage")
         """
         try:
-            if HAS_VERTEX_AI:
-                from vertexai.generative_models import GenerativeModel
-                model = GenerativeModel('gemini-1.5-flash')
-            else:
-                model = genai.GenerativeModel('gemini-flash-latest')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
@@ -384,7 +463,7 @@ class DiagnosticAgent:
     collection, performs semantic search to retrieve manual chunks, and uses the LLM
     to diagnose the root cause, estimate Remaining Useful Life (RUL), and identify replacement parts.
     """
-    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
         self.agent_name = "DiagnosticAgent (RAG Analyst)"
 
@@ -457,10 +536,20 @@ class DiagnosticAgent:
         diagnosis = None
         if self.use_llm:
             diagnosis = self._diagnose_with_llm(machine_id, machine_name, telemetry, explanation, rag_context)
+            if anomaly_context.get("diagnosed_component"):
+                diagnosis["diagnosed_component"] = anomaly_context.get("diagnosed_component")
+                diagnosis["anomaly_signature"] = anomaly_context.get("anomaly_signature")
+                diagnosis["required_replacement_part"] = anomaly_context.get("required_replacement_part")
             if custom_part_id:
                 diagnosis['required_replacement_part'] = custom_part_id
         else:
-            diagnosis = SmartLLMEmulator.diagnose_fault(machine_id, telemetry, rag_context)
+            diagnosis = SmartLLMEmulator.diagnose_fault(
+                machine_id, 
+                telemetry, 
+                rag_context,
+                diagnosed_component=anomaly_context.get("diagnosed_component"),
+                required_replacement_part=anomaly_context.get("required_replacement_part")
+            )
             if custom_part_id:
                 diagnosis['required_replacement_part'] = custom_part_id
             
@@ -473,6 +562,11 @@ class DiagnosticAgent:
         diagnosis['severity'] = anomaly_context['severity']
         diagnosis['anomaly_explanation'] = explanation
         diagnosis['rag_context_used'] = rag_context
+        
+        if anomaly_context.get("diagnosed_component"):
+            diagnosis['diagnosed_component'] = anomaly_context.get("diagnosed_component")
+        if anomaly_context.get("anomaly_signature"):
+            diagnosis['anomaly_signature'] = anomaly_context.get("anomaly_signature")
         
         return diagnosis
 
@@ -514,11 +608,7 @@ class DiagnosticAgent:
         - "required_replacement_part": string (must be one of: "PART-001", "PART-002", "PART-003", "PART-004")
         """
         try:
-            if HAS_VERTEX_AI:
-                from vertexai.generative_models import GenerativeModel
-                model = GenerativeModel('gemini-1.5-flash')
-            else:
-                model = genai.GenerativeModel('gemini-flash-latest')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
@@ -541,7 +631,7 @@ class SourcingOptimizationAgent:
     calculates a 'Resilience & Efficiency Score' for each option using an LLM,
     and returns the absolute best supplier to minimize downtime.
     """
-    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
         self.agent_name = "SourcingOptimizationAgent"
 
@@ -632,11 +722,7 @@ class SourcingOptimizationAgent:
         - "reasoning": string (technical justification comparing lead times, risk, and costs, explaining the winning option)
         """
         try:
-            if HAS_VERTEX_AI:
-                from vertexai.generative_models import GenerativeModel
-                model = GenerativeModel('gemini-1.5-flash')
-            else:
-                model = genai.GenerativeModel('gemini-flash-latest')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
@@ -690,17 +776,17 @@ class PlanningToolAgent:
             data["is_in_stock"] = data["stock_level"] > data["reorder_point"]
             return data
 
-    def create_maintenance_order(self, machine_id: str, priority: str, root_cause: str, status: str, assigned_technician: str) -> Dict[str, Any]:
+    def create_maintenance_order(self, machine_id: str, priority: str, root_cause: str, status: str, assigned_technician: str, diagnosed_component: Optional[str] = None, anomaly_signature: Optional[str] = None) -> Dict[str, Any]:
         """Tool: Inserts a new row in the PostgreSQL maintenance_orders table."""
         logger.info(f"[{self.agent_name} Tool] Executing create_maintenance_order status='{status}'...")
         with self.conn.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO maintenance_orders (machine_id, priority, status, root_cause, assigned_technician)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO maintenance_orders (machine_id, priority, status, root_cause, assigned_technician, diagnosed_component, anomaly_signature)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, created_at;
                 """,
-                (machine_id, priority, status, root_cause, assigned_technician)
+                (machine_id, priority, status, root_cause, assigned_technician, diagnosed_component, anomaly_signature)
             )
             order_id, created_at = cursor.fetchone()
         self.conn.commit()
@@ -709,6 +795,8 @@ class PlanningToolAgent:
             "machine_id": machine_id,
             "status": status,
             "priority": priority,
+            "diagnosed_component": diagnosed_component,
+            "anomaly_signature": anomaly_signature,
             "created_at": created_at.isoformat() if isinstance(created_at, datetime.datetime) else str(created_at)
         }
 
@@ -923,7 +1011,7 @@ Industrial Sector AI Automation Network
             }
 
         # 3. Sourcing Optimization
-        sourcing_agent = SourcingOptimizationAgent(use_llm=(HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI)
+        sourcing_agent = SourcingOptimizationAgent(use_llm=(HAS_GEMINI_SDK and GEMINI_API_KEY is not None))
         optimization_res = sourcing_agent.optimize_sourcing(part_name, suppliers)
         best_supplier_id = optimization_res.get("selected_supplier_id")
         
@@ -980,6 +1068,8 @@ Industrial Sector AI Automation Network
         rul = diagnostic_payload['remaining_useful_life_hours']
         required_part = diagnostic_payload['required_replacement_part']
         anomaly_explanation = diagnostic_payload['anomaly_explanation']
+        diagnosed_component = diagnostic_payload.get('diagnosed_component')
+        anomaly_signature = diagnostic_payload.get('anomaly_signature')
         
         logger.info(f"\n>>> Handoff to {self.agent_name} for Action Planning")
         logger.info(f"[{self.agent_name}] Analyzing diagnostic. Required part: {required_part}")
@@ -1018,7 +1108,9 @@ Industrial Sector AI Automation Network
                 priority=priority,
                 root_cause=detailed_cause,
                 status=order_status,
-                assigned_technician=technician
+                assigned_technician=technician,
+                diagnosed_component=diagnosed_component,
+                anomaly_signature=anomaly_signature
             )
             
             return {
@@ -1049,7 +1141,9 @@ Industrial Sector AI Automation Network
                 priority=priority,
                 root_cause=detailed_cause,
                 status="Pending_Sourcing",
-                assigned_technician="Procurement & Logistics Agent"
+                assigned_technician="Procurement & Logistics Agent",
+                diagnosed_component=diagnosed_component,
+                anomaly_signature=anomaly_signature
             )
             order_id = order_res["order_id"]
             
@@ -1084,7 +1178,7 @@ class PredictiveMaintenanceOrchestrator:
     It runs schema updates, executes the scan, routes diagnostics via RAG,
     performs tool executions, and returns comprehensive diagnostic results.
     """
-    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None) or HAS_VERTEX_AI):
+    def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
         verify_schema_constraints()
         
@@ -1150,8 +1244,175 @@ class PredictiveMaintenanceOrchestrator:
         return pipeline_results
 
 
+class MqttTelemetryIngestor:
+    """
+    Subscribes to an EMQX Broker, receives telemetry JSON payloads from factory/machines/+/telemetry,
+    converts real-world physical sensor names to database column names, saves them in Postgres,
+    and runs the Multi-Agent Anomaly Detection & Diagnostics loops on the fly!
+    """
+    def __init__(self, broker_host=None, broker_port=None, username=None, password=None, use_llm=False):
+        self.broker_host = broker_host or os.getenv("MQTT_BROKER_HOST", "broker.emqx.io")
+        self.broker_port = int(broker_port or os.getenv("MQTT_BROKER_PORT", 1883))
+        self.username = username or os.getenv("MQTT_USERNAME")
+        self.password = password or os.getenv("MQTT_PASSWORD")
+        self.use_llm = use_llm
+        self.topic = "factory/machines/+/telemetry"
+        self.client = None
+        self.orchestrator = PredictiveMaintenanceOrchestrator(use_llm=self.use_llm)
+
+    def start(self):
+        import paho.mqtt.client as mqtt
+        
+        try:
+            self.client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+        except Exception:
+            # Fallback for older paho-mqtt versions
+            self.client = mqtt.Client()
+
+        if self.username and self.password:
+            self.client.username_pw_set(self.username, self.password)
+
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+
+        logger.info(f"[MQTT] Connecting to EMQX Broker at {self.broker_host}:{self.broker_port}...")
+        self.client.connect(self.broker_host, self.broker_port, 60)
+        self.client.loop_start()
+
+    def stop(self):
+        if self.client:
+            self.client.loop_stop()
+            self.client.disconnect()
+            logger.info("[MQTT] Disconnected from broker.")
+
+    def on_connect(self, client, userdata, flags, rc, properties=None):
+        logger.info(f"[MQTT] Connected with result code {rc}")
+        client.subscribe(self.topic)
+        logger.info(f"[MQTT] Subscribed to topic: {self.topic}")
+
+    def on_message(self, client, userdata, msg):
+        try:
+            # Extract machine_id from topic (factory/machines/MCH-001/telemetry)
+            parts = msg.topic.split('/')
+            if len(parts) < 3:
+                return
+            machine_id = parts[2]
+            
+            payload = json.loads(msg.payload.decode('utf-8'))
+            logger.info(f"[MQTT] Received telemetry for machine {machine_id}: {payload}")
+            
+            # Map client-side/real-world physical sensor names to database fields
+            temp = float(payload.get("winding_temp") or payload.get("temperature") or 0.0)
+            vib = float(payload.get("radial_vibration") or payload.get("vibration") or 0.0)
+            pres = float(payload.get("discharge_pressure") or payload.get("pressure") or 0.0)
+            cur = float(payload.get("coil_amperage") or payload.get("current") or 0.0)
+            
+            # Connect to PostgreSQL and insert telemetry
+            conn = get_postgres_connection()
+            try:
+                # Retrieve machine critical thresholds
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT name, critical_thresholds FROM machines WHERE id = %s;", (machine_id,))
+                    res = cursor.fetchone()
+                    if not res:
+                        logger.warning(f"[MQTT] Machine {machine_id} not found in database. Skipping ingestion.")
+                        return
+                    machine_name, thresholds = res
+                    if isinstance(thresholds, str):
+                        thresholds = json.loads(thresholds)
+                
+                # Check for thresholds breach and diagnose component
+                diag_comp, anom_sig, part_needed = run_diagnostic_mapping(temp, vib, pres, cur, thresholds)
+                
+                # Insert telemetry row
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current, diagnosed_component, anomaly_signature)
+                        VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s)
+                        RETURNING id;
+                        """,
+                        (machine_id, temp, vib, pres, cur, diag_comp, anom_sig)
+                    )
+                    telemetry_row_id = cursor.fetchone()[0]
+                conn.commit()
+                logger.info(f"[MQTT] Telemetry transacted into database. Row ID: {telemetry_row_id}")
+                
+                # Update machine status in Postgres if anomaly is found or if healthy
+                new_status = "Healthy"
+                severity = "Healthy"
+                if diag_comp:
+                    severity = "Critical" if (temp > thresholds.get("temperature", 80.0)*1.15 or vib > thresholds.get("vibration", 8.0)*1.15) else "Degraded"
+                    new_status = severity
+                
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE machines SET status = %s, updated_at = NOW() WHERE id = %s;",
+                        (new_status, machine_id)
+                    )
+                conn.commit()
+                
+                # If an anomaly is identified, trigger the orchestrator loops automatically
+                if diag_comp:
+                    logger.info(f"[MQTT] Dynamic anomaly detected: {diag_comp}! Triggering maintenance orchestrator loop...")
+                    
+                    # Package anomaly context
+                    anomaly_context = {
+                        "is_anomaly": True,
+                        "machine_id": machine_id,
+                        "machine_name": machine_name,
+                        "severity": severity,
+                        "explanation": f"EMQX Broker Real-time Alert: {anom_sig}. Localized component breakdown: {diag_comp}.",
+                        "diagnosed_component": diag_comp,
+                        "anomaly_signature": anom_sig,
+                        "required_replacement_part": part_needed,
+                        "telemetry_context": [
+                            {"temperature": temp, "vibration": vib, "pressure": pres, "current": cur}
+                        ]
+                    }
+                    
+                    # Run RAG Diagnostics and Sourcing
+                    chroma_cli = get_chroma_client()
+                    
+                    # Run root cause diagnostic
+                    diagnostic_payload = self.orchestrator.diagnostician.diagnose_anomaly(conn, chroma_cli, anomaly_context)
+                    diagnostic_payload["diagnosed_component"] = diag_comp
+                    diagnostic_payload["anomaly_signature"] = anom_sig
+                    diagnostic_payload["required_replacement_part"] = part_needed
+                    
+                    # Plan maintenance & sourcing
+                    action_agent = PlanningToolAgent(conn, chroma_cli)
+                    workflow_res = action_agent.execute_workflow(diagnostic_payload)
+                    
+                    logger.info(f"[MQTT] Autonomous maintenance dispatched successfully. Order ID: #{workflow_res['maintenance_order']['order_id']}")
+                    
+            except Exception as e:
+                logger.error(f"[MQTT] Error processing MQTT telemetry payload: {e}", exc_info=True)
+                if conn:
+                    conn.rollback()
+            finally:
+                if conn:
+                    conn.close()
+                    
+        except Exception as e:
+            logger.error(f"[MQTT] Error parsing MQTT message: {e}")
+
+
 # Execute orchestrator pipeline directly if executed as a main script
 if __name__ == "__main__":
-    orchestrator = PredictiveMaintenanceOrchestrator()
-    results = orchestrator.run_pipeline()
-    print(f"\nPipeline processed {len(results)} anomalies.")
+    import time
+    # Check if MQTT mode is requested or start directly
+    print("Starting Predictive Maintenance Orchestration...")
+    ingestor = MqttTelemetryIngestor()
+    ingestor.start()
+    try:
+        # Also run a fleet scan on start
+        orchestrator = PredictiveMaintenanceOrchestrator()
+        results = orchestrator.run_pipeline()
+        print(f"\nPipeline processed {len(results)} fleet scan anomalies.")
+        # Keep the MQTT client running
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopping ingestor...")
+        ingestor.stop()

@@ -58,3 +58,6 @@ desktop.ini
 ai_chats
 main.tex
 secrets.txt
+
+public_schema.sql
+schema.sql

@@ -20,7 +20,7 @@ export async function HEAD() {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
   if (!cleanDatabaseUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
@@ -30,9 +30,25 @@ export async function GET() {
 
   const client = await pool.connect();
   try {
+    const { searchParams } = new URL(req.url);
+    let workspaceId = searchParams.get("workspace_id");
+    if (!workspaceId) {
+      try {
+        const workspaceRes = await client.query("SELECT id FROM workspaces LIMIT 1;");
+        if (workspaceRes.rows.length > 0) {
+          workspaceId = workspaceRes.rows[0].id;
+        } else {
+          workspaceId = "WS-001";
+        }
+      } catch (e) {
+        workspaceId = "WS-001";
+      }
+    }
+
     // A. Fetch Machines
     const machinesRes = await client.query(
-      "SELECT id, name, location, status, critical_thresholds FROM machines ORDER BY id;"
+      "SELECT id, name, location, status, critical_thresholds FROM machines WHERE workspace_id = $1 ORDER BY id;",
+      [workspaceId]
     );
     const machines = machinesRes.rows.map((row) => ({
       id: row.id,
@@ -42,15 +58,18 @@ export async function GET() {
       critical_thresholds: row.critical_thresholds,
     }));
 
-    // B. Fetch Telemetry History (Latest 15 points per machine) — single windowed query
+    // B. Fetch Telemetry History (Latest 15 points per machine)
     const telemetryRes = await client.query(
-      `SELECT machine_id, timestamp, temperature, vibration, pressure, current
+      `SELECT machine_id, timestamp, temperature, vibration, pressure, current, diagnosed_component, anomaly_signature
        FROM (
-         SELECT *, ROW_NUMBER() OVER (PARTITION BY machine_id ORDER BY timestamp DESC) AS rn
-         FROM sensor_telemetry
+         SELECT t.*, ROW_NUMBER() OVER (PARTITION BY t.machine_id ORDER BY t.timestamp DESC) AS rn
+         FROM sensor_telemetry t
+         JOIN machines m ON t.machine_id = m.id
+         WHERE m.workspace_id = $1
        ) sub
        WHERE rn <= 15
-       ORDER BY machine_id, timestamp ASC;`
+       ORDER BY machine_id, timestamp ASC;`,
+      [workspaceId]
     );
 
     const telemetry = {};
@@ -62,6 +81,8 @@ export async function GET() {
         vibration: row.vibration,
         pressure: row.pressure,
         current: row.current,
+        diagnosed_component: row.diagnosed_component,
+        anomaly_signature: row.anomaly_signature,
       });
     }
 
@@ -80,9 +101,12 @@ export async function GET() {
 
     // D. Fetch Maintenance Orders
     const ordersRes = await client.query(
-      `SELECT id, machine_id, priority, status, root_cause, assigned_technician, created_at, updated_at
-       FROM maintenance_orders
-       ORDER BY id DESC;`
+      `SELECT mo.id, mo.machine_id, mo.priority, mo.status, mo.root_cause, mo.assigned_technician, mo.diagnosed_component, mo.anomaly_signature, mo.created_at, mo.updated_at
+       FROM maintenance_orders mo
+       JOIN machines m ON mo.machine_id = m.id
+       WHERE m.workspace_id = $1
+       ORDER BY mo.id DESC;`,
+      [workspaceId]
     );
     const orders = ordersRes.rows.map((row) => ({
       id: row.id,
@@ -91,6 +115,8 @@ export async function GET() {
       status: row.status,
       root_cause: row.root_cause,
       assigned_technician: row.assigned_technician,
+      diagnosed_component: row.diagnosed_component,
+      anomaly_signature: row.anomaly_signature,
       created_at: row.created_at.toISOString(),
       updated_at: row.updated_at.toISOString(),
     }));

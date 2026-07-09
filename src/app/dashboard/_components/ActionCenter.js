@@ -36,6 +36,7 @@ export default function ActionCenter({
               <tr className={`${theme === 'dark' ? 'bg-[#0f131c] border-[#182030]' : 'bg-slate-50 border-slate-100'} text-slate-500 border-b uppercase tracking-widest text-[9px]`}>
                 <th className="py-3.5 px-5">Ticket ID</th>
                 <th className="py-3.5 px-4">Equipment</th>
+                <th className="py-3.5 px-4">Diagnosed Fault</th>
                 <th className="py-3.5 px-4">Priority</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-4">Assigned Specialist</th>
@@ -53,6 +54,10 @@ export default function ActionCenter({
                       <td className="py-3.5 px-4">
                         <span className={`font-semibold block ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{order.machine_id}</span>
                         <span className="text-[10px] text-slate-500">Autonomous PdM</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`font-semibold block ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{order.diagnosed_component || "N/A"}</span>
+                        <span className="text-[10px] text-slate-500">{order.anomaly_signature || "N/A"}</span>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${

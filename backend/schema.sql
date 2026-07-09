@@ -13,13 +13,24 @@ DROP TABLE IF EXISTS maintenance_orders CASCADE;
 DROP TABLE IF EXISTS inventory CASCADE;
 DROP TABLE IF EXISTS sensor_telemetry CASCADE;
 DROP TABLE IF EXISTS machines CASCADE;
+DROP TABLE IF EXISTS workspaces CASCADE;
 DROP TABLE IF EXISTS machine_reports CASCADE;
 DROP TABLE IF EXISTS admin_accounts CASCADE;
+
+-- 0. WORKSPACES TABLE
+-- Stores workspaces that group fleets of machines.
+CREATE TABLE workspaces (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
 -- 1. MACHINES TABLE
 -- Stores metadata and critical operating thresholds for each piece of equipment.
 CREATE TABLE machines (
     id VARCHAR(50) PRIMARY KEY,
+    workspace_id VARCHAR(50) REFERENCES workspaces(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     location VARCHAR(100) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'Operational', -- e.g., 'Operational', 'Degraded', 'Critical', 'Maintenance'
@@ -34,6 +45,9 @@ CREATE INDEX idx_machines_critical_thresholds ON machines USING gin (critical_th
 -- Optimize status lookups for fleet dashboard filtering
 CREATE INDEX idx_machines_status ON machines (status);
 
+-- Optimize workspace foreign key lookups
+CREATE INDEX idx_machines_workspace ON machines (workspace_id);
+
 
 -- 2. SENSOR TELEMETRY TABLE
 -- Time-series telemetry tracking real-time sensor measurements from active machinery.
@@ -45,6 +59,8 @@ CREATE TABLE sensor_telemetry (
     vibration DOUBLE PRECISION NOT NULL,    -- in mm/s (velocity RMS)
     pressure DOUBLE PRECISION NOT NULL,     -- in Bar
     current DOUBLE PRECISION NOT NULL,      -- in Amperes
+    diagnosed_component VARCHAR(100),       -- localized component breakdown
+    anomaly_signature VARCHAR(100),         -- anomaly signature
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -82,6 +98,8 @@ CREATE TABLE maintenance_orders (
     status VARCHAR(30) NOT NULL DEFAULT 'Pending',   -- Must be Pending, Approved, Dispatched, Pending_Sourcing, Dispatched_Sourcing_Active
     root_cause TEXT,
     assigned_technician VARCHAR(100),
+    diagnosed_component VARCHAR(100),       -- localized component breakdown
+    anomaly_signature VARCHAR(100),         -- anomaly signature
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_maintenance_status CHECK (status IN ('Pending', 'Approved', 'Dispatched', 'Pending_Sourcing', 'Dispatched_Sourcing_Active'))

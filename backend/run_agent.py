@@ -58,6 +58,15 @@ def run_fleet_demo():
         # Close connection so the Orchestrator can take over cleanly
         conn.close()
         
+        # Start MQTT Telemetry Ingestor in background
+        from agent import MqttTelemetryIngestor
+        print("\n[System] Starting MQTT Telemetry Ingestor on background thread...")
+        ingestor = MqttTelemetryIngestor()
+        ingestor.start()
+        
+        import time
+        time.sleep(2)
+        
         orchestrator = PredictiveMaintenanceOrchestrator()
         
         if is_template_demo:
@@ -69,33 +78,57 @@ def run_fleet_demo():
             
             phase1_results = orchestrator.run_pipeline()
             
-            # Step 3: Inject a dynamic anomaly on Machine MCH-002 (High-Speed Industrial Fan B)
+            # Step 3: Publish dynamic anomaly payload over MQTT for Fan B (MCH-002)
             print("\n" + "="*60)
-            print(" PHASE 2: INJECTING Telemetry Anomaly on Fan B (MCH-002)")
-            print(" Expected Outcome: PART-004 is OUT OF STOCK -> Trigger Chroma RAG Reroute")
+            print(" PHASE 2: PUBLISHING Telemetry Anomaly on Fan B (MCH-002) via MQTT")
+            print(" Expected Outcome: Ingested, diagnosed, and dispatched out-of-stock sourcing")
             print("="*60)
             
-            inject_fan_anomaly()
+            publish_mock_telemetry("MCH-002", {
+                "winding_temp": 89.5,
+                "radial_vibration": 4.2,
+                "discharge_pressure": 6.8,
+                "coil_amperage": 22.4
+            })
             
-            # Run the pipeline again to detect, diagnose, and execute on the new anomaly
-            print("\n[System] Re-running Multi-Agent Orchestrator Pipeline...")
-            phase2_results = orchestrator.run_pipeline()
+            # Wait for ingestion and multi-agent pipeline dispatch
+            print("\n[System] Waiting for MQTT Message Ingestion and processing...")
+            time.sleep(3)
+            
         else:
             # Custom Fleet mode
             if len(machines) > 0:
                 target_machine = machines[0]
                 print("\n" + "="*60)
-                print(f" PHASE 1: INJECTING CUSTOM TELEMETRY ANOMALY ON {target_machine['name']} ({target_machine['id']})")
-                print(" Expected Outcome: Detect custom thresholds breach and execute sourcing route")
+                print(f" PHASE 1: PUBLISHING CUSTOM TELEMETRY ANOMALY ON {target_machine['name']} ({target_machine['id']}) via MQTT")
+                print(" Expected Outcome: Ingested, diagnosed and dispatched sourcing route")
                 print("="*60)
                 
-                inject_custom_anomaly(target_machine['id'])
+                # Fetch custom machine thresholds
+                target_id = target_machine['id']
+                target_thresholds = target_machine.get('critical_thresholds') or {}
+                if isinstance(target_thresholds, str):
+                    target_thresholds = json.loads(target_thresholds)
                 
-                print("\n[System] Running Multi-Agent Orchestrator Pipeline on Custom Fleet...")
-                pipeline_results = orchestrator.run_pipeline()
+                t_limit = target_thresholds.get("temperature", 90.0)
+                v_limit = target_thresholds.get("vibration", 8.0)
+                
+                publish_mock_telemetry(target_id, {
+                    "winding_temp": t_limit + 10.0 if t_limit > 0 else 95.0,
+                    "radial_vibration": v_limit + 2.0 if v_limit > 0 else 9.5,
+                    "discharge_pressure": 6.0,
+                    "coil_amperage": 12.0
+                })
+                
+                print("\n[System] Waiting for MQTT Message Ingestion and processing...")
+                time.sleep(3)
             else:
                 print("[System] No machines found in custom fleet to execute simulation.")
                 
+        # Stop Ingestor
+        print("\n[System] Stopping MQTT Ingestor...")
+        ingestor.stop()
+        
         # Step 4: Display Final SQL Database Records
         display_final_database_state()
         
@@ -105,149 +138,23 @@ def run_fleet_demo():
         traceback.print_exc()
 
 
-def inject_fan_anomaly():
-    """Simulates a progressive stator coil thermal overload anomaly on MCH-002 over 24 hours."""
-    print("[Simulator] Simulating stator winding thermal degradation for MCH-002 (High-Speed Industrial Fan B)...")
+def publish_mock_telemetry(machine_id: str, payload: dict):
+    """Publishes a test telemetry message to broker.emqx.io to verify MQTT ingestion."""
+    import paho.mqtt.client as mqtt
     
-    conn = get_postgres_connection()
-    try:
-        # Get Fan thresholds
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT name, critical_thresholds FROM machines WHERE id = 'MCH-002';")
-            res = cursor.fetchone()
-            if not res:
-                print("[Simulator] Machine MCH-002 not found!")
-                return
-            name, thresholds = res
-            
-        # Clean previous telemetry for MCH-002 to load the anomaly telemetry
-        with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM sensor_telemetry WHERE machine_id = 'MCH-002';")
-            
-        now = datetime.datetime.now(datetime.timezone.utc)
-        points = 144  # 24 hours, every 10 minutes
-        
-        # Nominal baselines for Fan B
-        base_temp = 48.0
-        base_vib = 2.1
-        base_pres = 2.0
-        base_cur = 11.0
-        
-        telemetry_records = []
-        
-        for i in range(points):
-            timestamp = now - datetime.timedelta(minutes=10 * (points - i))
-            progress = i / float(points - 1)  # 0.0 to 1.0
-            
-            # Winding degradation profile (exponential growth)
-            deg_factor = progress ** 2.5
-            
-            # Winding Temp climbs from 48C to 89.5C (Threshold is 80.0C)
-            temp = base_temp + (41.5 * deg_factor) + random.uniform(-0.5, 0.5)
-            
-            # Radial Vibration climbs from 2.1 to 12.2 mm/s (Threshold is 10.0 mm/s)
-            vib = base_vib + (10.1 * deg_factor) + random.uniform(-0.1, 0.1)
-            
-            # Fan pressure stays relatively stable but fluctuates slightly
-            pres = base_pres + random.uniform(-0.08, 0.08)
-            
-            # Current spikes from 11.0A to 25.8A (Threshold is 20.0A)
-            cur = base_cur + (14.8 * deg_factor) + random.uniform(-0.2, 0.2)
-            
-            telemetry_records.append(("MCH-002", timestamp, temp, vib, pres, cur))
-            
-        with conn.cursor() as cursor:
-            cursor.executemany(
-                """
-                INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                telemetry_records
-            )
-            
-            # Keep machine status as 'Operational' so that Anomaly Detection Agent detects the change dynamically!
-            cursor.execute("UPDATE machines SET status = 'Operational' WHERE id = 'MCH-002';")
-            
-        conn.commit()
-        print(f"[Simulator] Seeded {len(telemetry_records)} progressive failure telemetry records for MCH-002.")
-        print("[Simulator] Machine MCH-002 status reset to 'Operational' for live evaluation.")
-        
-    except Exception as e:
-        print(f"[Simulator] Failed to inject anomaly: {e}")
-        conn.rollback()
-    finally:
-        conn.close()
-
-
-def inject_custom_anomaly(machine_id):
-    """Simulates a dynamic telemetry failure on any custom machine based on its specific thresholds."""
-    print(f"[Simulator] Analyzing thresholds and preparing failure telemetry for {machine_id}...")
+    broker = os.getenv("MQTT_BROKER_HOST", "broker.emqx.io")
+    port = int(os.getenv("MQTT_BROKER_PORT", 1883))
     
-    conn = get_postgres_connection()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT name, critical_thresholds FROM machines WHERE id = %s;", (machine_id,))
-            res = cursor.fetchone()
-            if not res:
-                print(f"[Simulator] Machine {machine_id} not found!")
-                return
-            name, thresholds = res
-            
-        if isinstance(thresholds, str):
-            thresholds = json.loads(thresholds)
-            
-        # Clean previous telemetry
-        with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM sensor_telemetry WHERE machine_id = %s;", (machine_id,))
-            
-        now = datetime.datetime.now(datetime.timezone.utc)
-        points = 144
+        client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+    except Exception:
+        client = mqtt.Client()
         
-        # Nominal baselines
-        base_temp = thresholds.get("temperature", 90.0) * 0.65
-        base_vib = thresholds.get("vibration", 8.0) * 0.35
-        base_pres = thresholds.get("pressure", 6.5) * 0.95
-        base_cur = thresholds.get("current", 15.0) * 0.75
-        
-        telemetry_records = []
-        
-        for i in range(points):
-            timestamp = now - datetime.timedelta(minutes=10 * (points - i))
-            progress = i / float(points - 1)
-            deg_factor = progress ** 2.5
-            
-            # If a sensor limit is 0.0 (disabled), keep telemetry at 0.0
-            t_limit = thresholds.get("temperature", 90.0)
-            temp = (base_temp + ((t_limit * 1.15 - base_temp) * deg_factor) + random.uniform(-0.5, 0.5)) if t_limit > 0.0 else 0.0
-            
-            v_limit = thresholds.get("vibration", 8.0)
-            vib = (base_vib + ((v_limit * 1.30 - base_vib) * deg_factor) + random.uniform(-0.1, 0.1)) if v_limit > 0.0 else 0.0
-            
-            p_limit = thresholds.get("pressure", 6.5)
-            pres = (base_pres - ((base_pres - p_limit * 0.40) * deg_factor) + random.uniform(-0.05, 0.05)) if p_limit > 0.0 else 0.0
-            
-            c_limit = thresholds.get("current", 15.0)
-            cur = (base_cur + ((c_limit * 1.35 - base_cur) * deg_factor) + random.uniform(-0.2, 0.2)) if c_limit > 0.0 else 0.0
-            
-            telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur))
-            
-        with conn.cursor() as cursor:
-            cursor.executemany(
-                """
-                INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                telemetry_records
-            )
-            cursor.execute("UPDATE machines SET status = 'Operational' WHERE id = %s;", (machine_id,))
-            
-        conn.commit()
-        print(f"[Simulator] Seeded {len(telemetry_records)} progressive custom failure telemetry records for {machine_id}.")
-    except Exception as e:
-        print(f"[Simulator] Failed to inject custom anomaly: {e}")
-        conn.rollback()
-    finally:
-        conn.close()
+    client.connect(broker, port, 60)
+    topic = f"factory/machines/{machine_id}/telemetry"
+    print(f"[MQTT Publisher] Publishing to '{topic}': {payload}")
+    client.publish(topic, json.dumps(payload))
+    client.disconnect()
 
 
 def display_final_database_state():
@@ -268,7 +175,7 @@ def display_final_database_state():
         print("\n--- ALL MAINTENANCE ORDERS DISPATCHED IN DATABASE ---")
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""
-                SELECT id, machine_id, priority, status, assigned_technician, created_at, root_cause 
+                SELECT id, machine_id, priority, status, assigned_technician, created_at, root_cause, diagnosed_component, anomaly_signature 
                 FROM maintenance_orders 
                 ORDER BY id;
             """)
@@ -277,6 +184,7 @@ def display_final_database_state():
             for ord in orders:
                 status_icon = "[APPROVED]" if ord['status'] == "Approved" else ("[PENDING_SOURCING]" if ord['status'] == "Pending_Sourcing" else "[PENDING]")
                 print(f"\n Ticket #{ord['id']} | Machine: {ord['machine_id']} | Priority: {ord['priority']} | Status: {ord['status']} {status_icon}")
+                print(f" Diagnosed Component: {ord.get('diagnosed_component')} | Anomaly Signature: {ord.get('anomaly_signature')}")
                 print(f" Assigned Technician: {ord['assigned_technician']}")
                 print(f" Created: {ord['created_at'].strftime('%Y-%m-%d %H:%M:%S')}")
                 

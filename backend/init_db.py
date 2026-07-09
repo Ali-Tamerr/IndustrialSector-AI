@@ -76,13 +76,17 @@ def initialize_postgres_schema(conn):
 
 
 def seed_postgres_data(conn):
-    """Seeds the machines and inventory tables with baseline operational data."""
-    print("Seeding baseline Machines and Spare Parts Inventory...")
+    """Seeds the workspaces, machines and inventory tables with baseline operational data."""
+    print("Seeding baseline Workspaces, 1000 Fleet Machines, and Spare Parts Inventory...")
     
-    # 1. Seed 3 Machines with structured JSONB critical thresholds
+    # 0. Seed a default workspace
+    default_workspace = ("WS-001", "Primary Production Facility", "Main plant floor fleet control tower.")
+
+    # 1. Seed 3 Machines with structured JSONB critical thresholds + workspace_id
     machines_data = [
         (
             "MCH-001",
+            "WS-001",
             "Rotary Gear Pump A",
             "Bay 3 - Fluids Processing",
             "Operational",
@@ -95,6 +99,7 @@ def seed_postgres_data(conn):
         ),
         (
             "MCH-002",
+            "WS-001",
             "High-Speed Industrial Fan B",
             "Bay 7 - Ventilation and Exhaust",
             "Operational",
@@ -107,6 +112,7 @@ def seed_postgres_data(conn):
         ),
         (
             "MCH-003",
+            "WS-001",
             "Heavy-Duty Compressor C",
             "Bay 12 - Pneumatics & Air Power",
             "Operational",
@@ -118,6 +124,46 @@ def seed_postgres_data(conn):
             })
         )
     ]
+
+    # Generate remaining 997 machines (MCH-004 to MCH-1000)
+    for i in range(4, 1001):
+        mch_id = f"MCH-{i:03d}"
+        asset_type = i % 4
+        if asset_type == 0:
+            name = f"Centrifugal Pump {i}"
+            loc = f"Bay {i % 15 + 1} - Fluids Processing"
+            part = "PART-003"
+            t = 90.0; v = 8.0; p = 6.5; c = 15.0
+        elif asset_type == 1:
+            name = f"Exhaust Fan {i}"
+            loc = f"Bay {i % 15 + 1} - Ventilation"
+            part = "PART-004"
+            t = 80.0; v = 10.0; p = 3.0; c = 20.0
+        elif asset_type == 2:
+            name = f"Compressor Unit {i}"
+            loc = f"Bay {i % 15 + 1} - Pneumatics"
+            part = "PART-002"
+            t = 95.0; v = 7.5; p = 8.5; c = 25.0
+        else:
+            name = f"Motor Drive {i}"
+            loc = f"Bay {i % 15 + 1} - Assembly Line"
+            part = "PART-001"
+            t = 85.0; v = 7.0; p = 5.0; c = 18.0
+
+        machines_data.append((
+            mch_id,
+            "WS-001",
+            name,
+            loc,
+            "Operational",
+            Json({
+                "temperature": t,
+                "vibration": v,
+                "pressure": p,
+                "current": c,
+                "required_part_id": part
+            })
+        ))
     
     # 2. Seed initial spare parts inventory (including parts below reorder points to demonstrate supply chain alerts)
     inventory_data = [
@@ -163,14 +209,25 @@ def seed_postgres_data(conn):
     ]
     
     with conn.cursor() as cursor:
+        # Seed workspace
+        cursor.execute(
+            """
+            INSERT INTO workspaces (id, name, description)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET name = EXCLUDED.name, description = EXCLUDED.description;
+            """,
+            default_workspace
+        )
+
         # Seed machines
         for m in machines_data:
             cursor.execute(
                 """
-                INSERT INTO machines (id, name, location, status, critical_thresholds)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO machines (id, workspace_id, name, location, status, critical_thresholds)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE 
-                SET name = EXCLUDED.name, location = EXCLUDED.location, 
+                SET workspace_id = EXCLUDED.workspace_id, name = EXCLUDED.name, location = EXCLUDED.location, 
                     status = EXCLUDED.status, critical_thresholds = EXCLUDED.critical_thresholds;
                 """,
                 m
@@ -215,49 +272,61 @@ def seed_postgres_data(conn):
             )
             
     conn.commit()
-    print("Structured metadata and supplier graph seeded successfully.")
+    print("Structured workspaces, fleet metadata, and supplier graph seeded successfully.")
 
 
 def generate_baseline_telemetry(conn):
     """
-    Generates 24 hours of stable, healthy telemetry data for all 3 machines
-    to serve as a baseline. Inserts a record every 10 minutes (144 points per machine).
+    Generates baseline telemetry for all 1000 machines.
+    Inserts 15 points per machine (150 minutes of history).
     """
-    print("Generating 24-hour healthy baseline telemetry for all machines...")
+    print("Generating healthy baseline telemetry for all 1,000 machines...")
     now = datetime.datetime.now(datetime.timezone.utc)
-    points_to_generate = 144  # 24 hours * 6 points per hour (every 10 minutes)
+    points_to_generate = 15
     
-    baselines = {
-        "MCH-001": {"temp": 55.0, "vib": 1.8, "pres": 5.2, "cur": 8.2},
-        "MCH-002": {"temp": 48.0, "vib": 2.1, "pres": 2.0, "cur": 11.0},
-        "MCH-003": {"temp": 62.0, "vib": 2.4, "pres": 7.0, "cur": 17.5}
-    }
-    
+    # Retrieve all machine IDs and thresholds
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT id, critical_thresholds FROM machines;")
+        machines = cursor.fetchall()
+        
     telemetry_records = []
     
-    for machine_id, metrics in baselines.items():
+    for machine_id, thresholds in machines:
+        if isinstance(thresholds, str):
+            thresholds = json.loads(thresholds)
+            
+        t_limit = thresholds.get("temperature", 80.0)
+        v_limit = thresholds.get("vibration", 8.0)
+        p_limit = thresholds.get("pressure", 5.0)
+        c_limit = thresholds.get("current", 15.0)
+        
+        # Base healthy values: ~65% of limits
+        base_temp = t_limit * 0.65
+        base_vib = v_limit * 0.35
+        base_pres = p_limit * 0.95
+        base_cur = c_limit * 0.75
+        
         for i in range(points_to_generate):
-            # Calculate timestamp going back in time
             timestamp = now - datetime.timedelta(minutes=10 * (points_to_generate - i))
             
-            # Stable baseline with small random fluctuation (normal operational state)
-            temp = metrics["temp"] + random.uniform(-1.2, 1.2)
-            vib = metrics["vib"] + random.uniform(-0.15, 0.15)
-            pres = metrics["pres"] + random.uniform(-0.1, 0.1)
-            cur = metrics["cur"] + random.uniform(-0.3, 0.3)
+            temp = base_temp + random.uniform(-1.0, 1.0)
+            vib = base_vib + random.uniform(-0.15, 0.15)
+            pres = base_pres + random.uniform(-0.1, 0.1)
+            cur = base_cur + random.uniform(-0.3, 0.3)
             
-            telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur))
+            # Columns: machine_id, timestamp, temperature, vibration, pressure, current, diagnosed_component, anomaly_signature
+            telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur, None, None))
             
     with conn.cursor() as cursor:
         cursor.executemany(
             """
-            INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current, diagnosed_component, anomaly_signature)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             telemetry_records
         )
     conn.commit()
-    print(f"Seeded {len(telemetry_records)} normal sensor readings.")
+    print(f"Seeded {len(telemetry_records)} normal sensor readings for 1,000 machines.")
 
 
 # ==============================================================================
@@ -322,14 +391,19 @@ def trigger_anomaly(conn, machine_id):
         # Current spikes from 8.2 Amps to 17.5 Amps (Threshold is 15.0 Amps, indicating motor strain)
         cur = base_cur + (9.3 * deg_factor) + random.uniform(-0.3, 0.3)
         
-        telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur))
+        # High Radial Vibration alone or with Temperature -> Flag 'Rotor Shaft Bearing Failure'
+        is_anomaly_point = progress > 0.85
+        diag_comp = 'Rotor Shaft Bearing Failure' if is_anomaly_point else None
+        anom_sig = 'High Radial Vibration alone or with Temperature' if is_anomaly_point else None
+        
+        telemetry_records.append((machine_id, timestamp, temp, vib, pres, cur, diag_comp, anom_sig))
         
     # Write degradation telemetry to PostgreSQL
     with conn.cursor() as cursor:
         cursor.executemany(
             """
-            INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO sensor_telemetry (machine_id, timestamp, temperature, vibration, pressure, current, diagnosed_component, anomaly_signature)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             telemetry_records
         )
@@ -355,11 +429,11 @@ def trigger_anomaly(conn, machine_id):
         
         cursor.execute(
             """
-            INSERT INTO maintenance_orders (machine_id, priority, status, root_cause, assigned_technician)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO maintenance_orders (machine_id, priority, status, root_cause, assigned_technician, diagnosed_component, anomaly_signature)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
-            (machine_id, 'High', 'Pending', root_cause_msg, 'Sarah Jenkins (PdM Specialist)')
+            (machine_id, 'High', 'Pending', root_cause_msg, 'Sarah Jenkins (PdM Specialist)', 'Rotor Shaft Bearing Failure', 'High Radial Vibration alone or with Temperature')
         )
         order_id = cursor.fetchone()[0]
         
