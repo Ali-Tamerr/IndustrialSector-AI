@@ -1,0 +1,4 @@
+# Pyrefly configuration
+# Points the type checker at the project's virtual environment
+# so it can resolve all installed backend packages.
+python_interpreter = ".venv/Scripts/python.exe"
