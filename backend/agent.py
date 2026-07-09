@@ -28,19 +28,20 @@ CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
 CHROMA_TENANT = os.getenv("CHROMA_TENANT")
 CHROMA_DATABASE = os.getenv("CHROMA_DATABASE", "IndustrialSector")
 
-# Attempt importing google.generativeai for LLM support
+# Attempt importing google.genai (new Google AI SDK) for LLM support
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY")
 HAS_GEMINI_SDK = False
+_genai_client = None
 try:
-    import google.generativeai as genai
+    from google import genai
     HAS_GEMINI_SDK = True
     if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        logger.info("Google Generative AI SDK configured successfully.")
+        _genai_client = genai.Client(api_key=GEMINI_API_KEY)
+        logger.info("Google AI SDK (google-genai) configured successfully.")
     else:
         logger.warning("GEMINI_API_KEY not found in environment.")
 except ImportError:
-    logger.warning("google-generativeai package not found.")
+    logger.warning("google-genai package not found.")
 
 if not HAS_GEMINI_SDK or not GEMINI_API_KEY:
     logger.warning("Google AI Studio SDK is not fully configured (missing package or API key). Running in Smart LLM Emulator fallback mode.")
@@ -441,10 +442,10 @@ class AnomalyDetectionAgent:
         - "anomaly_signature": string or null (if is_anomaly is true, describe the combination signature e.g. "High Winding Temp + High Coil Amperage")
         """
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            response = _genai_client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt,
+                config={"response_mime_type": "application/json"}
             )
             data = json.loads(response.text.strip())
             return data
@@ -608,10 +609,10 @@ class DiagnosticAgent:
         - "required_replacement_part": string (must be one of: "PART-001", "PART-002", "PART-003", "PART-004")
         """
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            response = _genai_client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt,
+                config={"response_mime_type": "application/json"}
             )
             data = json.loads(response.text.strip())
             return data
@@ -722,10 +723,10 @@ class SourcingOptimizationAgent:
         - "reasoning": string (technical justification comparing lead times, risk, and costs, explaining the winning option)
         """
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            response = _genai_client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt,
+                config={"response_mime_type": "application/json"}
             )
             data = json.loads(response.text.strip())
             return data
