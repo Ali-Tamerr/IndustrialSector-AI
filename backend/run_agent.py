@@ -26,7 +26,8 @@ def run_fleet_demo():
         # Step 1: Ensure database is populated.
         with conn.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) FROM machines;")
-            machine_count = cursor.fetchone()[0]
+            row = cursor.fetchone()
+            machine_count = row[0] if row is not None else 0
             
         if machine_count == 0:
             print("[System] PostgreSQL is uninitialized. Running 'python init_db.py' first...")

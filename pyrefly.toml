@@ -2,3 +2,6 @@
 # Points the type checker at the project's virtual environment
 # so it can resolve all installed backend packages.
 python_interpreter = ".venv/Scripts/python.exe"
+
+# backend/ is a standalone Python package root (run_agent.py imports agent.py directly)
+search_path = ["backend"]

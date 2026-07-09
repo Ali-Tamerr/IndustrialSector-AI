@@ -442,11 +442,15 @@ class AnomalyDetectionAgent:
         - "anomaly_signature": string or null (if is_anomaly is true, describe the combination signature e.g. "High Winding Temp + High Coil Amperage")
         """
         try:
+            if _genai_client is None:
+                raise RuntimeError("Gemini client not initialised — missing API key.")
             response = _genai_client.models.generate_content(
                 model='gemini-1.5-flash',
                 contents=prompt,
                 config={"response_mime_type": "application/json"}
             )
+            if response.text is None:
+                raise RuntimeError("Empty response from Gemini API.")
             data = json.loads(response.text.strip())
             return data
         except Exception as e:
@@ -609,11 +613,15 @@ class DiagnosticAgent:
         - "required_replacement_part": string (must be one of: "PART-001", "PART-002", "PART-003", "PART-004")
         """
         try:
+            if _genai_client is None:
+                raise RuntimeError("Gemini client not initialised — missing API key.")
             response = _genai_client.models.generate_content(
                 model='gemini-1.5-flash',
                 contents=prompt,
                 config={"response_mime_type": "application/json"}
             )
+            if response.text is None:
+                raise RuntimeError("Empty response from Gemini API.")
             data = json.loads(response.text.strip())
             return data
         except Exception as e:
@@ -723,11 +731,15 @@ class SourcingOptimizationAgent:
         - "reasoning": string (technical justification comparing lead times, risk, and costs, explaining the winning option)
         """
         try:
+            if _genai_client is None:
+                raise RuntimeError("Gemini client not initialised — missing API key.")
             response = _genai_client.models.generate_content(
                 model='gemini-1.5-flash',
                 contents=prompt,
                 config={"response_mime_type": "application/json"}
             )
+            if response.text is None:
+                raise RuntimeError("Empty response from Gemini API.")
             data = json.loads(response.text.strip())
             return data
         except Exception as e:
@@ -1335,7 +1347,10 @@ class MqttTelemetryIngestor:
                         """,
                         (machine_id, temp, vib, pres, cur, diag_comp, anom_sig)
                     )
-                    telemetry_row_id = cursor.fetchone()[0]
+                    row = cursor.fetchone()
+                    if row is None:
+                        raise RuntimeError("INSERT INTO sensor_telemetry returned no row ID.")
+                    telemetry_row_id = row[0]
                 conn.commit()
                 logger.info(f"[MQTT] Telemetry transacted into database. Row ID: {telemetry_row_id}")
                 
