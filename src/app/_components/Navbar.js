@@ -265,41 +265,7 @@ export default function Navbar({
           </>
         ) : (
           <div className="hidden lg:flex items-center space-x-3.5">
-            <Link
-              href="/dashboard"
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark' 
-                  ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white' 
-                  : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Control Tower</span>
-            </Link>
-
-            <Link
-              href="/device"
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark' 
-                  ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white' 
-                  : 'bg-emerald-50 text-indigo-700 border-emerald-202/85 hover:bg-emerald-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Device Client</span>
-            </Link>
-
-            <button
-              onClick={() => setShowTestForm(true)}
-              className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
-                theme === 'dark' 
-                  ? 'bg-cyan-955/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white' 
-                  : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white shadow-sm'
-              }`}
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>Simulate Report</span>
-            </button>
+          
           </div>
         )}
 
@@ -531,40 +497,7 @@ export default function Navbar({
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                      theme === 'dark' ? 'bg-indigo-950/20 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white' : 'bg-indigo-50 text-indigo-700 border-indigo-200/85 hover:bg-indigo-600 hover:text-white'
-                    }`}
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Control Tower</span>
-                  </Link>
-
-                  <Link
-                    href="/device"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                      theme === 'dark' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white' : 'bg-emerald-50 text-indigo-700 border-emerald-202/85 hover:bg-emerald-600 hover:text-white'
-                    }`}
-                  >
-                    <Sliders className="w-3.5 h-3.5" />
-                    <span>Device Client</span>
-                  </Link>
-
-                  <button
-                    onClick={() => {
-                      setShowTestForm(true);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
-                      theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white' : 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-600 hover:text-white'
-                    }`}
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Simulate Report</span>
-                  </button>
+                  
                 </>
               )}
 
