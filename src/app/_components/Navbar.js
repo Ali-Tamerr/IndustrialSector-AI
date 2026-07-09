@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 import { 
   Cpu, 
   HelpCircle, 
@@ -16,7 +18,8 @@ import {
   ArrowLeft,
   PlusCircle,
   User,
-  LogOut
+  LogOut,
+  LogIn
 } from "lucide-react";
 import Link from "next/link";
 
@@ -49,15 +52,17 @@ export default function Navbar({
   setMobileSimDropdownOpen,
 
   // Admin-specific props
-  setShowTestForm,
-  showUserDropdown,
-  setShowUserDropdown,
-  handleLogout,
-  image,
-  name,
-  email,
-  adminId
+  setShowTestForm
 }) {
+  const { data: session, status } = useSession();
+  const [localShowUserDropdown, setLocalShowUserDropdown] = useState(false);
+
+  const userImage = session?.user?.image || "";
+  const userName = session?.user?.name || "";
+  const userEmail = session?.user?.email || "";
+  const userAdminId = session?.user?.adminId || "";
+  const isLoggedIn = status === "authenticated";
+
   return (
     <header className={`border-b ${
       theme === 'dark' 
@@ -295,70 +300,88 @@ export default function Navbar({
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Simulate Report</span>
             </button>
-
-            {/* Google / User Account Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 active:scale-95 ${
-                  theme === 'dark' 
-                    ? 'bg-slate-900 border-[#182030] text-slate-300 hover:bg-slate-800' 
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
-                }`}
-              >
-                {image ? (
-                  <img 
-                    src={image} 
-                    alt={name || "Admin"} 
-                    className="w-4 h-4 rounded-full object-cover border border-cyan-500/30"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <User className="w-3.5 h-3.5 text-cyan-400" />
-                )}
-                <span>{name || email || adminId || "Admin"}</span>
-                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${showUserDropdown ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showUserDropdown && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowUserDropdown(false)} />
-                  <div className={`absolute right-0 mt-2 w-48 rounded border shadow-xl z-50 transition-all duration-300 animate-fadeIn ${
-                    theme === 'dark' 
-                      ? 'bg-[#0c0f17] border-[#182030] text-slate-300' 
-                      : 'bg-white border-slate-200 text-slate-700'
-                  }`}>
-                    <div className="p-1">
-                      <button
-                        onClick={() => {
-                          setShowUserDropdown(false);
-                          handleLogout();
-                        }}
-                        className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-red-400 hover:bg-red-500/10 rounded transition-colors text-left"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         )}
 
-        {/* Common Theme Toggle Button */}
-        <button
-          onClick={toggleTheme}
-          className={`p-2.5 rounded-full border transition-all duration-300 flex items-center justify-center active:scale-95 ${
-            theme === 'dark'
-              ? 'bg-slate-950/40 border-slate-800 text-yellow-400 hover:bg-slate-900 hover:text-yellow-300 hover:scale-105 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-              : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-105'
-          }`}
-          title="Toggle Light/Dark Theme"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+        {/* Unified Profile / Account Dropdown always visible */}
+        <div className="relative">
+          <button
+            onClick={() => setLocalShowUserDropdown(!localShowUserDropdown)}
+            className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-305 flex items-center space-x-1.5 active:scale-95 ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-[#182030] text-slate-300 hover:bg-slate-800' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
+            }`}
+          >
+            {userImage ? (
+              <img 
+                src={userImage} 
+                alt={userName || "User"} 
+                className="w-4 h-4 rounded-full object-cover border border-cyan-500/30"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <User className="w-3.5 h-3.5 text-cyan-400" />
+            )}
+            <span>{userName || userEmail || userAdminId || "Guest"}</span>
+            <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-305 ${localShowUserDropdown ? 'rotate-180' : ''}`} />
+          </button>
+
+          {localShowUserDropdown && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setLocalShowUserDropdown(false)} />
+              <div className={`absolute right-0 mt-2 w-48 rounded border shadow-xl z-50 transition-all duration-300 animate-fadeIn ${
+                theme === 'dark' 
+                  ? 'bg-[#0c0f17] border-[#182030] text-slate-300' 
+                  : 'bg-white border-slate-200 text-slate-705'
+              }`}>
+                <div className="p-1.5 space-y-1">
+                  
+                  {/* Theme Toggle option inside dropdown */}
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                      setLocalShowUserDropdown(false);
+                    }}
+                    className={`w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold rounded transition-colors text-left ${
+                      theme === 'dark' 
+                        ? 'text-yellow-400 hover:bg-slate-800' 
+                        : 'text-indigo-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                    <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                  </button>
+
+                  <div className={`border-t my-1 ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-100'}`} />
+
+                  {/* Auth Actions */}
+                  {isLoggedIn ? (
+                    <button
+                      onClick={() => {
+                        setLocalShowUserDropdown(false);
+                        signOut();
+                      }}
+                      className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-red-400 hover:bg-red-500/10 rounded transition-colors text-left"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  ) : (
+                    <Link
+                      href="/"
+                      onClick={() => setLocalShowUserDropdown(false)}
+                      className="w-full flex items-center gap-2 py-2 px-3 text-[11px] font-mono uppercase font-bold text-cyan-400 hover:bg-cyan-500/10 rounded transition-colors text-left"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>Admin Login</span>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Mobile Menu Toggle Button */}
         <button
@@ -542,33 +565,48 @@ export default function Navbar({
                     <PlusCircle className="w-3.5 h-3.5" />
                     <span>Simulate Report</span>
                   </button>
+                </>
+              )}
 
-                  <div className="border-t border-slate-200/20 pt-2.5 mt-1">
-                    <div className={`flex items-center justify-between px-3 py-2 rounded border ${
-                      theme === 'dark' ? 'bg-slate-900 border-[#182030] text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-                    }`}>
-                      <div className="flex items-center space-x-2">
-                        {image ? (
-                          <img src={image} alt="User" className="w-5 h-5 rounded-full object-cover" />
-                        ) : (
-                          <User className="w-4 h-4 text-cyan-400" />
-                        )}
-                        <span className="truncate max-w-[120px] font-mono text-xs">{name || email || "Admin"}</span>
-                      </div>
+              {/* Mobile Profile & Theme Toggle card at the bottom */}
+              <div className="border-t border-slate-200/20 pt-2.5 mt-1">
+                <div className={`flex items-center justify-between px-3 py-2 rounded border ${
+                  theme === 'dark' ? 'bg-slate-900 border-[#182030] text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    {userImage ? (
+                      <img src={userImage} alt="User" className="w-5 h-5 rounded-full object-cover" />
+                    ) : (
+                      <User className="w-4 h-4 text-cyan-400" />
+                    )}
+                    <span className="truncate max-w-[100px] font-mono text-xs">{userName || userEmail || "Guest"}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={toggleTheme}
+                      className={`p-1.5 rounded-full transition-colors ${
+                        theme === 'dark' ? 'text-yellow-400 hover:bg-slate-800' : 'text-indigo-600 hover:bg-slate-200'
+                      }`}
+                      title="Toggle Light/Dark Theme"
+                    >
+                      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+                    {isLoggedIn && (
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          handleLogout();
+                          signOut();
                         }}
-                        className="text-red-400 hover:text-red-500"
+                        className="text-red-400 hover:text-red-500 p-1.5"
                         title="Sign Out"
                       >
                         <LogOut className="w-4 h-4" />
                       </button>
-                    </div>
+                    )}
                   </div>
-                </>
-              )}
+                </div>
+              </div>
+
             </div>
           </div>
         )}

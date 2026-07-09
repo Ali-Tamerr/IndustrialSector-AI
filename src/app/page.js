@@ -31,17 +31,12 @@ export default function AdminPage() {
 
   const { data: session, status } = useSession();
 
-  const [name, setName] = useState("");
-  const [image, setImage] = useState("");
-
   // Sync Google session with local state variables
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       setIsLoggedIn(true);
       if (session.user.adminId) setAdminId(session.user.adminId);
       if (session.user.email) setEmail(session.user.email);
-      if (session.user.name) setName(session.user.name);
-      if (session.user.image) setImage(session.user.image);
     } else if (status === "unauthenticated") {
       setIsLoggedIn(false);
     }
@@ -51,7 +46,6 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("approved"); // approved or notifications
   const [adminView, setAdminView] = useState("dashboard"); // dashboard or reports
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleApproveReport = async (reportId) => {
@@ -217,9 +211,6 @@ export default function AdminPage() {
     return total;
   }, [fleetData]);
 
-  const handleLogout = () => {
-    signOut();
-  };
 
 
   const handleSendTestReport = async (e) => {
@@ -394,13 +385,6 @@ export default function AdminPage() {
         theme={theme}
         toggleTheme={toggleTheme}
         setShowTestForm={setShowTestForm}
-        showUserDropdown={showUserDropdown}
-        setShowUserDropdown={setShowUserDropdown}
-        handleLogout={handleLogout}
-        image={image}
-        name={name}
-        email={email}
-        adminId={adminId}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />
