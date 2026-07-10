@@ -2040,7 +2040,7 @@ Industrial Sector AI Automation Network`;
                   <span>Database & AI Setup</span>
                 </h2>
                 <p className={`text-[11px] mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Configure database connection and Gemini keys stored locally in ~/.industrial_control_tower/.env
+                  Overwrite the existing credentials with your custom ones
                 </p>
               </div>
 
@@ -2049,7 +2049,7 @@ Industrial Sector AI Automation Network`;
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
-                      PostgreSQL Connection URL (DATABASE_URL)
+                      PostgreSQL Connection URL
                     </label>
                     {dbStatus.checking ? (
                       <span className="text-[9px] font-mono text-cyan-400 flex items-center gap-1 animate-pulse">
@@ -2057,7 +2057,7 @@ Industrial Sector AI Automation Network`;
                       </span>
                     ) : dbStatus.connected ? (
                       <span className="text-[9px] font-mono text-emerald-400 font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Connected
+                        ✓  Connected
                       </span>
                     ) : (
                       <span className="text-[9px] font-mono text-amber-500 font-bold">
@@ -2088,7 +2088,7 @@ Industrial Sector AI Automation Network`;
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
-                      Google Gemini API Key (GEMINI_API_KEY)
+                      Google Gemini API Key 
                     </label>
                     {geminiStatus.configured ? (
                       <span className="text-[9px] font-mono text-emerald-400 font-bold">
@@ -2126,15 +2126,7 @@ Industrial Sector AI Automation Network`;
                   </div>
                 </div>
 
-                {/* Info Text */}
-                <div className={`p-3 rounded-xl border text-[10px] leading-relaxed font-sans ${
-                  theme === 'dark'
-                    ? 'bg-slate-950/40 border-slate-850 text-slate-400'
-                    : 'bg-slate-50 border-slate-200 text-slate-500'
-                }`}>
-                  <span className="font-bold block mb-0.5">💡 Configuration Notice</span>
-                  Providing your Gemini API Key unlocks high-performance automated multi-agent operational forecasting & root cause diagnostic analysis. A local fallback emulator is automatically triggered when no API Key is active.
-                </div>
+                
 
                 {/* Form Buttons */}
                 <div className="flex justify-end gap-3 pt-3 border-t border-slate-500/10 mt-2">
