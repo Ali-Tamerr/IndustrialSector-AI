@@ -39,8 +39,13 @@ let currentConnectionString = null;
 
 function getActivePool() {
   const latestUrl = process.env.DATABASE_URL;
-  const cleanUrl = latestUrl ? latestUrl.split("?")[0] : latestUrl;
-  
+  const cleanUrl = latestUrl ? latestUrl.split("?")[0] : null;
+
+  // If no DATABASE_URL is configured, return null — callers must handle this
+  if (!cleanUrl) {
+    return null;
+  }
+
   if (!activePool || cleanUrl !== currentConnectionString) {
     if (activePool) {
       activePool.end().catch(err => console.error("Error closing old pool:", err));
@@ -48,7 +53,7 @@ function getActivePool() {
     currentConnectionString = cleanUrl;
     activePool = new Pool({
       connectionString: cleanUrl,
-      ssl: cleanUrl && cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
+      ssl: cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
     });
   }
   return activePool;
@@ -56,8 +61,16 @@ function getActivePool() {
 
 // Wrapper object that implements the standard Pool interface used in the app
 const pool = {
-  connect: () => getActivePool().connect(),
-  query: (text, params) => getActivePool().query(text, params),
+  connect: () => {
+    const p = getActivePool();
+    if (!p) throw new Error("Database not configured — set DATABASE_URL in Settings.");
+    return p.connect();
+  },
+  query: (text, params) => {
+    const p = getActivePool();
+    if (!p) throw new Error("Database not configured — set DATABASE_URL in Settings.");
+    return p.query(text, params);
+  },
   end: () => {
     if (activePool) {
       return activePool.end();

@@ -12,7 +12,7 @@ export const authOptions = {
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false;
-      
+
       try {
         // Query database to see if this admin email exists
         const res = await pool.query("SELECT id FROM admin_accounts WHERE email = $1", [user.email]);
@@ -20,7 +20,7 @@ export const authOptions = {
           user.adminId = res.rows[0].id;
           return true;
         }
-        
+
         // Auto-provision a new admin account in the database for Google sign-in
         const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
         const newAdminId = `ADM-${randomHex}`;
@@ -31,8 +31,10 @@ export const authOptions = {
         user.adminId = newAdminId;
         return true;
       } catch (err) {
-        console.error("NextAuth signIn database check failed:", err);
-        return false;
+        // If DB is unavailable (e.g. not yet configured), still allow sign-in
+        // so the app is usable in setup mode without crashing the auth endpoint.
+        console.error("NextAuth signIn database check failed:", err.message);
+        return true;
       }
     },
     async jwt({ token, user }) {
