@@ -19,5 +19,22 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # Create temporary deploy directory
+          mkdir -p ../hf-deploy
+          
+          # Copy files and remove .git/src-tauri to build a clean web tree
+          cp -R . ../hf-deploy/
+          rm -rf ../hf-deploy/.git
+          rm -rf ../hf-deploy/src-tauri
+          
+          # Navigate and initialize a fresh history-less repo
+          cd ../hf-deploy
+          git init -b main
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "deploy: clean web standalone Next.js deployment"
+          
+          # Force push to Hugging Face Space
           git remote add hf https://alitaamrr:$HF_TOKEN@huggingface.co/spaces/alitaamrr/IndustrialSector-AI
-          git push --force hf main
+          git push --force hf main --quiet
