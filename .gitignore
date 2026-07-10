@@ -7,6 +7,13 @@ node_modules/
 /.next/
 /out/
 /build/
+/frontend-dist/
+
+# Desktop/Tauri Build Artifacts
+/dist/
+/src-tauri/resources/
+/desktop-build.log
+/daemon.spec
 
 # Local Environment Variables & Secrets
 .env

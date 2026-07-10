@@ -12,7 +12,7 @@ export default function ThoughtsStream({
         <span>Zone 2: Multi-Agent Execution Log (Thoughts Stream)</span>
       </h2>
       
-      <div className={`bg-[#080a0f] border rounded-xl flex-1 flex flex-col overflow-hidden scanlines shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px] ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-200'}`}>
+      <div className={`bg-[#080a0f] border rounded-xl flex-1 flex flex-col overflow-hidden relative shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px] ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-200'}`}>
         <div className={`border-b px-4 py-2.5 bg-[#0c0f17] flex items-center justify-between font-mono text-[9px] text-slate-505 ${theme === 'dark' ? 'border-[#182030]/80' : 'border-slate-250'}`}>
           <div className="flex items-center space-x-1.5">
             <span className="h-2 w-2 rounded-full bg-red-500/20"></span>

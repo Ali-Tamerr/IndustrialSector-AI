@@ -89,6 +89,11 @@ export default function Navbar({
                 <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'} border`}>
                   {activeProject?.type === "template" ? `${activeProject?.templateId?.toUpperCase()}_TEMPLATE` : "CUSTOM_FLEET"}
                 </span>
+                {typeof window !== "undefined" && window.__TAURI__ && (
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border-emerald-200'} border animate-pulse`}>
+                    DESKTOP_SYNC
+                  </span>
+                )}
               </div>
               <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} font-mono tracking-widest uppercase hidden sm:block`}>
                 Predictive Maintenance & Supply Chain Sourcing Graph

@@ -1,0 +1,45 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Industrial Control Tower",
+  "version": "0.1.0",
+  "identifier": "com.industrialsector.controltower",
+  "build": {
+    "frontendDist": "../frontend-dist",
+    "devUrl": "http://localhost:3160/c-home",
+    "beforeDevCommand": "npm run dev:resources",
+    "beforeBuildCommand": "npm run build:resources"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Industrial Control Tower",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "resources": [
+      "resources/node.exe",
+      "resources/daemon.exe",
+      "resources/standalone/**/*"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  }
+}

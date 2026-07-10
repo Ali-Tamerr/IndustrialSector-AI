@@ -183,3 +183,37 @@ Following the demo run, the PostgreSQL audit table shows the final system state:
 | **#1** | `MCH-001` | High | **`Approved`** | Sarah Jenkins (PdM Specialist) | Bearing cage wear. **IN STOCK** (Stock: 15). Scheduled immediate tech dispatch. |
 | **#2** | `MCH-002` | Critical | **`Dispatched_Sourcing_Active`** | Procurement & Logistics Agent | AC stator winding breakdown. **OUT OF STOCK**. **Rerouted via SKF Munich (5 days, Score: 59.50). Expedited email draft generated.** |
 | **#3** | `MCH-003` | High | **`Dispatched_Sourcing_Active`** | Procurement & Logistics Agent | Cavitation leading to seal fracture. **OUT OF STOCK**. **Rerouted via Parker Hannifin Cleveland (2 days, Score: 82.23). Expedited email draft generated.** |
+
+---
+
+## 🖥️ Standalone Tauri Desktop Client (Zero-Dependency)
+
+The **Industrial Sector AI** control tower is fully wrap-packaged into a native desktop application using **Tauri v2**. It is configured to build as a **completely zero-dependency (standalone)** installer for Windows.
+
+### ⚙️ How it Works under the Hood
+* **Bundled Node.js & Next.js Server**: When Next.js compiles using `output: 'standalone'`, the server logic is minified and self-contained. During the build phase, Tauri packages a portable Node.js executable directly into the application's resources. In production, Tauri resolves this resource path and runs the Next.js server locally on port 3160 using the packaged Node.js binary.
+* **Compiled Python Daemon**: The Python telemetry daemon (`backend/daemon.py`) is compiled using PyInstaller into a standalone executable (`daemon.exe`) that embeds the Python interpreter and all python package dependencies (such as `paho-mqtt`, `psycopg2`, `dotenv`).
+* **Rust Process Supervisor (`src-tauri/src/lib.rs`)**: Tauri manages the lifecycle of these two child processes. It spawns the Next.js server and Python daemon directly from its resources folder and intercepts the exit event to cleanly terminate the process trees, avoiding orphaned background tasks.
+* **Zero Prerequisites**: Recipients can install and run the resulting `.msi` or `.exe` immediately on any Windows computer—even if they do not have Node.js, npm, or Python installed!
+
+### 📦 Building & Distributing the Standalone Installer
+
+To compile the standalone installer on your development machine (requires the Rust toolchain):
+
+1. **Build and Assemble Standalone Resources**:
+   Run the resource bundler script to compile Next.js in standalone mode, compile the Python daemon to an executable, and copy the required local binary files to the Tauri resource directories:
+   ```bash
+   node scripts/build-desktop-resources.js
+   ```
+
+2. **Generate the Tauri Installer Package**:
+   Build the release bundle:
+   ```bash
+   npm run desktop:build
+   ```
+   Tauri will output the installers in:
+   * **Windows Installer (.msi)**: `src-tauri/target/release/bundle/msi/control-tower_0.1.0_x64_en-US.msi`
+   * **Standalone Executable (.exe)**: `src-tauri/target/release/control-tower.exe`
+
+3. **Share & Install**:
+   Send the `.msi` file to other users. They double-click to install, creating desktop/start menu shortcuts to launch the control tower offline or online instantly.

@@ -1549,6 +1549,11 @@ Industrial Sector AI Automation Network`;
               <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-3`}>
                 <Database className={`w-7 h-7 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'} animate-pulse`} />
                 <span>Workspaces</span>
+                {typeof window !== "undefined" && window.__TAURI__ && (
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border-emerald-200'} border animate-pulse`}>
+                    DESKTOP_ACTIVE
+                  </span>
+                )}
               </h1>
               <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} font-sans`}>
                 Manage and monitor your predictive maintenance IoT fleets
