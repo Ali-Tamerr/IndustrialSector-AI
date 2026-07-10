@@ -20,28 +20,49 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if not os.path.exists(dotenv_path):
     dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path, override=True)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-CHROMA_HOST = os.getenv("CHROMA_HOST", "api.trychroma.com")
-CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
-CHROMA_TENANT = os.getenv("CHROMA_TENANT")
-CHROMA_DATABASE = os.getenv("CHROMA_DATABASE", "IndustrialSector")
-
-# Attempt importing google.genai (new Google AI SDK) for LLM support
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY")
-HAS_GEMINI_SDK = False
+DATABASE_URL = None
+CHROMA_HOST = None
+CHROMA_API_KEY = None
+CHROMA_TENANT = None
+CHROMA_DATABASE = None
+GEMINI_API_KEY = None
 _genai_client = None
+HAS_GEMINI_SDK = False
+
 try:
     from google import genai
     HAS_GEMINI_SDK = True
-    if GEMINI_API_KEY:
-        _genai_client = genai.Client(api_key=GEMINI_API_KEY)
-        logger.info("Google AI SDK (google-genai) configured successfully.")
-    else:
-        logger.warning("GEMINI_API_KEY not found in environment.")
 except ImportError:
     logger.warning("google-genai package not found.")
+
+def reload_env_vars():
+    global DATABASE_URL, CHROMA_HOST, CHROMA_API_KEY, CHROMA_TENANT, CHROMA_DATABASE, GEMINI_API_KEY, _genai_client
+    home_dir = os.path.expanduser("~")
+    app_env_path = os.path.join(home_dir, ".industrial_control_tower", ".env")
+    if os.path.exists(app_env_path):
+        load_dotenv(app_env_path, override=True)
+    else:
+        load_dotenv(dotenv_path, override=True)
+
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    CHROMA_HOST = os.getenv("CHROMA_HOST", "api.trychroma.com")
+    CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
+    CHROMA_TENANT = os.getenv("CHROMA_TENANT")
+    CHROMA_DATABASE = os.getenv("CHROMA_DATABASE", "IndustrialSector")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY")
+    
+    if HAS_GEMINI_SDK and GEMINI_API_KEY:
+        try:
+            _genai_client = genai.Client(api_key=GEMINI_API_KEY)
+        except Exception as e:
+            logger.warning(f"Failed to configure Gemini Client: {e}")
+            _genai_client = None
+    else:
+        _genai_client = None
+
+# Initial load
+reload_env_vars()
 
 if not HAS_GEMINI_SDK or not GEMINI_API_KEY:
     logger.warning("Google AI Studio SDK is not fully configured (missing package or API key). Running in Smart LLM Emulator fallback mode.")
@@ -69,6 +90,7 @@ except ImportError:
 
 def get_postgres_connection():
     """Establishes connection to PostgreSQL using the DATABASE_URL."""
+    reload_env_vars()
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is missing from .env!")
     return psycopg2.connect(DATABASE_URL)
@@ -442,6 +464,7 @@ class AnomalyDetectionAgent:
         - "anomaly_signature": string or null (if is_anomaly is true, describe the combination signature e.g. "High Winding Temp + High Coil Amperage")
         """
         try:
+            reload_env_vars()
             if _genai_client is None:
                 raise RuntimeError("Gemini client not initialised — missing API key.")
             response = _genai_client.models.generate_content(
@@ -613,6 +636,7 @@ class DiagnosticAgent:
         - "required_replacement_part": string (must be one of: "PART-001", "PART-002", "PART-003", "PART-004")
         """
         try:
+            reload_env_vars()
             if _genai_client is None:
                 raise RuntimeError("Gemini client not initialised — missing API key.")
             response = _genai_client.models.generate_content(
@@ -731,6 +755,7 @@ class SourcingOptimizationAgent:
         - "reasoning": string (technical justification comparing lead times, risk, and costs, explaining the winning option)
         """
         try:
+            reload_env_vars()
             if _genai_client is None:
                 raise RuntimeError("Gemini client not initialised — missing API key.")
             response = _genai_client.models.generate_content(

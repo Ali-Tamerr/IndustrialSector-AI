@@ -3,6 +3,7 @@ use std::sync::Mutex;
 use std::path::Path;
 use std::net::TcpStream;
 use std::time::{Duration, Instant};
+use std::fs::OpenOptions;
 use tauri::Manager;
 
 struct AppState {
@@ -91,10 +92,35 @@ pub fn run() {
           let standalone_path = resources_path.join("standalone");
           let server_js = standalone_path.join("server.js");
 
+          // Create logs directory and log files in home folder
+          let home_dir = app.path().home_dir().expect("failed to get home directory");
+          let app_dir = home_dir.join(".industrial_control_tower");
+          let logs_dir = app_dir.join("logs");
+          let _ = std::fs::create_dir_all(&logs_dir);
+
+          let daemon_log_file = OpenOptions::new()
+              .create(true)
+              .append(true)
+              .open(logs_dir.join("daemon.log"));
+
+          let nextjs_log_file = OpenOptions::new()
+              .create(true)
+              .append(true)
+              .open(logs_dir.join("nextjs.log"));
+
           println!("[Tauri] Production: Spawning bundled Python Daemon...");
-          let python_proc = Command::new(&daemon_exe)
-              .current_dir(&resources_path)
-              .spawn();
+          let python_proc = if let Ok(stdout_file) = daemon_log_file {
+              let stderr_file = stdout_file.try_clone().unwrap();
+              Command::new(&daemon_exe)
+                  .current_dir(&resources_path)
+                  .stdout(stdout_file)
+                  .stderr(stderr_file)
+                  .spawn()
+          } else {
+              Command::new(&daemon_exe)
+                  .current_dir(&resources_path)
+                  .spawn()
+          };
 
           match python_proc {
               Ok(child) => {
@@ -105,12 +131,24 @@ pub fn run() {
           }
 
           println!("[Tauri] Production: Spawning bundled Next.js server on port 3160...");
-          let next_proc = Command::new(&node_exe)
-              .arg(&server_js)
-              .env("HOSTNAME", "127.0.0.1")
-              .env("PORT", "3160")
-              .current_dir(&standalone_path)
-              .spawn();
+          let next_proc = if let Ok(stdout_file) = nextjs_log_file {
+              let stderr_file = stdout_file.try_clone().unwrap();
+              Command::new(&node_exe)
+                  .arg(&server_js)
+                  .env("HOSTNAME", "127.0.0.1")
+                  .env("PORT", "3160")
+                  .current_dir(&standalone_path)
+                  .stdout(stdout_file)
+                  .stderr(stderr_file)
+                  .spawn()
+          } else {
+              Command::new(&node_exe)
+                  .arg(&server_js)
+                  .env("HOSTNAME", "127.0.0.1")
+                  .env("PORT", "3160")
+                  .current_dir(&standalone_path)
+                  .spawn()
+          };
 
           match next_proc {
               Ok(child) => {

@@ -181,6 +181,15 @@ export default function Home() {
   const [projectDescriptionInput, setProjectDescriptionInput] = useState("");
   const [projectTemplateInput, setProjectTemplateInput] = useState("steel");
 
+  // Key configurations states
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [dbUrlInput, setDbUrlInput] = useState("");
+  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState("");
+  const [dbStatus, setDbStatus] = useState({ connected: false, error: null, checking: false });
+  const [geminiStatus, setGeminiStatus] = useState({ configured: false });
+  const [savingKeys, setSavingKeys] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+
   // Helper to update this tab's active project in localStorage
   const updateTabActiveProject = useCallback((projectId) => {
     if (typeof window === "undefined") return;
@@ -333,8 +342,72 @@ export default function Home() {
     };
   }, [updateTabActiveProject]);
 
+  const fetchKeys = async () => {
+    try {
+      setDbStatus(prev => ({ ...prev, checking: true }));
+      const res = await fetch("/api/setup/keys");
+      const data = await res.json();
+      if (res.ok) {
+        setDbUrlInput(data.DATABASE_URL || "");
+        setGeminiApiKeyInput(data.GEMINI_API_KEY || "");
+        setDbStatus({
+          connected: data.dbConnected,
+          error: data.dbError,
+          checking: false
+        });
+        setGeminiStatus({
+          configured: data.geminiConfigured
+        });
+      } else {
+        setDbStatus(prev => ({ ...prev, checking: false, error: data.error }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch keys:", err);
+      setDbStatus(prev => ({ ...prev, checking: false, error: err.message }));
+    }
+  };
 
+  useEffect(() => {
+    fetchKeys();
+  }, []);
 
+  const handleSaveKeys = async (e) => {
+    if (e) e.preventDefault();
+    setSavingKeys(true);
+    try {
+      const res = await fetch("/api/setup/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          DATABASE_URL: dbUrlInput,
+          GEMINI_API_KEY: geminiApiKeyInput
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDbStatus({
+          connected: data.dbConnected,
+          error: data.dbError,
+          checking: false
+        });
+        setGeminiStatus({
+          configured: data.geminiConfigured
+        });
+        if (data.dbConnected) {
+          alert("Configuration saved! Database connection successful.");
+        } else {
+          alert("Configuration saved, but database connection failed. Please check your credentials.");
+        }
+        setShowSettingsModal(false);
+      } else {
+        alert("Failed to save settings: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Error saving settings: " + err.message);
+    } finally {
+      setSavingKeys(false);
+    }
+  };
 
   const generateDefaultName = (type, templateId) => {
     const customPrefixes = [
@@ -1560,17 +1633,32 @@ Industrial Sector AI Automation Network`;
               </p>
             </div>
             
-            <button
-              onClick={handleOpenNewWorkspace}
-              className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
-                theme === 'dark'
-                  ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
-                  : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-md shadow-cyan-100/50'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              <span>NEW WORKSPACE</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className={`py-2.5 px-4 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
+                  theme === 'dark'
+                    ? 'bg-slate-900/60 border-slate-800 text-slate-350 hover:bg-slate-800 hover:text-white'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
+                }`}
+                title="Database & Gemini Settings"
+              >
+                <Settings className="w-4 h-4 animate-spin-slow" />
+                <span>SETTINGS</span>
+              </button>
+
+              <button
+                onClick={handleOpenNewWorkspace}
+                className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
+                  theme === 'dark'
+                    ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
+                    : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-md shadow-cyan-100/50'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>NEW WORKSPACE</span>
+              </button>
+            </div>
           </div>
 
           {/* Search bar & filter tabs navigation */}
@@ -1928,7 +2016,156 @@ Industrial Sector AI Automation Network`;
           </div>
         )}
 
-       
+        {/* Modal: Global Settings Configurator */}
+        {showSettingsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
+            <div className={`w-full max-w-lg border rounded-2xl p-6 relative flex flex-col max-h-[90vh] overflow-y-auto shadow-2xl transition-all duration-300 ${
+              theme === 'dark'
+                ? 'bg-[#0a0d16] border-[#1b2336] text-slate-200 shadow-cyan-900/10'
+                : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/40'
+            }`}>
+              
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-slate-500/10 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="mb-5">
+                <h2 className={`text-base font-bold font-mono tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-800'} flex items-center gap-2`}>
+                  <Settings className="w-4 h-4" />
+                  <span>Database & AI Setup</span>
+                </h2>
+                <p className={`text-[11px] mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Configure database connection and Gemini keys stored locally in ~/.industrial_control_tower/.env
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveKeys} className="space-y-4">
+                {/* Database URL */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
+                      PostgreSQL Connection URL (DATABASE_URL)
+                    </label>
+                    {dbStatus.checking ? (
+                      <span className="text-[9px] font-mono text-cyan-400 flex items-center gap-1 animate-pulse">
+                        <Activity className="w-3 h-3 animate-spin" /> Testing...
+                      </span>
+                    ) : dbStatus.connected ? (
+                      <span className="text-[9px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Connected
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-mono text-amber-500 font-bold">
+                        ⚠️ Disconnected
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={dbUrlInput}
+                    onChange={(e) => setDbUrlInput(e.target.value)}
+                    placeholder="postgresql://username:password@localhost:5432/dbname"
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
+                      theme === 'dark'
+                        ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
+                    }`}
+                  />
+                  {dbStatus.error && (
+                    <div className="text-[10px] text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg p-2.5 font-mono break-all mt-1">
+                      Connection Error: {dbStatus.error}
+                    </div>
+                  )}
+                </div>
+
+                {/* Gemini API Key */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
+                      Google Gemini API Key (GEMINI_API_KEY)
+                    </label>
+                    {geminiStatus.configured ? (
+                      <span className="text-[9px] font-mono text-emerald-400 font-bold">
+                        ✓ Configured
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-mono text-slate-500">
+                        Fallback Mode Enabled
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      value={geminiApiKeyInput}
+                      onChange={(e) => setGeminiApiKeyInput(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className={`w-full pl-4 pr-10 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
+                        theme === 'dark'
+                          ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500'
+                          : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition"
+                    >
+                      {showApiKey ? (
+                        <span className="text-[10px] font-mono select-none">HIDE</span>
+                      ) : (
+                        <span className="text-[10px] font-mono select-none">SHOW</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Info Text */}
+                <div className={`p-3 rounded-xl border text-[10px] leading-relaxed font-sans ${
+                  theme === 'dark'
+                    ? 'bg-slate-950/40 border-slate-850 text-slate-400'
+                    : 'bg-slate-50 border-slate-200 text-slate-500'
+                }`}>
+                  <span className="font-bold block mb-0.5">💡 Configuration Notice</span>
+                  Providing your Gemini API Key unlocks high-performance automated multi-agent operational forecasting & root cause diagnostic analysis. A local fallback emulator is automatically triggered when no API Key is active.
+                </div>
+
+                {/* Form Buttons */}
+                <div className="flex justify-end gap-3 pt-3 border-t border-slate-500/10 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSettingsModal(false)}
+                    className={`px-4 py-2 rounded-xl font-mono text-[10px] font-bold tracking-wider transition-all border ${
+                      theme === 'dark'
+                        ? 'border-slate-750 bg-transparent text-slate-400 hover:bg-slate-900'
+                        : 'border-slate-300 bg-transparent text-slate-650 hover:bg-slate-105'
+                    }`}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingKeys}
+                    className={`px-4 py-2 rounded-xl font-mono text-[10px] font-bold tracking-wider transition-all border flex items-center gap-1.5 ${
+                      theme === 'dark'
+                        ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30'
+                        : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-sm'
+                    }`}
+                  >
+                    {savingKeys && <Activity className="w-3 h-3 animate-spin" />}
+                    <span>{savingKeys ? "SAVING..." : "SAVE SETTINGS"}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       </div>
     );

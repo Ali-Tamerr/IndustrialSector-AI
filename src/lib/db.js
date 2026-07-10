@@ -1,15 +1,13 @@
 import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
-// Manually load the root .env file to get DATABASE_URL
-let databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
+// Helper to load and parse an env file into process.env
+function loadEnvFile(filePath) {
   try {
-    const envPath = path.resolve(process.cwd(), ".env");
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, "utf8");
+    if (fs.existsSync(filePath)) {
+      const envContent = fs.readFileSync(filePath, "utf8");
       envContent.split("\n").forEach((line) => {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith("#")) return;
@@ -19,19 +17,59 @@ if (!databaseUrl) {
           process.env[key.trim()] = value;
         }
       });
-      databaseUrl = process.env.DATABASE_URL;
     }
   } catch (err) {
-    console.error("Failed to read root .env file:", err);
+    console.error(`Failed to read env file: ${filePath}`, err);
   }
 }
 
-const cleanDatabaseUrl = databaseUrl ? databaseUrl.split("?")[0] : databaseUrl;
+// 1. Load local env file
+loadEnvFile(path.resolve(process.cwd(), ".env"));
 
-const pool = new Pool({
-  connectionString: cleanDatabaseUrl,
-  ssl: cleanDatabaseUrl && cleanDatabaseUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
-});
+// 2. Load ~/.industrial_control_tower/.env (overrides local env)
+const towerEnvPath = path.join(os.homedir(), ".industrial_control_tower", ".env");
+loadEnvFile(towerEnvPath);
+
+// Establish database url variables
+let databaseUrl = process.env.DATABASE_URL;
+export let cleanDatabaseUrl = databaseUrl ? databaseUrl.split("?")[0] : databaseUrl;
+
+let activePool = null;
+let currentConnectionString = null;
+
+function getActivePool() {
+  const latestUrl = process.env.DATABASE_URL;
+  const cleanUrl = latestUrl ? latestUrl.split("?")[0] : latestUrl;
+  
+  if (!activePool || cleanUrl !== currentConnectionString) {
+    if (activePool) {
+      activePool.end().catch(err => console.error("Error closing old pool:", err));
+    }
+    currentConnectionString = cleanUrl;
+    activePool = new Pool({
+      connectionString: cleanUrl,
+      ssl: cleanUrl && cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
+    });
+  }
+  return activePool;
+}
+
+// Wrapper object that implements the standard Pool interface used in the app
+const pool = {
+  connect: () => getActivePool().connect(),
+  query: (text, params) => getActivePool().query(text, params),
+  end: () => {
+    if (activePool) {
+      return activePool.end();
+    }
+    return Promise.resolve();
+  }
+};
+
+export function updateDatabaseUrl(newUrl) {
+  process.env.DATABASE_URL = newUrl;
+  cleanDatabaseUrl = newUrl ? newUrl.split("?")[0] : newUrl;
+}
 
 async function ensureTablesInitialized(client) {
   // Create admin_accounts table
@@ -73,5 +111,5 @@ async function ensureTablesInitialized(client) {
   `);
 }
 
-export { pool, cleanDatabaseUrl, ensureTablesInitialized };
+export { pool, ensureTablesInitialized };
 

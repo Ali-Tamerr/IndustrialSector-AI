@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { pool, cleanDatabaseUrl } from "@/lib/db";
+import { pool, cleanDatabaseUrl, ensureTablesInitialized } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +16,9 @@ export async function POST(req) {
     client = await pool.connect();
     const body = await req.json();
     const { type, templateId, customMachines } = body;
+
+    // Initialize tables if they do not exist yet on a fresh database instance
+    await ensureTablesInitialized(client);
 
     // A. Clear the database tables in correct relational order without blocking concurrent SELECTs
     await client.query("BEGIN;");

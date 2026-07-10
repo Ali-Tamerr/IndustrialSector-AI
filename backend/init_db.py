@@ -21,11 +21,17 @@ except ImportError:
     print("Error: chromadb is not installed. Please install it using 'pip install chromadb'")
     sys.exit(1)
 
-# Load environment variables from the workspace .env file
-dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
-if not os.path.exists(dotenv_path):
-    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path, override=True)
+# Load environment variables from the user's home directory .env or fallback to workspace .env
+home_dir = os.path.expanduser("~")
+app_env_path = os.path.join(home_dir, ".industrial_control_tower", ".env")
+if os.path.exists(app_env_path):
+    load_dotenv(app_env_path, override=True)
+else:
+    dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+    if not os.path.exists(dotenv_path):
+        dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(dotenv_path, override=True)
+
 
 # Retrieve configuration with robust defaults
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/industrial_pdm")
