@@ -348,8 +348,7 @@ export default function Home() {
       const res = await fetch("/api/setup/keys");
       const data = await res.json();
       if (res.ok) {
-        setDbUrlInput(data.DATABASE_URL || "");
-        setGeminiApiKeyInput(data.GEMINI_API_KEY || "");
+        // Intentionally do NOT pre-fill inputs — users must type new values to overwrite
         setDbStatus({
           connected: data.dbConnected,
           error: data.dbError,
