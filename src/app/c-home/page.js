@@ -2067,13 +2067,14 @@ Industrial Sector AI Automation Network`;
                   <input
                     type="text"
                     required
+                    autoComplete="off"
                     value={dbUrlInput}
                     onChange={(e) => setDbUrlInput(e.target.value)}
-                    placeholder="postgresql://username:password@localhost:5432/dbname"
+                    placeholder="postgresql://user:pass@host:5432/dbname"
                     className={`w-full px-4 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
                       theme === 'dark'
-                        ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500'
-                        : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
+                        ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500 [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#0c0f17] [&:-webkit-autofill]:[color:#e2e8f0]'
+                        : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500 [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#f8fafc]'
                     }`}
                   />
                   {dbStatus.error && (
@@ -2102,13 +2103,14 @@ Industrial Sector AI Automation Network`;
                   <div className="relative">
                     <input
                       type={showApiKey ? "text" : "password"}
+                      autoComplete="new-password"
                       value={geminiApiKeyInput}
                       onChange={(e) => setGeminiApiKeyInput(e.target.value)}
                       placeholder="AIzaSy..."
                       className={`w-full pl-4 pr-10 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
                         theme === 'dark'
-                          ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500'
-                          : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
+                          ? 'bg-[#0c0f17] border-[#1b2336] text-slate-200 focus:border-cyan-500 [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#0c0f17] [&:-webkit-autofill]:[color:#e2e8f0]'
+                          : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500 [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#f8fafc]'
                       }`}
                     />
                     <button

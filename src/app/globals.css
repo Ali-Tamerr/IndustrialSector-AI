@@ -29,7 +29,14 @@ body {
   background: #2563eb;
 }
 
-
-
-
-
+/* Override browser autofill white background in dark mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0c0f17 inset !important;
+  box-shadow: 0 0 0 1000px #0c0f17 inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  caret-color: #e2e8f0;
+  transition: background-color 9999s ease-in-out 0s;
+}
