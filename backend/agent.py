@@ -105,14 +105,14 @@ def get_chroma_client():
                     tenant=CHROMA_TENANT,
                     database=CHROMA_DATABASE,
                     api_key=CHROMA_API_KEY,
-                    cloud_host=CHROMA_HOST
+                    cloud_host=CHROMA_HOST or "api.trychroma.com"
                 )
             else:
                 from chromadb.config import Settings
                 return chromadb.HttpClient(
-                    host=CHROMA_HOST,
-                    tenant=CHROMA_TENANT,
-                    database=CHROMA_DATABASE,
+                    host=CHROMA_HOST or "api.trychroma.com",
+                    tenant=CHROMA_TENANT or "default",
+                    database=CHROMA_DATABASE or "default",
                     settings=Settings(
                         chroma_client_auth_provider="chromadb.auth.token_authn.TokenHeaderAuthClientProvider",
                         chroma_client_auth_credentials=CHROMA_API_KEY
