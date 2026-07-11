@@ -214,34 +214,94 @@ export default function Home() {
           if (!mTelemetry || mTelemetry.length === 0) return;
 
           const latest = mTelemetry[mTelemetry.length - 1];
-          const metrics = generateBaselines(machine.id);
+          const hasCustomSensors = machine.sensors && machine.sensors.length > 0;
           const thresholds = machine.critical_thresholds || { temperature: 80, vibration: 10, pressure: 3, current: 20 };
 
-          let tempTarget = metrics.temp;
-          let vibTarget = metrics.vib;
-          let presTarget = metrics.pres;
-          let curTarget = metrics.cur;
+          let newReading = { timestamp: nowStr };
 
-          if (machine.status !== "Operational") {
-            tempTarget = Math.max(latest.temperature, thresholds.temperature || 80.0);
-            vibTarget = Math.max(latest.vibration, thresholds.vibration || 10.0);
-            presTarget = latest.pressure;
-            curTarget = Math.max(latest.current, thresholds.current || 20.0);
+          if (hasCustomSensors) {
+            machine.sensors.forEach((s) => {
+              const nameLower = s.name.toLowerCase();
+              let target = s.current;
+
+              // If degraded/critical, simulate breaching boundaries
+              if (machine.status !== "Operational") {
+                target = s.max * 1.05; // Force anomaly breach
+              }
+
+              const latestVal = latest[s.name] !== undefined ? latest[s.name] :
+                                (nameLower.includes("temp") ? latest.temperature :
+                                 nameLower.includes("vib") ? latest.vibration :
+                                 nameLower.includes("pres") ? latest.pressure :
+                                 nameLower.includes("cur") || nameLower.includes("amp") ? latest.current : s.current);
+
+              const driftCoeff = 0.15;
+              const dev = (s.max - s.min) * 0.05 || 1.0;
+              const nextVal = latestVal + driftCoeff * (target - latestVal) + (Math.random() * dev * 0.5 - dev * 0.25);
+              const clampedVal = parseFloat(Math.max(s.min * 0.5, Math.min(s.max * 1.5, nextVal)).toFixed(2));
+
+              if (nameLower.includes("temp")) {
+                newReading.temperature = clampedVal;
+              } else if (nameLower.includes("vib")) {
+                newReading.vibration = clampedVal;
+              } else if (nameLower.includes("pres")) {
+                newReading.pressure = clampedVal;
+              } else if (nameLower.includes("cur") || nameLower.includes("amp")) {
+                newReading.current = clampedVal;
+              } else {
+                newReading[s.name] = clampedVal;
+              }
+            });
+
+            // Set standard defaults so components don't crash
+            if (newReading.temperature === undefined) newReading.temperature = latest.temperature || 0;
+            if (newReading.vibration === undefined) newReading.vibration = latest.vibration || 0;
+            if (newReading.pressure === undefined) newReading.pressure = latest.pressure || 0;
+            if (newReading.current === undefined) newReading.current = latest.current || 0;
+
+          } else {
+            const metrics = generateBaselines(machine.id);
+            let tempTarget = metrics.temp;
+            let vibTarget = metrics.vib;
+            let presTarget = metrics.pres;
+            let curTarget = metrics.cur;
+
+            if (machine.status !== "Operational") {
+              tempTarget = Math.max(latest.temperature, thresholds.temperature || 80.0);
+              vibTarget = Math.max(latest.vibration, thresholds.vibration || 10.0);
+              presTarget = latest.pressure;
+              curTarget = Math.max(latest.current, thresholds.current || 20.0);
+            }
+
+            const driftCoeff = 0.15;
+            const nextTemp = latest.temperature + driftCoeff * (tempTarget - latest.temperature) + (Math.random() * 0.4 - 0.2);
+            const nextVib = latest.vibration + driftCoeff * (vibTarget - latest.vibration) + (Math.random() * 0.08 - 0.04);
+            const nextPres = latest.pressure + driftCoeff * (presTarget - latest.pressure) + (Math.random() * 0.04 - 0.02);
+            const nextCur = latest.current + driftCoeff * (curTarget - latest.current) + (Math.random() * 0.12 - 0.06);
+
+            newReading.temperature = parseFloat(Math.max(0, nextTemp).toFixed(2));
+            newReading.vibration = parseFloat(Math.max(0, nextVib).toFixed(2));
+            newReading.pressure = parseFloat(Math.max(0, nextPres).toFixed(2));
+            newReading.current = parseFloat(Math.max(0, nextCur).toFixed(2));
           }
 
-          const driftCoeff = 0.15;
-          const nextTemp = latest.temperature + driftCoeff * (tempTarget - latest.temperature) + (Math.random() * 0.4 - 0.2);
-          const nextVib = latest.vibration + driftCoeff * (vibTarget - latest.vibration) + (Math.random() * 0.08 - 0.04);
-          const nextPres = latest.pressure + driftCoeff * (presTarget - latest.pressure) + (Math.random() * 0.04 - 0.02);
-          const nextCur = latest.current + driftCoeff * (curTarget - latest.current) + (Math.random() * 0.12 - 0.06);
-
-          const newReading = {
-            timestamp: nowStr,
-            temperature: parseFloat(Math.max(0, nextTemp).toFixed(2)),
-            vibration: parseFloat(Math.max(0, nextVib).toFixed(2)),
-            pressure: parseFloat(Math.max(0, nextPres).toFixed(2)),
-            current: parseFloat(Math.max(0, nextCur).toFixed(2))
-          };
+          // Check if custom sensor values trigger an automatic critical alert
+          if (hasCustomSensors && machine.status === "Operational") {
+            let isAnomaly = false;
+            machine.sensors.forEach(s => {
+              const nameLower = s.name.toLowerCase();
+              const currentVal = nameLower.includes("temp") ? newReading.temperature :
+                                 nameLower.includes("vib") ? newReading.vibration :
+                                 nameLower.includes("pres") ? newReading.pressure :
+                                 nameLower.includes("cur") || nameLower.includes("amp") ? newReading.current : newReading[s.name];
+              if (currentVal < s.min || currentVal > s.max) {
+                isAnomaly = true;
+              }
+            });
+            if (isAnomaly) {
+              machine.status = "Critical";
+            }
+          }
 
           mTelemetry.push(newReading);
           currentData.telemetry[machine.id] = mTelemetry.slice(-15);

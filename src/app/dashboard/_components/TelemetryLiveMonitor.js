@@ -249,9 +249,32 @@ export default function TelemetryLiveMonitor({
                           )}
                         </div>
                       )}
+
+                      {/* Custom Sensors Rendering inside card if any exist and are not temp/vib/pres/cur */}
+                      {machine.sensors && machine.sensors.filter(s => {
+                        const nameLower = s.name.toLowerCase();
+                        return !nameLower.includes("temp") && !nameLower.includes("vib") && !nameLower.includes("pres") && !nameLower.includes("cur") && !nameLower.includes("amp");
+                      }).length > 0 && (
+                        <div className={`p-3 rounded-lg border text-[10px] font-mono leading-relaxed space-y-1.5 ${
+                          theme === 'dark' ? 'bg-[#182030]/20 border-[#182030]/60 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-650'
+                        }`}>
+                          {machine.sensors.filter(s => {
+                            const nameLower = s.name.toLowerCase();
+                            return !nameLower.includes("temp") && !nameLower.includes("vib") && !nameLower.includes("pres") && !nameLower.includes("cur") && !nameLower.includes("amp");
+                          }).map((s, idx) => {
+                            const sensorVal = latest[s.name] !== undefined ? latest[s.name] : s.current;
+                            return (
+                              <div key={idx} className="flex justify-between items-center">
+                                <span className="opacity-75">{s.name}:</span>
+                                <span className="font-bold">{sensorVal} {s.unit}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="py-8 text-center text-xs text-slate-500 flex-1">No active telemetry signal.</div>
+                    <div className="py-8 text-center text-xs text-slate-555 flex-1">No active telemetry signal.</div>
                   )}
 
                   {/* Action Buttons */}
@@ -347,8 +370,31 @@ export default function TelemetryLiveMonitor({
                         </button>
                       </div>
                       
-                      <div className="flex-1 flex flex-col justify-center space-y-8 pb-4">
-                        {(hasTemp || hasVib) ? (
+                      <div className="flex-1 flex flex-col justify-center space-y-4 pb-4 overflow-y-auto pr-1">
+                        {hasCustomSensors ? (
+                          machine.sensors.map((s, idx) => {
+                            const nameLower = s.name.toLowerCase();
+                            const sensorHistory = data?.telemetry?.[machine.id]?.map(p => {
+                              return p[s.name] !== undefined ? p[s.name] :
+                                     (nameLower.includes("temp") ? p.temperature :
+                                      nameLower.includes("vib") ? p.vibration :
+                                      nameLower.includes("pres") ? p.pressure :
+                                      nameLower.includes("cur") || nameLower.includes("amp") ? p.current : s.current);
+                            }) || [];
+                            const sensorVal = latest[s.name] !== undefined ? latest[s.name] : s.current;
+                            return (
+                              <div key={idx} className="flex flex-col space-y-1.5">
+                                <div className="text-[9px] font-mono tracking-widest text-slate-500 flex justify-between uppercase">
+                                  <span>{s.name}</span>
+                                  <span style={{ color: health.sparkColor }} className="font-bold">{sensorVal} {s.unit}</span>
+                                </div>
+                                <div className={`h-12 w-full rounded-lg border flex items-center justify-center p-1.5 ${theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                                  <Sparkline data={sensorHistory} color={health.sparkColor} width={220} height={40} />
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
                           <>
                             {hasTemp && (
                               <div className="flex flex-col space-y-2">
@@ -374,8 +420,6 @@ export default function TelemetryLiveMonitor({
                               </div>
                             )}
                           </>
-                        ) : (
-                          <div className="text-xs text-slate-555 text-center font-mono">No telemetry graphs available.</div>
                         )}
                       </div>
                     </div>

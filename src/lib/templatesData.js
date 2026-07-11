@@ -271,7 +271,8 @@ export function seedWorkspaceData(type, templateId, customMachinesInput) {
         pressure: getVal(m.thresholds?.pressure, 6.5),
         current: getVal(m.thresholds?.current, 15.0),
         required_part_id: m.thresholds?.required_part_id || "PART-001"
-      }
+      },
+      sensors: m.sensors || []
     }));
     inventoryToSeed = [];
     supplierNodesToSeed = [];
@@ -284,21 +285,59 @@ export function seedWorkspaceData(type, templateId, customMachinesInput) {
   const telemetry = {};
   
   machinesToSeed.forEach(m => {
-    const metrics = generateBaselines(m.id);
     const mTelemetry = [];
-    for (let i = 0; i < pointsToGenerate; i++) {
-      const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
-      const temp = metrics.temp + (Math.random() * 2 - 1);
-      const vib = metrics.vib + (Math.random() * 0.4 - 0.2);
-      const pres = metrics.pres + (Math.random() * 0.2 - 0.1);
-      const cur = metrics.cur + (Math.random() * 0.6 - 0.3);
-      mTelemetry.push({
-        timestamp: timestamp.toISOString(),
-        temperature: parseFloat(temp.toFixed(2)),
-        vibration: parseFloat(vib.toFixed(2)),
-        pressure: parseFloat(pres.toFixed(2)),
-        current: parseFloat(cur.toFixed(2))
-      });
+    
+    // For custom machines, check if they have dynamic sensors defined
+    if (m.sensors && m.sensors.length > 0) {
+      for (let i = 0; i < pointsToGenerate; i++) {
+        const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
+        const reading = { timestamp: timestamp.toISOString() };
+        
+        m.sensors.forEach(s => {
+          // Standardize telemetry fields by key mapping or dynamic names
+          const nameLower = s.name.toLowerCase();
+          const dev = (s.max - s.min) * 0.05 || 1.0;
+          const val = s.current + (Math.random() * dev * 2 - dev);
+          const clampedVal = parseFloat(Math.max(s.min, Math.min(s.max, val)).toFixed(2));
+          
+          if (nameLower.includes("temp")) {
+            reading.temperature = clampedVal;
+          } else if (nameLower.includes("vib")) {
+            reading.vibration = clampedVal;
+          } else if (nameLower.includes("pres")) {
+            reading.pressure = clampedVal;
+          } else if (nameLower.includes("cur") || nameLower.includes("amp")) {
+            reading.current = clampedVal;
+          } else {
+            // Store extra dynamic properties
+            reading[s.name] = clampedVal;
+          }
+        });
+        
+        // Ensure defaults exist so components don't crash
+        if (reading.temperature === undefined) reading.temperature = 0;
+        if (reading.vibration === undefined) reading.vibration = 0;
+        if (reading.pressure === undefined) reading.pressure = 0;
+        if (reading.current === undefined) reading.current = 0;
+        
+        mTelemetry.push(reading);
+      }
+    } else {
+      const metrics = generateBaselines(m.id);
+      for (let i = 0; i < pointsToGenerate; i++) {
+        const timestamp = new Date(now.getTime() - 10 * 60 * 1000 * (pointsToGenerate - i));
+        const temp = metrics.temp + (Math.random() * 2 - 1);
+        const vib = metrics.vib + (Math.random() * 0.4 - 0.2);
+        const pres = metrics.pres + (Math.random() * 0.2 - 0.1);
+        const cur = metrics.cur + (Math.random() * 0.6 - 0.3);
+        mTelemetry.push({
+          timestamp: timestamp.toISOString(),
+          temperature: parseFloat(temp.toFixed(2)),
+          vibration: parseFloat(vib.toFixed(2)),
+          pressure: parseFloat(pres.toFixed(2)),
+          current: parseFloat(cur.toFixed(2))
+        });
+      }
     }
     telemetry[m.id] = mTelemetry;
   });
