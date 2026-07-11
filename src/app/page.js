@@ -296,10 +296,12 @@ export default function AdminPage() {
           <div className={`px-8 py-6 border-b flex items-center gap-4 ${
             theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]' : 'border-slate-200 bg-slate-50'
           }`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-              theme === 'dark' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-            }`}>
-              <ShieldCheck className="w-5 h-5 text-blue-400" />
+            <div className="flex items-center">
+              <img 
+                src={theme === 'dark' ? '/ISAI logo white.png' : '/ISAI logo black.png'} 
+                alt="ISAI Logo" 
+                className="h-8 w-auto object-contain"
+              />
             </div>
             <div>
               <h1 className={`text-base font-bold font-mono tracking-tight ${

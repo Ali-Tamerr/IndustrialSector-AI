@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Activity, Cpu, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Activity, Cpu, Search, Filter, ChevronLeft, ChevronRight, Info } from "lucide-react";
 
 // Inline Sparkline Component using native React SVG paths
 function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
@@ -61,6 +61,7 @@ export default function TelemetryLiveMonitor({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [infoPopupMachineId, setInfoPopupMachineId] = useState(null);
   const itemsPerPage = 12;
 
   // Filter machines based on search query and status filter
@@ -177,7 +178,17 @@ export default function TelemetryLiveMonitor({
 
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className={`font-mono font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{machine.name}</h3>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className={`font-mono font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{machine.name}</h3>
+                        <button
+                          type="button"
+                          onClick={() => setInfoPopupMachineId(infoPopupMachineId === machine.id ? null : machine.id)}
+                          className="text-slate-400 hover:text-cyan-400 p-0.5 rounded transition"
+                          title="View Sensor Threshold Details"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <span className="text-[10px] text-slate-500 font-mono tracking-wider">{machine.id} · {machine.location}</span>
                     </div>
                     <span className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded-full border ${health.bg} flex items-center space-x-1 mr-6`}>
@@ -408,7 +419,7 @@ export default function TelemetryLiveMonitor({
                               </div>
                             )}
                             
-                            {hasVib && (
+                             {hasVib && (
                               <div className="flex flex-col space-y-2">
                                 <div className="text-[10px] font-mono tracking-widest text-slate-500 flex justify-between">
                                   <span>RADIAL VIBRATION</span>
@@ -421,6 +432,84 @@ export default function TelemetryLiveMonitor({
                             )}
                           </>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info Popup Overlay (Min, Max, Current sensor values) */}
+                  {infoPopupMachineId === machine.id && (
+                    <div className={`absolute inset-0 z-20 flex flex-col p-5 backdrop-blur-md transition-all duration-300 ${theme === 'dark' ? 'bg-[#0c0f17]/95' : 'bg-white/95'}`}>
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className={`font-mono text-xs font-bold uppercase tracking-wider flex items-center space-x-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          <Info className="w-4 h-4 text-cyan-400" />
+                          <span>Sensor Bounds (Min/Max)</span>
+                        </h4>
+                        <button 
+                          onClick={() => setInfoPopupMachineId(null)}
+                          className={`p-1 rounded-full ${theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-555 hover:text-slate-808 hover:bg-slate-200'}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                        {(() => {
+                          const sensorList = [];
+                          if (machine.sensors && machine.sensors.length > 0) {
+                            machine.sensors.forEach(s => {
+                              const nameLower = s.name.toLowerCase();
+                              const sensorVal = latest[s.name] !== undefined ? latest[s.name] : s.current;
+                              sensorList.push({
+                                name: s.name,
+                                min: s.min,
+                                max: s.max,
+                                current: sensorVal,
+                                unit: s.unit || ""
+                              });
+                            });
+                          } else {
+                            // Compute default sensor properties from critical thresholds
+                            const thresholds = machine.critical_thresholds || {};
+                            if (thresholds.temperature) {
+                              sensorList.push({ name: "Winding Temperature", min: 20.0, max: thresholds.temperature, current: latest?.temperature || 0, unit: "°C" });
+                            }
+                            if (thresholds.vibration) {
+                              sensorList.push({ name: "Radial Vibration", min: 0.1, max: thresholds.vibration, current: latest?.vibration || 0, unit: "mm/s" });
+                            }
+                            if (thresholds.pressure) {
+                              sensorList.push({ name: "Discharge Pressure", min: 1.0, max: thresholds.pressure, current: latest?.pressure || 0, unit: "Bar" });
+                            }
+                            if (thresholds.current) {
+                              sensorList.push({ name: "Coil Amperage", min: 2.0, max: thresholds.current, current: latest?.current || 0, unit: "A" });
+                            }
+                          }
+
+                          return sensorList.map((s, idx) => (
+                            <div key={idx} className={`p-3 rounded-lg border text-xs font-mono leading-relaxed ${
+                              theme === 'dark' ? 'bg-[#182030]/50 border-slate-700/50' : 'bg-slate-50 border-slate-200'
+                            }`}>
+                              <div className={`font-bold border-b pb-1.5 mb-2 ${theme === 'dark' ? 'border-[#1b2336] text-white' : 'border-slate-200 text-slate-800'}`}>
+                                {s.name}
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-[10px]">
+                                <div>
+                                  <span className="text-slate-500 block">MIN</span>
+                                  <span className="font-semibold text-slate-400">{s.min} {s.unit}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 block">CURRENT</span>
+                                  <span className={`font-semibold ${s.current < s.min || s.current > s.max ? 'text-red-400 font-bold' : 'text-slate-300'}`}>
+                                    {s.current} {s.unit}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 block">MAX</span>
+                                  <span className="font-semibold text-slate-400">{s.max} {s.unit}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
                   )}

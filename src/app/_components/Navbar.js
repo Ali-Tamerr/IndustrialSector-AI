@@ -74,8 +74,12 @@ export default function Navbar({
       <div className="flex items-center space-x-3">
         {pageType === "dashboard" ? (
           <>
-            <div className={`h-8.5 w-8.5 ${theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'} rounded border flex items-center justify-center`}>
-              <Cpu className="w-5 h-5 text-blue-400 animate-pulse" />
+            <div className="flex items-center">
+              <img 
+                src={theme === 'dark' ? '/ISAI logo white.png' : '/ISAI logo black.png'} 
+                alt="ISAI Logo" 
+                className="h-7 w-auto object-contain mr-1"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -83,7 +87,7 @@ export default function Navbar({
                   type="text"
                   value={activeProject?.name || ""}
                   onChange={(e) => handleRenameProject(activeProject?.id, e.target.value)}
-                  className={`bg-transparent border-b border-transparent hover:border-slate-500 focus:border-blue-500 outline-none font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-805'} transition-all w-full max-w-[180px] sm:max-w-[240px] md:max-w-[320px]`}
+                  className={`bg-transparent border-b border-transparent hover:border-slate-500 focus:border-blue-500 outline-none font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-855'} transition-all w-full max-w-[180px] sm:max-w-[240px] md:max-w-[320px]`}
                   placeholder="Unnamed Project"
                 />
                 <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'} border`}>
@@ -102,10 +106,12 @@ export default function Navbar({
           </>
         ) : (
           <>
-            <div className={`h-8.5 w-8.5 rounded border flex items-center justify-center transition-all duration-300 ${
-              theme === 'dark' ? 'bg-blue-600/10 border-blue-500/30 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600'
-            }`}>
-              <ShieldCheck className="w-5 h-5 text-blue-400 animate-pulse" />
+            <div className="flex items-center">
+              <img 
+                src={theme === 'dark' ? '/ISAI logo white.png' : '/ISAI logo black.png'} 
+                alt="ISAI Logo" 
+                className="h-7 w-auto object-contain mr-1"
+              />
             </div>
             <div>
               <h1 className={`text-[16px] font-mono font-extrabold tracking-wider ${
