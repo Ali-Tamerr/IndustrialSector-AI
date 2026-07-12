@@ -69,3 +69,5 @@ secrets.txt
 public_schema.sql
 schema.sql
 backend/schema.sql
+
+page_history.patch
