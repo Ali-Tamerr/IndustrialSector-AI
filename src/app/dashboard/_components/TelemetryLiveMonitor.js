@@ -122,7 +122,6 @@ export default function TelemetryLiveMonitor({
           </div>
 
           <div className="flex items-center space-x-1.5">
-            <Filter className="h-3.5 w-3.5 text-slate-500" />
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -172,7 +171,7 @@ export default function TelemetryLiveMonitor({
                       machine.status === "Operational" ? "bg-emerald-500/10 text-emerald-400" :
                       machine.status === "Degraded" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400"
                     }`}>
-                      {health.label}
+                      {machine.status}
                     </div>
                   </div>
 
@@ -180,21 +179,9 @@ export default function TelemetryLiveMonitor({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <h3 className={`font-mono font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{machine.name}</h3>
-                        <button
-                          type="button"
-                          onClick={() => setInfoPopupMachineId(infoPopupMachineId === machine.id ? null : machine.id)}
-                          className="text-slate-400 hover:text-cyan-400 p-0.5 rounded transition"
-                          title="View Sensor Threshold Details"
-                        >
-                          <Info className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                       <span className="text-[10px] text-slate-500 font-mono tracking-wider">{machine.id} · {machine.location}</span>
                     </div>
-                    <span className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded-full border ${health.bg} flex items-center space-x-1 mr-6`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${health.dot} ${machine.status !== "Operational" ? "animate-ping" : ""}`}></span>
-                      <span>{machine.status.toUpperCase()}</span>
-                    </span>
                   </div>
 
                   {latest ? (
@@ -232,7 +219,7 @@ export default function TelemetryLiveMonitor({
                           )}
                           {hasCurr && (
                             <div>
-                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Coil Amperage</span>
+                              <span className="text-[9px] text-slate-555 uppercase tracking-wider block">Coil Amperage</span>
                               <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
                             </div>
                           )}
@@ -290,6 +277,21 @@ export default function TelemetryLiveMonitor({
 
                   {/* Action Buttons */}
                   <div className={`mt-auto pt-4 border-t flex justify-end items-center space-x-2 z-10 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setInfoPopupMachineId(infoPopupMachineId === machine.id ? null : machine.id)}
+                      className={`flex items-center space-x-1 px-2.5 py-1.5 rounded border transition-all duration-300 ${
+                        infoPopupMachineId === machine.id
+                          ? 'bg-[#182030] border-cyan-400 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
+                          : (theme === 'dark'
+                              ? 'bg-slate-900/80 border-[#2b3548] text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-[#182030]'
+                              : 'bg-white border-slate-200 text-slate-505 hover:text-cyan-600 hover:border-cyan-300 hover:bg-slate-50 shadow-sm')
+                      }`}
+                      title="View Sensor Threshold Details"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+
                     <button 
                       onClick={() => setGraphsPopupMachineId(graphsPopupMachineId === machine.id ? null : machine.id)}
                       className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded border transition-all duration-300 ${

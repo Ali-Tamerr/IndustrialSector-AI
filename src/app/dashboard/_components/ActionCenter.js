@@ -26,7 +26,7 @@ export default function ActionCenter({
     <section id="zone-4" className="space-y-3 transition-all duration-500">
       <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
         <Inbox className="w-3.5 h-3.5 text-blue-400" />
-        <span>Zone 4: Action Center (Active Maintenance Orders)</span>
+        <span>Zone 3: Action Center (Active Maintenance Orders)</span>
       </h2>
 
       <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl overflow-hidden`}>

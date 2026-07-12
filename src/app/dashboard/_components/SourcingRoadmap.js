@@ -14,9 +14,9 @@ export default function SourcingRoadmap({
         <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Settings className="w-3.5 h-3.5 text-blue-400" />
-            <span>Zone 3: Component Sourcing Roadmap</span>
+            <span>Zone 2: Component Sourcing Roadmap</span>
           </div>
-          <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span>
+          {/* <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span> */}
         </h2>
         
         <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-4 flex-1 flex flex-col overflow-y-auto min-h-[460px] max-h-[460px] space-y-3`}>
@@ -39,9 +39,9 @@ export default function SourcingRoadmap({
       <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Settings className="w-3.5 h-3.5 text-blue-400" />
-          <span>Zone 3: Component Sourcing Roadmap</span>
+          <span>Zone 2: Component Sourcing Roadmap</span>
         </div>
-        <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span>
+        {/* <span className="text-[9px] text-slate-500 normal-case tracking-normal font-medium">Real-time supply chain progression tracker</span> */}
       </h2>
 
       <div className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030]' : 'bg-white border-slate-200 shadow-sm'} border rounded-xl p-4 flex-1 flex flex-col overflow-y-auto min-h-[460px] max-h-[460px] space-y-3`}>
