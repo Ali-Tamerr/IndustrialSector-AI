@@ -382,7 +382,9 @@ export default function TelemetryLiveMonitor({
                       </div>
                       
                       <div className="flex-1 flex flex-col justify-center space-y-4 pb-4 overflow-y-auto pr-1">
-                        {hasCustomSensors ? (
+                        {(() => {
+                          const hasCustomSensors = machine.sensors && machine.sensors.length > 0;
+                          return hasCustomSensors ? (
                           machine.sensors.map((s, idx) => {
                             const nameLower = s.name.toLowerCase();
                             const sensorHistory = data?.telemetry?.[machine.id]?.map(p => {
@@ -431,7 +433,8 @@ export default function TelemetryLiveMonitor({
                               </div>
                             )}
                           </>
-                        )}
+                        );
+                      })()}
                       </div>
                     </div>
                   )}
