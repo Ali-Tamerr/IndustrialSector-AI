@@ -104,6 +104,7 @@ export default function Home() {
   const [projectNameInput, setProjectNameInput] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("steel");
   const [activeProjectTabs, setActiveProjectTabs] = useState({});
+  const [showLogPopup, setShowLogPopup] = useState(false);
 
   // Helper to update this tab's active project in localStorage
   const updateTabActiveProject = useCallback((projectId) => {
@@ -1308,6 +1309,7 @@ Industrial Sector AI Automation Network`;
         setMobileMenuOpen={setMobileMenuOpen}
         mobileSimDropdownOpen={mobileSimDropdownOpen}
         setMobileSimDropdownOpen={setMobileSimDropdownOpen}
+        setShowLogPopup={setShowLogPopup}
       />
 
       <main className="p-6 max-w-7xl mx-auto space-y-6">
@@ -1321,13 +1323,7 @@ Industrial Sector AI Automation Network`;
           setComponentsPopupMachineId={setComponentsPopupMachineId}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <ThoughtsStream
-            theme={theme}
-            thoughts={thoughts}
-            thoughtsContainerRef={thoughtsContainerRef}
-          />
-
+        <div className="grid grid-cols-1 gap-6">
           <SourcingRoadmap
             theme={theme}
             data={data}
@@ -1375,6 +1371,54 @@ Industrial Sector AI Automation Network`;
         handleSaveConfig={handleSaveConfig}
         savingConfig={savingConfig}
       />
+
+      {/* Multi-Agent Execution Log Popup Modal */}
+      {showLogPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Glassmorphic Backdrop overlay */}
+          <div 
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-md cursor-pointer"
+            onClick={() => setShowLogPopup(false)}
+          />
+          
+          <div className={`relative w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden transition-all duration-300 transform scale-100 ${
+            theme === 'dark'
+              ? 'bg-[#0a0d14] border-slate-800 shadow-cyan-950/20'
+              : 'bg-white border-slate-200 shadow-slate-200/50'
+          }`}>
+            {/* Modal Header */}
+            <div className={`px-5 py-4 border-b flex items-center justify-between ${
+              theme === 'dark' ? 'border-slate-800 bg-[#0d111b]' : 'border-slate-200 bg-slate-50'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
+                <span className="font-mono text-xs font-bold tracking-wider uppercase">
+                  Multi-Agent Execution Thoughts Stream
+                </span>
+              </div>
+              <button
+                onClick={() => setShowLogPopup(false)}
+                className={`p-1.5 rounded-lg border transition-all ${
+                  theme === 'dark'
+                    ? 'border-slate-800 hover:bg-slate-800/60 text-slate-400 hover:text-white'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-650 hover:text-slate-900'
+                }`}
+              >
+                <span className="font-mono text-xs block px-1">CLOSE ×</span>
+              </button>
+            </div>
+
+            {/* Modal Terminal Panel Content */}
+            <div className="p-5">
+              <ThoughtsStream
+                theme={theme}
+                thoughts={thoughts}
+                thoughtsContainerRef={thoughtsContainerRef}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

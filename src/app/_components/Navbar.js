@@ -50,6 +50,7 @@ export default function Navbar({
   setMobileMenuOpen,
   mobileSimDropdownOpen,
   setMobileSimDropdownOpen,
+  setShowLogPopup,
 
   // Admin-specific props
   setShowTestForm
@@ -200,6 +201,18 @@ export default function Navbar({
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Projects Portal</span>
+              </button>
+
+              <button
+                onClick={() => setShowLogPopup(prev => !prev)}
+                className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
+                  theme === 'dark'
+                    ? 'bg-blue-950/20 text-blue-400 border-blue-500/20 hover:bg-blue-600 hover:text-white'
+                    : 'bg-blue-50 text-blue-700 border-blue-200/80 hover:bg-blue-600 hover:text-white shadow-sm'
+                }`}
+              >
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Agent Execution Log</span>
               </button>
 
               <button

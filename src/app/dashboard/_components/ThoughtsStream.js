@@ -6,11 +6,7 @@ export default function ThoughtsStream({
   thoughtsContainerRef
 }) {
   return (
-    <section id="zone-2" className="lg:col-span-5 space-y-3 flex flex-col transition-all duration-500">
-      <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
-        <Layers className="w-3.5 h-3.5 text-blue-400" />
-        <span>Zone 2: Multi-Agent Execution Log (Thoughts Stream)</span>
-      </h2>
+    <div className="space-y-3 flex flex-col transition-all duration-500 w-full">
       
       <div className={`bg-[#080a0f] border rounded-xl flex-1 flex flex-col overflow-hidden relative shadow-[inset_0_4px_24px_rgba(0,0,0,0.9)] min-h-[460px] max-h-[460px] ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-200'}`}>
         <div className={`border-b px-4 py-2.5 bg-[#0c0f17] flex items-center justify-between font-mono text-[9px] text-slate-505 ${theme === 'dark' ? 'border-[#182030]/80' : 'border-slate-250'}`}>
@@ -46,6 +42,6 @@ export default function ThoughtsStream({
           })}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
