@@ -47,6 +47,7 @@ export default function Home() {
   const [componentsPopupMachineId, setComponentsPopupMachineId] = useState(null);
   const [graphsPopupMachineId, setGraphsPopupMachineId] = useState(null);
   const prevStages = useRef({});
+  const prevMachineStatuses = useRef({});
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -407,6 +408,12 @@ export default function Home() {
                   
                   const refKey = `${proj.id}-${order.id}`;
                   prevStages.current[refKey] = activeStageIndex;
+                });
+              }
+              if (data.machines) {
+                data.machines.forEach(machine => {
+                  const refKey = `${proj.id}-${machine.id}`;
+                  prevMachineStatuses.current[refKey] = machine.status || "Operational";
                 });
               }
             } catch (err) {
@@ -787,11 +794,29 @@ export default function Home() {
             "Stage Advanced",
             `${componentName} (Ticket #${order.id}) moved from ${prevDisplay} → ${nextDisplay}.`
           );
+          setThoughts((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random(),
+              agent: "SourcingOptimizationAgent",
+              type: "sourcing",
+              text: `Sourcing Milestone Achieved: Component '${componentName}' (Ticket #${order.id}) progressed from ${prevDisplay} → ${nextDisplay}.`
+            }
+          ]);
         } else {
           triggerDeviceNotification(
             "Stage Rolled Back",
             `${componentName} (Ticket #${order.id}) reverted from ${prevDisplay} → ${nextDisplay}.`
           );
+          setThoughts((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random(),
+              agent: "SourcingOptimizationAgent",
+              type: "sourcing",
+              text: `Sourcing Milestone Reverted: Component '${componentName}' (Ticket #${order.id}) rolled back from ${prevDisplay} → ${nextDisplay}.`
+            }
+          ]);
         }
       }
 
@@ -824,6 +849,31 @@ export default function Home() {
                 needsSave = true;
               }
             }
+
+            // Monitor status transitions (Operational -> Stable, Degraded -> Warning, Critical -> Anomaly)
+            const refKey = `${activeId}-${machine.id}`;
+            const lastStatus = prevMachineStatuses.current[refKey];
+            const currentStatus = machine.status || "Operational";
+            if (lastStatus !== undefined && currentStatus !== lastStatus) {
+              const statusDisplayMap = {
+                "Operational": "Stable",
+                "Degraded": "Warning",
+                "Critical": "Critical Anomaly"
+              };
+              const prevLabel = statusDisplayMap[lastStatus] || lastStatus;
+              const nextLabel = statusDisplayMap[currentStatus] || currentStatus;
+              
+              setThoughts((prev) => [
+                ...prev,
+                {
+                  id: Date.now() + Math.random(),
+                  agent: "AnomalyDetectionAgent",
+                  type: currentStatus === "Critical" ? "warning" : "info",
+                  text: `Status Shift Alert: Machine '${machine.name}' (${machine.id}) status transitioned from ${prevLabel} → ${nextLabel}.`
+                }
+              ]);
+            }
+            prevMachineStatuses.current[refKey] = currentStatus;
           });
           if (needsSave) {
             localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(parsed));
@@ -839,6 +889,12 @@ export default function Home() {
           if (currentProj) {
             const seeded = seedWorkspaceData(currentProj.type, currentProj.templateId, currentProj.customMachines);
             localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(seeded));
+            if (seeded && seeded.machines) {
+              seeded.machines.forEach(machine => {
+                const refKey = `${activeId}-${machine.id}`;
+                prevMachineStatuses.current[refKey] = machine.status || "Operational";
+              });
+            }
             setData(seeded);
             checkMilestones(activeId, seeded.maintenance_orders, seeded.machines, seeded.inventory);
           } else {
@@ -1032,6 +1088,7 @@ export default function Home() {
         `[AnomalyDetectionAgent (Evaluator)] Evaluating machine ${machineName} (${machineId})...`,
         `[AnomalyDetectionAgent (Evaluator)] Machine ${machineId} Evaluation: Anomaly=true, Severity=Critical`,
         `[AnomalyDetectionAgent (Evaluator)] Updated local machine '${machineId}' status to 'Critical'.`,
+        `[DiagnosticAgent (RAG Analyst)] Predictive analysis initialized: Gemini started diagnosing/predicting component failure for critical asset ${machineId}...`,
         `[DiagnosticAgent (RAG Analyst)] Performing RAG query against Chroma Vector Database...`,
         `[DiagnosticAgent (RAG Analyst)] Successfully retrieved 2 relevant manual chunks from ChromaDB.`,
         `[DiagnosticAgent (RAG Analyst)] Analyzing telemetry alongside operational manuals to isolate root cause...`,
@@ -1178,6 +1235,7 @@ Industrial Sector AI Automation Network`;
           `[PlanningToolAgent (Action)] Executing recursive supplier graph traversal for: ${part_name}`,
           `[SourcingOptimizationAgent] Optimizing sourcing for part '${part_name}' with ${suppliers.length} options...`,
           `[SourcingOptimizationAgent] Chosen '${best_supplier_name}' with score ${best_score.toFixed(2)}.`,
+          `[Orchestrator] AI dispatch: Gemini sent a message to the emailing agent that it should email suppliers (${best_supplier_name}) about replacement part ${required_part}...`,
           `[PlanningToolAgent (Action) Tool] Executing draft_procurement_order for Supplier: ${best_supplier_id}`,
           `[PlanningToolAgent (Action) Tool] Updated maintenance order #${newOrderId} status to 'Dispatched_Sourcing_Active'`,
           `[Orchestrator] Workflow completed for machine: '${machineName}'!`,
@@ -1353,6 +1411,18 @@ Industrial Sector AI Automation Network`;
         theme={theme}
         selectedEmail={selectedEmail}
         setSelectedEmail={setSelectedEmail}
+        onApprove={(email) => {
+          showToast(`Expedited dispatch email to ${email.to} has been approved & successfully transmitted!`, "success");
+          setThoughts((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              agent: "SourcingOptimizationAgent",
+              type: "planning",
+              text: `Manual Override: Procurement request email to '${email.to}' for subject '${email.subject}' approved and dispatched by admin.`
+            }
+          ]);
+        }}
       />
 
       <FleetConfigurator
@@ -1398,16 +1468,47 @@ Industrial Sector AI Automation Network`;
                   Multi-Agent Execution Thoughts Stream
                 </span>
               </div>
-              <button
-                onClick={() => setShowLogPopup(false)}
-                className={`p-1.5 rounded-lg border transition-all ${
-                  theme === 'dark'
-                    ? 'border-slate-800 hover:bg-slate-800/60 text-slate-400 hover:text-white'
-                    : 'border-slate-200 hover:bg-slate-100 text-slate-650 hover:text-slate-900'
-                }`}
-              >
-                <span className="font-mono text-xs block px-1">CLOSE ×</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      showToast("Transmitting multi-agent execution thoughts logs to admin panel...", "info");
+                      await new Promise(resolve => setTimeout(resolve, 800));
+                      
+                      const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
+                      const logPayload = {
+                        projectId: activeId,
+                        timestamp: new Date().toISOString(),
+                        logs: thoughts.map(t => `[${t.agent}] ${t.text}`)
+                      };
+                      
+                      // Save to a local file/db simulated trigger or fetch
+                      localStorage.setItem(`admin_transmission_${activeId}_${Date.now()}`, JSON.stringify(logPayload));
+                      showToast("Multi-agent thoughts stream logs successfully transmitted to Admin!", "success");
+                    } catch (e) {
+                      showToast("Failed to transmit logs to Admin: " + e.message, "error");
+                    }
+                  }}
+                  className={`p-1.5 rounded-lg border transition-all flex items-center space-x-1 font-mono text-xs ${
+                    theme === 'dark'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-600 hover:text-white'
+                      : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white shadow-sm'
+                  }`}
+                  title="Transmit entire execution thoughts stream log to the Admin Control Tower dashboard database"
+                >
+                  <span>✉ Send to Admin</span>
+                </button>
+                <button
+                  onClick={() => setShowLogPopup(false)}
+                  className={`p-1.5 rounded-lg border transition-all ${
+                    theme === 'dark'
+                      ? 'border-slate-800 hover:bg-slate-800/60 text-slate-400 hover:text-white'
+                      : 'border-slate-200 hover:bg-slate-100 text-slate-650 hover:text-slate-900'
+                  }`}
+                >
+                  <span className="font-mono text-xs block px-1">CLOSE ×</span>
+                </button>
+              </div>
             </div>
 
             {/* Modal Terminal Panel Content */}

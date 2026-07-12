@@ -3,7 +3,8 @@ import { Mail } from "lucide-react";
 export default function EmailInspector({
   theme,
   selectedEmail,
-  setSelectedEmail
+  setSelectedEmail,
+  onApprove
 }) {
   if (!selectedEmail) return null;
 
@@ -26,8 +27,8 @@ export default function EmailInspector({
         <div className="p-6 space-y-4">
           <div className={`rounded-lg p-4 font-mono text-xs space-y-1.5 border ${theme === 'dark' ? 'bg-[#06080c] border-[#182030]/80 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
             <div><span className="text-slate-500">From:</span> <span className="text-emerald-400">{selectedEmail.from}</span></div>
-            <div><span className="text-slate-505">To:</span> <span className="text-blue-400">{selectedEmail.to}</span></div>
-            <div><span className="text-slate-505">Subject:</span> <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedEmail.subject}</span></div>
+            <div><span className="text-slate-555">To:</span> <span className="text-blue-400">{selectedEmail.to}</span></div>
+            <div><span className="text-slate-555">Subject:</span> <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedEmail.subject}</span></div>
             <div><span className="text-slate-555">Date:</span> <span className="text-slate-400">{selectedEmail.date}</span></div>
           </div>
           
@@ -45,7 +46,11 @@ export default function EmailInspector({
           </button>
           <button 
             onClick={() => {
-              alert("Expedited dispatch webhook triggered! Order confirmed.");
+              if (onApprove) {
+                onApprove(selectedEmail);
+              } else {
+                alert("Expedited dispatch webhook triggered! Order confirmed.");
+              }
               setSelectedEmail(null);
             }}
             className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors duration-150"
