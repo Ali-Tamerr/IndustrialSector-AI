@@ -11,6 +11,7 @@ import ActionCenter from "@/app/dashboard/_components/ActionCenter";
 import TutorialTour from "@/app/dashboard/_components/TutorialTour";
 import EmailInspector from "@/app/dashboard/_components/EmailInspector";
 import FleetConfigurator from "@/app/dashboard/_components/FleetConfigurator";
+import { useToast } from "@/app/_components/ToastContext";
 
 import {
   PETROCHEMICAL_TEMPLATE,
@@ -26,6 +27,7 @@ const API_BASE = (typeof window !== "undefined" && (window.location.hostname ===
 
 
 export default function Home() {
+  const { showToast, showConfirm } = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [simulating, setSimulating] = useState(false);
@@ -459,7 +461,7 @@ export default function Home() {
     try {
       const finalProjectId = projectId || activeProjectId;
       if (!finalProjectId) {
-        alert("Setup failed: No project active.");
+        showToast("Setup failed: No project active.", "error");
         return;
       }
       
@@ -478,7 +480,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Local setup failed:", err);
-      alert("Local setup failed: " + err.message);
+      showToast("Local setup failed: " + err.message, "error");
     } finally {
       setSeeding(false);
     }
@@ -607,7 +609,7 @@ export default function Home() {
     try {
       const activeId = localStorage.getItem("activeProjectId") || activeProjectId;
       if (!activeId) {
-        alert("Configuration save failed: No project active.");
+        showToast("Configuration save failed: No project active.", "error");
         return;
       }
       
@@ -650,10 +652,10 @@ export default function Home() {
       localStorage.setItem(`workspace_data_${activeId}`, JSON.stringify(currentData));
       setShowEditor(false);
       await refreshData();
-      alert("Factory fleet structure successfully synchronized with Local Storage!");
+      showToast("Factory fleet structure successfully synchronized with Local Storage!", "success");
     } catch (err) {
       console.error("Config save failed:", err);
-      alert("Saving configuration failed: " + err.message);
+      showToast("Saving configuration failed: " + err.message, "error");
     } finally {
       setSavingConfig(false);
     }

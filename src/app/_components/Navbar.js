@@ -22,6 +22,7 @@ import {
   LogIn
 } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/app/_components/ToastContext";
 
 export default function Navbar({
   pageType = "dashboard", // "dashboard" | "admin"
@@ -55,6 +56,7 @@ export default function Navbar({
   // Admin-specific props
   setShowTestForm
 }) {
+  const { showConfirm, showToast } = useToast();
   const { data: session, status } = useSession();
   const [localShowUserDropdown, setLocalShowUserDropdown] = useState(false);
 
@@ -186,12 +188,12 @@ export default function Navbar({
               </Link>
               <button
                 onClick={() => {
-                  if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
+                  showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                     localStorage.removeItem("activeProjectId");
                     localStorage.removeItem("isSetupCompleted");
                     updateTabActiveProject(null);
                     window.location.href = "/c-home";
-                  }
+                  });
                 }}
                 className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
                   theme === 'dark'
@@ -446,12 +448,12 @@ export default function Navbar({
 
                   <button
                     onClick={() => {
-                      if (confirm("Return to Projects Portal?")) {
+                      showConfirm("Return to Projects Portal?", () => {
                         localStorage.removeItem("activeProjectId");
                         localStorage.removeItem("isSetupCompleted");
                         updateTabActiveProject(null);
                         window.location.href = "/c-home";
-                      }
+                      });
                     }}
                     className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
                       theme === 'dark' ? 'bg-cyan-955/20 text-cyan-400 border-cyan-500/20 hover:bg-cyan-600 hover:text-white' : 'bg-cyan-50 text-cyan-700 border-cyan-200/85 hover:bg-cyan-600 hover:text-white'

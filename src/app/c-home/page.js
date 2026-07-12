@@ -10,6 +10,7 @@ import {
   seedWorkspaceData
 } from "@/lib/templatesData";
 import CustomWorkspaceBuilder from "@/app/_components/CustomWorkspaceBuilder";
+import { useToast } from "@/app/_components/ToastContext";
 // We moved to a unified grid view for workspaces, so WorkspaceSidebar and ProjectConfigurator are not rendered directly.
 import { 
   Activity, 
@@ -98,6 +99,7 @@ function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
 
 
 export default function Home() {
+  const { showToast, showConfirm } = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [simulating, setSimulating] = useState(false);
@@ -406,16 +408,16 @@ export default function Home() {
           configured: data.geminiConfigured
         });
         if (data.dbConnected) {
-          alert("Configuration saved! Database connection successful.");
+          showToast("Configuration saved! Database connection successful.", "success");
         } else {
-          alert("Configuration saved, but database connection failed. Please check your credentials.");
+          showToast("Configuration saved, but database connection failed. Please check your credentials.", "warning");
         }
         setShowSettingsModal(false);
       } else {
-        alert("Failed to save settings: " + (data.error || "Unknown error"));
+        showToast("Failed to save settings: " + (data.error || "Unknown error"), "error");
       }
     } catch (err) {
-      alert("Error saving settings: " + err.message);
+      showToast("Error saving settings: " + err.message, "error");
     } finally {
       setSavingKeys(false);
     }
@@ -457,7 +459,7 @@ export default function Home() {
     try {
       const finalProjectId = projectId || activeProjectId;
       if (!finalProjectId) {
-        alert("Setup failed: No project active.");
+        showToast("Setup failed: No project active.", "error");
         return;
       }
       
@@ -476,7 +478,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Local setup failed:", err);
-      alert("Local setup failed: " + err.message);
+      showToast("Local setup failed: " + err.message, "error");
     } finally {
       setSeeding(false);
     }
@@ -563,19 +565,20 @@ export default function Home() {
 
   const handleDeleteProject = (projId, e) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this project config?")) return;
-    
-    const updated = projects.filter(p => p.id !== projId);
-    setProjects(updated);
-    localStorage.setItem("projects", JSON.stringify(updated));
+    showConfirm("Are you sure you want to delete this project config?", () => {
+      const updated = projects.filter(p => p.id !== projId);
+      setProjects(updated);
+      localStorage.setItem("projects", JSON.stringify(updated));
 
-    if (activeProjectId === projId) {
-      setActiveProjectId(null);
-      localStorage.removeItem("activeProjectId");
-      localStorage.removeItem("isSetupCompleted");
-      setIsSetupCompleted(false);
-      updateTabActiveProject(null);
-    }
+      if (activeProjectId === projId) {
+        setActiveProjectId(null);
+        localStorage.removeItem("activeProjectId");
+        localStorage.removeItem("isSetupCompleted");
+        setIsSetupCompleted(false);
+        updateTabActiveProject(null);
+      }
+      showToast("Workspace config successfully deleted.", "success");
+    });
   };
 
   const activeProject = useMemo(() => {
@@ -1624,7 +1627,7 @@ Industrial Sector AI Automation Network`;
     e.stopPropagation();
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(projId);
-      alert(`Workspace ID copied to clipboard: ${projId}`);
+      showToast(`Workspace ID copied to clipboard: ${projId}`, "success");
     }
   };
 

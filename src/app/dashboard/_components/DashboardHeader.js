@@ -13,6 +13,7 @@ import {
   X 
 } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/app/_components/ToastContext";
 
 export default function DashboardHeader({
   theme,
@@ -39,6 +40,7 @@ export default function DashboardHeader({
   mobileSimDropdownOpen,
   setMobileSimDropdownOpen
 }) {
+  const { showConfirm } = useToast();
   return (
     <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300`}>
       <div className="flex items-center space-x-3">
@@ -115,12 +117,12 @@ export default function DashboardHeader({
           </Link>
           <button
             onClick={() => {
-              if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
+              showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                 localStorage.removeItem("activeProjectId");
                 localStorage.removeItem("isSetupCompleted");
                 updateTabActiveProject(null);
                 window.location.href = "/c-home";
-              }
+              });
             }}
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
               theme === 'dark'
@@ -292,12 +294,12 @@ export default function DashboardHeader({
 
               <button
                 onClick={() => {
-                  if (confirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.")) {
+                  showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                     localStorage.removeItem("activeProjectId");
                     localStorage.removeItem("isSetupCompleted");
                     updateTabActiveProject(null);
                     window.location.href = "/c-home";
-                  }
+                  });
                 }}
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
                   theme === 'dark'
