@@ -194,6 +194,7 @@ export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [projectDescriptionInput, setProjectDescriptionInput] = useState("");
   const [projectTemplateInput, setProjectTemplateInput] = useState("steel");
+  const [createWorkspaceMode, setCreateWorkspaceMode] = useState("template"); // "template" | "custom"
 
   // Key configurations states
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -1596,6 +1597,7 @@ Industrial Sector AI Automation Network`;
     setProjectTemplateInput("steel");
     setProjectNameInput(generateDefaultName("template", "steel"));
     setProjectDescriptionInput("");
+    setCreateWorkspaceMode("template");
     setShowCreateModal(true);
   };
 
@@ -1604,6 +1606,7 @@ Industrial Sector AI Automation Network`;
     const defaultName = generateDefaultName(templateId === "empty" ? "custom" : "template", templateId === "empty" ? null : templateId);
     setProjectNameInput(defaultName);
     setProjectDescriptionInput("");
+    setCreateWorkspaceMode(templateId === "empty" ? "custom" : "template");
     setShowCreateModal(true);
   };
 
@@ -1689,15 +1692,28 @@ Industrial Sector AI Automation Network`;
               </button>
 
               <button
-                onClick={handleOpenNewWorkspace}
+                onClick={() => handleOpenPresetCreate("empty")}
                 className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
                   theme === 'dark'
                     ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
                     : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-md shadow-cyan-100/50'
                 }`}
+                title="Create a custom blank workspace from scratch"
               >
                 <Plus className="w-4 h-4" />
-                <span>NEW WORKSPACE</span>
+                <span>NEW CUSTOM BLANK</span>
+              </button>
+
+              <button
+                onClick={handleOpenNewWorkspace}
+                className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
+                  theme === 'dark'
+                    ? 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>NEW TEMPLATE WORKSPACE</span>
               </button>
             </div>
           </div>
@@ -1955,7 +1971,7 @@ Industrial Sector AI Automation Network`;
                   <input
                     type="text"
                     required
-                    value={projectNameInput}
+                   
                     onChange={(e) => setProjectNameInput(e.target.value)}
                     placeholder="My Factory Fleet"
                     className={`w-full px-4 py-2.5 rounded-xl text-xs transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 border ${
@@ -1983,42 +1999,91 @@ Industrial Sector AI Automation Network`;
                   />
                 </div>
 
-                {/* Fleet Template Selector Grid */}
+                {/* Workspace Creator Mode Tabs (Wireframe Style) */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
-                    Select Fleet Template
+                    Workspace Mode
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: "steel", name: "Steel Mill", desc: "Rotary pumps & fans" },
-                      { id: "petrochemical", name: "Petrochemical", desc: "Gas turbines & pipes" },
-                      { id: "automotive", name: "Automotive", desc: "6-axis robotic arms" },
-                      { id: "empty", name: "Custom Blank", desc: "Start from scratch" }
-                    ].map((t) => (
-                      <div
-                        key={t.id}
-                        onClick={() => {
-                          setProjectTemplateInput(t.id);
-                          const defaultNames = ["Heavy Steel Mill", "Titanium Smelter", "Vulcan Ironworks", "Forge Nexus", "Hydrocracker Hub", "Refinery Grid", "Petrochemical Nexus", "Octane Transfer Complex", "6-Axis Assembly Sector", "Welding Line Beta", "Precision Motion Base", "Robotics Assembly Grid", "Quantum Factory", "Cyber-Physical Grid", "Hyperion Facility", "Apex Assembly"];
-                          if (!projectNameInput || defaultNames.some(dn => projectNameInput.startsWith(dn))) {
-                            setProjectNameInput(generateDefaultName(t.id === "empty" ? "custom" : "template", t.id === "empty" ? null : t.id));
-                          }
-                        }}
-                        className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 select-none hover:scale-[1.01] ${
-                          projectTemplateInput === t.id
-                            ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-500/10 text-white' : 'border-cyan-600 bg-cyan-50 text-slate-900')
-                            : (theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f17] hover:border-slate-800 text-slate-400 hover:text-slate-350' : 'border-slate-200 bg-slate-50 hover:border-slate-300 text-slate-650 hover:text-slate-900')
-                        }`}
-                      >
-                        <div className="font-mono text-xs font-bold">{t.name}</div>
-                        <div className="text-[10px] opacity-75 mt-0.5 font-sans leading-tight">{t.desc}</div>
-                      </div>
-                    ))}
+                  <div className="flex bg-slate-900/10 dark:bg-slate-950/40 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreateWorkspaceMode("template");
+                        setProjectTemplateInput("steel");
+                        setProjectNameInput(generateDefaultName("template", "steel"));
+                      }}
+                      className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold transition-all duration-300 ${
+                        createWorkspaceMode === "template"
+                          ? (theme === 'dark' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-300')
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Template
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreateWorkspaceMode("custom");
+                        setProjectTemplateInput("empty");
+                        setProjectNameInput(generateDefaultName("custom", null));
+                      }}
+                      className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold transition-all duration-300 ${
+                        createWorkspaceMode === "custom"
+                          ? (theme === 'dark' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' : 'bg-cyan-50 text-cyan-700 border border-cyan-300')
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Custom
+                    </button>
                   </div>
                 </div>
 
+                {/* Mode Contents */}
+                {createWorkspaceMode === "template" ? (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold font-mono uppercase tracking-wider block opacity-75">
+                      Select Fleet Template
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: "steel", name: "Steel Mill", desc: "Rotary pumps & fans", machines: ["Rotary Gear Pump A", "High-Speed Fan B", "Heavy-Duty Compressor C"], sensors: ["Winding Temp", "Vibration", "Discharge Pres", "Coil Current"] },
+                        { id: "petrochemical", name: "Petrochemical", desc: "Gas turbines & pipes", machines: ["Gas Turbine Generator A", "High-Pressure Pipe B", "Petrochemical Pump C"], sensors: ["Flow Rate", "Vibration", "Exhaust Temp", "Control Pressure"] },
+                        { id: "automotive", name: "Automotive", desc: "6-axis robotic arms", machines: ["Welder Robot Joint A", "Conveyor Drive B", "Assembly Compressor C"], sensors: ["Torque Load", "Joint Vibration", "System Temp", "Coil Amperage"] }
+                      ].map((t) => (
+                        <div
+                          key={t.id}
+                          onClick={() => {
+                            setProjectTemplateInput(t.id);
+                            const defaultNames = ["Heavy Steel Mill", "Titanium Smelter", "Vulcan Ironworks", "Forge Nexus", "Hydrocracker Hub", "Refinery Grid", "Petrochemical Nexus", "Octane Transfer Complex", "6-Axis Assembly Sector", "Welding Line Beta", "Precision Motion Base", "Robotics Assembly Grid", "Quantum Factory", "Cyber-Physical Grid", "Hyperion Facility", "Apex Assembly"];
+                            if (!projectNameInput || defaultNames.some(dn => projectNameInput.startsWith(dn))) {
+                              setProjectNameInput(generateDefaultName("template", t.id));
+                            }
+                          }}
+                          className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 select-none hover:scale-[1.01] ${
+                            projectTemplateInput === t.id
+                              ? (theme === 'dark' ? 'border-cyan-500 bg-cyan-500/10 text-white' : 'border-cyan-600 bg-cyan-50 text-slate-900')
+                              : (theme === 'dark' ? 'border-[#1b2336] bg-[#0c0f17] hover:border-slate-800 text-slate-400 hover:text-slate-350' : 'border-slate-200 bg-slate-50 hover:border-slate-300 text-slate-650 hover:text-slate-900')
+                          }`}
+                        >
+                          <div className="font-mono text-xs font-bold">{t.name}</div>
+                          <div className="text-[10px] opacity-75 mt-0.5 font-sans leading-tight">{t.desc}</div>
+                          
+                          {/* Template Details Preview */}
+                          <div className="mt-2.5 pt-2 border-t border-slate-500/10 space-y-1 text-[9px] font-mono opacity-80">
+                            <div className="font-bold text-cyan-400">Assets Included:</div>
+                            {t.machines.map((m, idx) => (
+                              <div key={idx} className="truncate">• {m}</div>
+                            ))}
+                            <div className="font-bold text-slate-500 mt-1">Sensors: {t.sensors.join(", ")}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 {/* Custom Fleet Dynamic Forms */}
-                {projectTemplateInput === "empty" && (
+                {createWorkspaceMode === "custom" && (
                   <div className={`space-y-4 border-t pt-4 ${theme === 'dark' ? 'border-[#1b2336]' : 'border-slate-200'}`}>
                     <div className="flex items-center gap-1.5 text-xs font-bold font-mono tracking-wide uppercase text-cyan-400">
                       <Cpu className="w-3.5 h-3.5" />
