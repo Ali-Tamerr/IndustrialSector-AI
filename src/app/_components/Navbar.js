@@ -99,7 +99,7 @@ export default function Navbar({
                   type="text"
                   value={activeProject?.name || ""}
                   onChange={(e) => handleRenameProject(activeProject?.id, e.target.value)}
-                  className={`bg-transparent border-b border-transparent hover:border-slate-500 focus:border-blue-500 outline-none font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-855'} transition-all w-full`}
+                  className={`bg-transparent border-b border-transparent hover:border-slate-500 focus:border-transparent focus:outline-none font-mono text-[16px] font-extrabold tracking-wider ${theme === 'dark' ? 'text-white' : 'text-slate-855'} transition-all w-full`}
                   placeholder="Unnamed Project"
                 />
                 {/* <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'} border`}>
