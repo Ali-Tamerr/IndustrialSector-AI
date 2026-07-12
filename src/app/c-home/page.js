@@ -494,7 +494,7 @@ export default function Home() {
       {
         id: "MCH-101",
         name: customMachineName.trim() || "Custom Compressor Alpha",
-        location: customMachineLocation.trim() || "Bay 1 - Main Complex",
+        location: customMachineLocation.trim() || "Main Facility Block",
         status: "Operational",
         thresholds: {
           temperature: customSensors.find(s => s.isPreset === "winding_temp")?.max || 90.0,
@@ -1692,28 +1692,15 @@ Industrial Sector AI Automation Network`;
               </button>
 
               <button
-                onClick={() => handleOpenPresetCreate("empty")}
+                onClick={handleOpenNewWorkspace}
                 className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
                   theme === 'dark'
                     ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
                     : 'bg-cyan-600 border-cyan-600 text-white hover:bg-cyan-700 hover:border-cyan-700 shadow-md shadow-cyan-100/50'
                 }`}
-                title="Create a custom blank workspace from scratch"
               >
                 <Plus className="w-4 h-4" />
-                <span>NEW CUSTOM BLANK</span>
-              </button>
-
-              <button
-                onClick={handleOpenNewWorkspace}
-                className={`py-2.5 px-5 rounded-xl font-mono text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 border hover:scale-[1.01] ${
-                  theme === 'dark'
-                    ? 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                <span>NEW TEMPLATE WORKSPACE</span>
+                <span>NEW WORKSPACE</span>
               </button>
             </div>
           </div>
@@ -2106,12 +2093,13 @@ Industrial Sector AI Automation Network`;
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold font-mono uppercase tracking-wider block opacity-70">
-                          Location (Bay)
+                          Location (Bay) (optional)
                         </label>
                         <input
                           type="text"
                           value={customMachineLocation}
                           onChange={(e) => setCustomMachineLocation(e.target.value)}
+                          placeholder="e.g. Bay 1 - Main Complex"
                           className={`w-full px-3 py-2 rounded-lg text-xs outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
                             theme === 'dark' ? 'bg-[#0c0f17] border-[#1b2336] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                           }`}

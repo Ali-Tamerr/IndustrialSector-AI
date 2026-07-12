@@ -59,7 +59,7 @@ export default function CustomWorkspaceBuilder({
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Bay Location</label>
+                <label className="block text-[10px] text-slate-500 mb-1.5 uppercase font-bold tracking-wider">Bay Location (optional)</label>
                 <input 
                   type="text" 
                   value={machine.location} 
@@ -143,7 +143,7 @@ export default function CustomWorkspaceBuilder({
         </button>
         
         <button
-          disabled={seeding || customMachines.some(m => !m.name.trim() || !m.location.trim())}
+          disabled={seeding || customMachines.some(m => !m.name.trim())}
           onClick={() => handleCreateProject("custom")}
           className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-mono text-xs font-bold rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.35)]"
         >

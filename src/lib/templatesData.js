@@ -254,16 +254,19 @@ export function seedWorkspaceData(type, templateId, customMachinesInput) {
       supplierEdgesToSeed = JSON.parse(JSON.stringify(STEEL_TEMPLATE.links));
       anomalyMachineId = STEEL_TEMPLATE.anomalyMachineId;
     }
-  } else {
     const getVal = (v, fallback) => {
       if (v === undefined || v === null || v === "") return fallback;
       const parsed = parseFloat(v);
       return isNaN(parsed) ? fallback : parsed;
     };
-    machinesToSeed = (customMachinesInput || []).map((m, idx) => ({
+    const inputList = (customMachinesInput && customMachinesInput.length > 0) 
+      ? customMachinesInput 
+      : [{ id: "MCH-101", name: "Custom Compressor Alpha", location: "Main Facility Block", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15, required_part_id: "PART-001" }, sensors: [] }];
+      
+    machinesToSeed = inputList.map((m, idx) => ({
       id: m.id || `MCH-10${idx + 1}`,
-      name: m.name || `Asset ${idx + 1}`,
-      location: m.location || `Bay ${idx + 1} Assembly`,
+      name: (m.name && m.name.trim()) ? m.name.trim() : `Custom Asset ${idx + 1}`,
+      location: (m.location && m.location.trim()) ? m.location.trim() : "Main Facility Block",
       status: "Operational",
       critical_thresholds: {
         temperature: getVal(m.thresholds?.temperature, 90.0),
