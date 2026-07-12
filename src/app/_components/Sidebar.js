@@ -80,10 +80,10 @@ export default function Sidebar({
         <div className={`p-4 border-b flex justify-between items-center ${
           theme === 'dark' ? 'border-[#182030]' : 'border-slate-100'
         }`}>
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             <Cpu className="w-5 h-5 text-blue-400" />
             <span className="font-mono text-xs font-bold tracking-widest text-slate-400">CONTROL CENTER</span>
-          </div>
+          </div> */}
           <button
             onClick={onClose}
             className={`p-1.5 rounded-lg border transition-all duration-300 ${
@@ -128,7 +128,7 @@ export default function Sidebar({
                 <span>Dashboard Tour</span>
               </button>
 
-              <Link
+              {/* <Link
                 href="/"
                 onClick={onClose}
                 className={`w-full px-3 py-3 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
@@ -139,7 +139,7 @@ export default function Sidebar({
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span>Admin Portal</span>
-              </Link>
+              </Link> */}
 
               <Link
                 href="/device"
@@ -151,7 +151,7 @@ export default function Sidebar({
                 }`}
               >
                 <Sliders className="w-4 h-4" />
-                <span>Device Client</span>
+                <span>Send to Admin</span>
               </Link>
 
               <button
@@ -171,7 +171,7 @@ export default function Sidebar({
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                <span>Projects Portal</span>
+                <span>Workflows Page</span>
               </button>
 
               <button
@@ -189,7 +189,7 @@ export default function Sidebar({
                 <span>Agent Execution Log</span>
               </button>
 
-              <button
+              {/* <button
                 onClick={() => {
                   setEditorMachines(data?.machines ? JSON.parse(JSON.stringify(data.machines)) : []);
                   setEditorInventory(data?.inventory ? JSON.parse(JSON.stringify(data.inventory)) : []);
@@ -206,7 +206,7 @@ export default function Sidebar({
               >
                 <Settings className="w-4 h-4" />
                 <span>Configure Fleet & Graph</span>
-              </button>
+              </button> */}
 
               {/* Failure Simulator section in sidebar */}
               <div className="pt-2 border-t border-slate-200/10">
@@ -302,7 +302,7 @@ export default function Sidebar({
 
         {/* Footer */}
         <div className={`p-4 border-t flex items-center justify-between ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-100'}`}>
-          <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">System Active</span>
+          {/* <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">System Active</span> */}
           <button
             onClick={toggleTheme}
             className={`p-2 rounded-full border transition-all duration-300 ${
