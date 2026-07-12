@@ -118,7 +118,7 @@ export default function SourcingTestPage() {
 
           // Labels match exactly what's shown on the progress bar
           const stageLabels = [
-            { n: 1, name: "Sourcing Approval" },
+            { n: 1, name: "Suppliers' Approval" },
             { n: 2, name: supplierLabel },
             { n: 3, name: "Company Warehouse" },
             { n: 4, name: order.machineId || "Machine" }
@@ -370,7 +370,7 @@ export default function SourcingTestPage() {
               {theme === 'dark' ? '☀️ LIGHT MODE' : '🌙 DARK MODE'}
             </button>
             <Link 
-              href="/"
+              href="/dashboard"
               className={`flex items-center space-x-1 px-3 py-1.5 rounded border text-xs font-semibold ${
                 theme === 'dark'
                   ? 'bg-slate-900 border-[#182030] text-slate-400 hover:text-cyan-400'
@@ -459,7 +459,7 @@ export default function SourcingTestPage() {
                           step: 3,
                           title: "Company Warehouse",
                           subtitle: activeStageIndex >= 2 ? (activeStageIndex === 2 ? "Arrived" : "Completed") : "On Route",
-                          details: activeStageIndex >= 2 ? "Awaiting technician swap" : "Transit in progress",
+                          details: activeStageIndex >= 2 ? "Signal active" : "",
                           state: activeStageIndex > 2 ? "completed" : (activeStageIndex === 2 ? "current-active" : "awaiting")
                         },
                         {
@@ -467,15 +467,15 @@ export default function SourcingTestPage() {
                           step: 2,
                           title: supplierName,
                           subtitle: activeStageIndex >= 1 ? (order.status === "Dispatched_Sourcing_Active" ? "In Transit" : "Completed") : "Awaiting",
-                          details: activeStageIndex >= 1 ? "Priority air courier active" : "Pending approval",
+                          details: activeStageIndex >= 1 ? "" : "",
                           state: activeStageIndex > 1 ? "completed" : (activeStageIndex === 1 ? "current-active" : "awaiting")
                         },
                         {
                           id: "approval",
                           step: 1,
-                          title: "Sourcing Approval",
+                          title: "Suppliers' Approval",
                           subtitle: approvalState === "Approved" ? "Approved" : (approvalState === "Pending" ? "Pending" : "Rejected"),
-                          details: approvalState === "Approved" ? "Purchase order dispatched" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
+                          details: approvalState === "Approved" ? "Purchase order completed" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
                           state: approvalState === "Approved" ? "completed" : (approvalState === "Pending" ? "current-pending" : "blocked")
                         }
                       ];

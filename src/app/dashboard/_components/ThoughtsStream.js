@@ -16,9 +16,7 @@ export default function ThoughtsStream({
             <span className="h-2 w-2 rounded-full bg-green-500/20"></span>
             <span className="ml-2 text-slate-400 font-bold uppercase tracking-widest text-[9px]">ORCHESTRATOR_EXEC_LOG</span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-450">
-            <span className="animate-pulse text-blue-400">● SIGNAL ACTIVE</span>
-          </div>
+         
         </div>
 
         {/* Terminal Body */}

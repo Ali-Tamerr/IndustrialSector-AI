@@ -75,7 +75,7 @@ export async function POST(req) {
         ];
 
         supplierNodesToSeed = [
-          ["SUP-201", "GE Power Systems Logistics", "Supplier", 0.08, "logistics@gepower.com"],
+          ["SUP-201", "Start of Transport", "Supplier", 0.08, "logistics@gepower.com"],
           ["SUP-202", "Chevron Seals Houston", "Supplier", 0.04, "houston.sales@chevronseals.com"],
           ["SUP-203", "Sulzer Gothenburg", "Supplier", 0.12, "procurement@sulzer.se"],
           ["SUP-204", "VarnishTech Graz", "Supplier", 0.20, "sales@varnishwtech.at"],

@@ -45,7 +45,7 @@ export const PETROCHEMICAL_TEMPLATE = {
     { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", type: "Part", risk: 0, email: "" },
     { id: "PART-203", name: "Petrochemical Centrifugal Impeller", type: "Part", risk: 0, email: "" },
     { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", type: "Part", risk: 0, email: "" },
-    { id: "SUP-201", name: "GE Power Systems Logistics", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
+    { id: "SUP-201", name: "Start of Transport", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
     { id: "SUP-202", name: "Chevron Seals Houston", type: "Supplier", risk: 0.04, email: "houston.sales@chevronseals.com" },
     { id: "SUP-203", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
     { id: "SUP-204", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" },
@@ -266,7 +266,7 @@ export function seedWorkspaceData(type, templateId, customMachinesInput) {
     machinesToSeed = inputList.map((m, idx) => ({
       id: m.id || `MCH-10${idx + 1}`,
       name: (m.name && m.name.trim()) ? m.name.trim() : `Custom Asset ${idx + 1}`,
-      location: (m.location && m.location.trim()) ? m.location.trim() : "Main Facility Block",
+      location: (m.location && m.location.trim()) ? m.location.trim() : "",
       status: "Operational",
       critical_thresholds: {
         temperature: getVal(m.thresholds?.temperature, 90.0),

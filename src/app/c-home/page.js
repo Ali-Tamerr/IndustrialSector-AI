@@ -703,7 +703,7 @@ export default function Home() {
         { id: "PART-202", name: "Fluorosilicone High-Pressure Gasket", type: "Part", risk: 0, email: "" },
         { id: "PART-203", name: "Petrochemical Centrifugal Impeller", type: "Part", risk: 0, email: "" },
         { id: "PART-204", name: "Exchanger Fan 3-Phase Rotor Winding", type: "Part", risk: 0, email: "" },
-        { id: "SUP-201", name: "GE Power Systems Logistics", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
+        { id: "SUP-201", name: "Start of Transport", type: "Supplier", risk: 0.08, email: "logistics@gepower.com" },
         { id: "SUP-202", name: "Chevron Seals Houston", type: "Supplier", risk: 0.04, email: "houston.sales@chevronseals.com" },
         { id: "SUP-203", name: "Sulzer Gothenburg", type: "Supplier", risk: 0.12, email: "procurement@sulzer.se" },
         { id: "SUP-204", name: "VarnishTech Graz", type: "Supplier", risk: 0.20, email: "sales@varnishwtech.at" }
@@ -989,7 +989,7 @@ export default function Home() {
         const supplierLabel = supplierMatch ? supplierMatch[1].trim() : "Supplier";
 
         const stageLabels = [
-          { n: 1, name: "Sourcing Approval" },
+          { n: 1, name: "Suppliers' Approval" },
           { n: 2, name: supplierLabel },
           { n: 3, name: "Company Warehouse" },
           { n: 4, name: machine?.id || "Machine" }

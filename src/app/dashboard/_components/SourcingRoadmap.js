@@ -66,7 +66,7 @@ export default function SourcingRoadmap({
               approvalState = "Rejected";
             }
 
-            // Stages: 0: Sourcing Approval, 1: Supplier, 2: Company Warehouse, 3: Machine
+            // Stages: 0: Suppliers' Approval, 1: Supplier, 2: Company Warehouse, 3: Machine
             let activeStageIndex = 0;
             if (approvalState === "Approved") {
               activeStageIndex = 1;
@@ -92,7 +92,7 @@ export default function SourcingRoadmap({
                 step: 3,
                 title: "Company Warehouse",
                 subtitle: activeStageIndex >= 2 ? (activeStageIndex === 2 ? "Arrived" : "Completed") : "On Route",
-                details: activeStageIndex >= 2 ? "Awaiting technician swap" : "Transit in progress",
+                details: activeStageIndex >= 2 ? "" : "",
                 state: activeStageIndex > 2 ? "completed" : (activeStageIndex === 2 ? "current-active" : "awaiting")
               },
               {
@@ -100,15 +100,15 @@ export default function SourcingRoadmap({
                 step: 2,
                 title: supplierName,
                 subtitle: activeStageIndex >= 1 ? (order.status === "Dispatched_Sourcing_Active" ? "In Transit" : "Completed") : "Awaiting",
-                details: activeStageIndex >= 1 ? "Priority air courier active" : "Pending approval",
+                details: activeStageIndex >= 1 ? "" : "",
                 state: activeStageIndex > 1 ? "completed" : (activeStageIndex === 1 ? "current-active" : "awaiting")
               },
               {
                 id: "approval",
                 step: 1,
-                title: "Sourcing Approval",
+                title: "Suppliers' Approval",
                 subtitle: approvalState === "Approved" ? "Approved" : (approvalState === "Pending" ? "Pending" : "Rejected"),
-                details: approvalState === "Approved" ? "Purchase order dispatched" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
+                details: approvalState === "Approved" ? "Purchase order completed" : (approvalState === "Pending" ? "Auditing stock & lead times" : "Risk limit exceeded"),
                 state: approvalState === "Approved" ? "completed" : (approvalState === "Pending" ? "current-pending" : "blocked")
               }
             ];

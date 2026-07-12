@@ -96,7 +96,7 @@ export default function TelemetryLiveMonitor({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-[11px] font-bold tracking-widest uppercase font-mono text-slate-500 flex items-center space-x-2">
           <Activity className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-          <span>Zone 1: Telemetry Live Monitor ({filteredMachines.length} of {data?.machines?.length || 0} Assets)</span>
+          <span>Zone 1: Telemetry Live Monitor</span>
         </h2>
 
         {/* Dynamic Controls */}
@@ -161,13 +161,40 @@ export default function TelemetryLiveMonitor({
               
               const hasTemp = (machine.critical_thresholds?.temperature ?? 0) > 0;
               const hasVib = (machine.critical_thresholds?.vibration ?? 0) > 0;
-              const hasPres = (machine.critical_thresholds?.pressure ?? 0) > 0;
-              const hasCurr = (machine.critical_thresholds?.current ?? 0) > 0;
+
+              // Build the unified sensor list
+              const sensorList = [];
+              if (machine.sensors && machine.sensors.length > 0) {
+                machine.sensors.forEach(s => {
+                  const sensorVal = latest && latest[s.name] !== undefined ? latest[s.name] : s.current;
+                  sensorList.push({
+                    name: s.name,
+                    current: sensorVal,
+                    unit: s.unit || ""
+                  });
+                });
+              } else {
+                const thresholds = machine.critical_thresholds || {};
+                if (thresholds.temperature) {
+                  sensorList.push({ name: "Winding Temp", current: latest?.temperature || 0, unit: "°C" });
+                }
+                if (thresholds.vibration) {
+                  sensorList.push({ name: "Radial Vibration", current: latest?.vibration || 0, unit: "mm/s" });
+                }
+                if (thresholds.pressure) {
+                  sensorList.push({ name: "Discharge Pressure", current: latest?.pressure || 0, unit: "Bar" });
+                }
+                if (thresholds.current) {
+                  sensorList.push({ name: "Coil Amperage", current: latest?.current || 0, unit: "A" });
+                }
+              }
+
+              const displayedSensors = sensorList.slice(0, 6);
 
               return (
-                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group flex flex-col`}>
-                  <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden pointer-events-none">
-                    <div className={`absolute top-2.5 right-[-26px] transform rotate-45 text-center text-[9px] font-mono font-bold uppercase py-0.5 w-[90px] ${
+                <div key={machine.id} className={`${theme === 'dark' ? 'bg-[#0c0f17] border-[#182030] hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'} rounded-xl p-5 border transition-all duration-300 relative overflow-hidden group flex flex-col min-h-[330px]`}>
+                  <div className="absolute top-0 right-0 h-20 w-20 overflow-hidden pointer-events-none">
+                    <div className={`absolute top-4 right-[-32px] transform rotate-45 text-center text-[8px] font-mono font-bold uppercase py-0.5 w-[120px] ${
                       machine.status === "Operational" ? "bg-emerald-500/10 text-emerald-400" :
                       machine.status === "Degraded" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400"
                     }`}>
@@ -186,43 +213,25 @@ export default function TelemetryLiveMonitor({
 
                   {latest ? (
                     <div className="space-y-4 font-mono flex-1">
-                      {/* First Row: Temp & Vibration */}
-                      {(hasTemp || hasVib) && (
-                        <div className={`grid ${hasTemp && hasVib ? 'grid-cols-2' : 'grid-cols-1'} gap-4 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
-                          {hasTemp && (
-                            <div>
-                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Winding Temp</div>
-                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                                {latest.temperature.toFixed(1)} <span className="text-xs text-slate-400 font-medium">°C</span>
-                              </div>
-                            </div>
-                          )}
-                          {hasVib && (
-                            <div>
-                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Radial Vibration</div>
-                              <div className={`text-xl font-bold mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                                {latest.vibration.toFixed(2)} <span className="text-xs text-slate-400 font-medium">mm/s</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {/* Grid displaying up to 6 sensors */}
+                      {displayedSensors.length > 0 && (
+                        <div className={`grid grid-cols-2 gap-6  pb-4 $`}>
+                          {displayedSensors.map((s, idx) => {
+                            const valFormatted = typeof s.current === 'number'
+                              ? (s.name.toLowerCase().includes("temp") || s.name.toLowerCase().includes("curr") || s.name.toLowerCase().includes("amp")
+                                  ? s.current.toFixed(1)
+                                  : s.current.toFixed(2))
+                              : s.current;
 
-                      {/* Second Row: Pressure & Current */}
-                      {(hasPres || hasCurr) && (
-                        <div className={`grid ${hasPres && hasCurr ? 'grid-cols-2' : 'grid-cols-1'} gap-3 border-b pb-4 ${theme === 'dark' ? 'border-[#182030]/60' : 'border-slate-100'}`}>
-                          {hasPres && (
-                            <div>
-                              <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Discharge Pressure</span>
-                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.pressure.toFixed(2)} Bar</span>
-                            </div>
-                          )}
-                          {hasCurr && (
-                            <div>
-                              <span className="text-[9px] text-slate-555 uppercase tracking-wider block">Coil Amperage</span>
-                              <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{latest.current.toFixed(1)} A</span>
-                            </div>
-                          )}
+                            return (
+                              <div key={idx}>
+                                <span className="text-[9px] text-slate-500 uppercase tracking-wider block">{s.name}</span>
+                                <span className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>
+                                  {valFormatted} {s.unit}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 
@@ -247,36 +256,13 @@ export default function TelemetryLiveMonitor({
                           )}
                         </div>
                       )}
-
-                      {/* Custom Sensors Rendering inside card if any exist and are not temp/vib/pres/cur */}
-                      {machine.sensors && machine.sensors.filter(s => {
-                        const nameLower = s.name.toLowerCase();
-                        return !nameLower.includes("temp") && !nameLower.includes("vib") && !nameLower.includes("pres") && !nameLower.includes("cur") && !nameLower.includes("amp");
-                      }).length > 0 && (
-                        <div className={`p-3 rounded-lg border text-[10px] font-mono leading-relaxed space-y-1.5 ${
-                          theme === 'dark' ? 'bg-[#182030]/20 border-[#182030]/60 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-650'
-                        }`}>
-                          {machine.sensors.filter(s => {
-                            const nameLower = s.name.toLowerCase();
-                            return !nameLower.includes("temp") && !nameLower.includes("vib") && !nameLower.includes("pres") && !nameLower.includes("cur") && !nameLower.includes("amp");
-                          }).map((s, idx) => {
-                            const sensorVal = latest[s.name] !== undefined ? latest[s.name] : s.current;
-                            return (
-                              <div key={idx} className="flex justify-between items-center">
-                                <span className="opacity-75">{s.name}:</span>
-                                <span className="font-bold">{sensorVal} {s.unit}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="py-8 text-center text-xs text-slate-555 flex-1">No active telemetry signal.</div>
                   )}
 
                   {/* Action Buttons */}
-                  <div className={`mt-auto pt-4 border-t flex justify-end items-center space-x-2 z-10 ${theme === 'dark' ? 'border-[#182030]/40' : 'border-slate-100'}`}>
+                  <div className={`mt-auto pt-4 flex justify-end items-center space-x-2 z-10`}>
                     <button
                       type="button"
                       onClick={() => setInfoPopupMachineId(infoPopupMachineId === machine.id ? null : machine.id)}
