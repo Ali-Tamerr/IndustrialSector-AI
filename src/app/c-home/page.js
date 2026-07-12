@@ -9,6 +9,7 @@ import {
   generateBaselines,
   seedWorkspaceData
 } from "@/lib/templatesData";
+import CustomWorkspaceBuilder from "@/app/_components/CustomWorkspaceBuilder";
 // We moved to a unified grid view for workspaces, so WorkspaceSidebar and ProjectConfigurator are not rendered directly.
 import { 
   Activity, 
@@ -162,15 +163,12 @@ export default function Home() {
   const [activeSetupTab, setActiveSetupTab] = useState("presets");
   const [seeding, setSeeding] = useState(false);
   const [customMachines, setCustomMachines] = useState([
-    { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", thresholds: { temperature: 90, vibration: 8, pressure: 6.5, current: 15, required_part_id: "PART-001" } }
+    { id: "MCH-101", name: "High-Temp Fan A", location: "Bay 4 - Extraction", customSensors: [{ name: "Winding Temperature", min: 20.0, max: 90.0, current: 55.0, unit: "°C", isPreset: "winding_temp" }] }
   ]);
 
   // States for dynamic custom fleet creation
   const [customMachineName, setCustomMachineName] = useState("Custom Compressor Alpha");
   const [customMachineLocation, setCustomMachineLocation] = useState("Bay 1 - Main Complex");
-  const [customSensors, setCustomSensors] = useState([
-    { name: "Winding Temperature", min: 20.0, max: 90.0, current: 55.0, unit: "°C", isPreset: "winding_temp" }
-  ]);
 
   // Visual Editor Configurator panel states
   const [showEditor, setShowEditor] = useState(false);
@@ -490,29 +488,33 @@ export default function Home() {
     const templateId = type === "template" ? projectTemplateInput : null;
     const finalName = projectNameInput.trim() || generateDefaultName(type, templateId);
     
-    const finalMachines = type === "custom" ? [
-      {
-        id: "MCH-101",
-        name: customMachineName.trim() || "Custom Compressor Alpha",
-        location: customMachineLocation.trim() || "Main Facility Block",
+    const finalMachines = type === "custom" ? customMachines.map((m, idx) => {
+      const getLimit = (presetKey, fallback) => {
+        const found = (m.customSensors || []).find(s => s.isPreset === presetKey);
+        return found ? parseFloat(found.max) || fallback : fallback;
+      };
+      return {
+        id: m.id || `MCH-10${idx + 1}`,
+        name: m.name.trim() || `Custom Asset ${idx + 1}`,
+        location: m.location.trim() || "Main Facility Block",
         status: "Operational",
         thresholds: {
-          temperature: customSensors.find(s => s.isPreset === "winding_temp")?.max || 90.0,
-          vibration: customSensors.find(s => s.isPreset === "vibration")?.max || 8.0,
-          pressure: customSensors.find(s => s.isPreset === "discharge_pressure")?.max || 6.5,
-          current: customSensors.find(s => s.isPreset === "coil_current")?.max || 15.0,
+          temperature: getLimit("winding_temp", 90.0),
+          vibration: getLimit("vibration", 8.0),
+          pressure: getLimit("discharge_pressure", 6.5),
+          current: getLimit("coil_current", 15.0),
           required_part_id: "PART-001"
         },
-        sensors: customSensors.map((s, idx) => ({
-          id: `SNS-${101 + idx}`,
+        sensors: (m.customSensors || []).map((s, sIdx) => ({
+          id: `SNS-CUST-${idx}-${sIdx}`,
           name: s.name,
-          min: parseFloat(s.min) || 0.0,
-          max: parseFloat(s.max) || 100.0,
-          current: parseFloat(s.current) || 50.0,
-          unit: s.unit || ""
+          min: parseFloat(s.min) || 0,
+          max: parseFloat(s.max) || 100,
+          current: parseFloat(s.current) || 50,
+          unit: s.unit
         }))
-      }
-    ] : [];
+      };
+    }) : [];
 
     const newProject = {
       id: "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
@@ -2072,190 +2074,14 @@ Industrial Sector AI Automation Network`;
                 {/* Custom Fleet Dynamic Forms */}
                 {createWorkspaceMode === "custom" && (
                   <div className={`space-y-4 border-t pt-4 ${theme === 'dark' ? 'border-[#1b2336]' : 'border-slate-200'}`}>
-                    <div className="flex items-center gap-1.5 text-xs font-bold font-mono tracking-wide uppercase text-cyan-400">
-                      <Cpu className="w-3.5 h-3.5" />
-                      <span>Configure First Asset</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold font-mono uppercase tracking-wider block opacity-70">
-                          Machine Name
-                        </label>
-                        <input
-                          type="text"
-                          value={customMachineName}
-                          onChange={(e) => setCustomMachineName(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-lg text-xs outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                            theme === 'dark' ? 'bg-[#0c0f17] border-[#1b2336] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold font-mono uppercase tracking-wider block opacity-70">
-                          Location (Bay) (optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={customMachineLocation}
-                          onChange={(e) => setCustomMachineLocation(e.target.value)}
-                          placeholder="e.g. Bay 1 - Main Complex"
-                          className={`w-full px-3 py-2 rounded-lg text-xs outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                            theme === 'dark' ? 'bg-[#0c0f17] border-[#1b2336] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Sensor Configs */}
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-bold font-mono uppercase tracking-wider opacity-70">Sensors Configuration</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCustomSensors([...customSensors, { name: "Custom Sensor", min: 0.0, max: 100.0, current: 50.0, unit: "", isPreset: "" }]);
-                          }}
-                          className="text-[9px] font-mono font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition"
-                        >
-                          <Plus className="w-3 h-3" /> ADD SENSOR
-                        </button>
-                      </div>
-
-                      <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                        {customSensors.map((sensor, idx) => (
-                          <div key={idx} className={`p-3 rounded-lg border relative space-y-2.5 ${
-                            theme === 'dark' ? 'bg-[#0c0f17] border-[#1b2336]' : 'bg-slate-50 border-slate-200'
-                          }`}>
-                            {customSensors.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => setCustomSensors(customSensors.filter((_, i) => i !== idx))}
-                                className="absolute top-2 right-2 text-red-400 hover:text-red-300 transition"
-                              >
-                                <Trash className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {/* Preset Selection & Name */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="space-y-1">
-                                <label className="text-[8px] font-bold font-mono uppercase opacity-60">Type Preset</label>
-                                <select
-                                  value={sensor.isPreset || ""}
-                                  onChange={(e) => {
-                                    const presetKey = e.target.value;
-                                    const updated = [...customSensors];
-                                    if (presetKey && SENSOR_PRESETS[presetKey]) {
-                                      const p = SENSOR_PRESETS[presetKey];
-                                      updated[idx] = { ...p, isPreset: presetKey };
-                                    } else {
-                                      updated[idx] = { ...updated[idx], isPreset: "", name: "Custom Sensor" };
-                                    }
-                                    setCustomSensors(updated);
-                                  }}
-                                  className={`w-full px-2 py-1 rounded text-[10px] outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                                    theme === 'dark' ? 'bg-[#0a0d16] border-[#182030] text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                                  }`}
-                                >
-                                  <option value="">Custom (Type Name)</option>
-                                  <option value="winding_temp">Winding Temperature</option>
-                                  <option value="vibration">Vibration</option>
-                                  <option value="discharge_pressure">Discharge Pressure</option>
-                                  <option value="coil_current">Coil Current</option>
-                                </select>
-                              </div>
-
-                              <div className="space-y-1">
-                                <label className="text-[8px] font-bold font-mono uppercase opacity-60">Sensor Name</label>
-                                <input
-                                  type="text"
-                                  disabled={!!sensor.isPreset}
-                                  value={sensor.name}
-                                  onChange={(e) => {
-                                    const updated = [...customSensors];
-                                    updated[idx].name = e.target.value;
-                                    setCustomSensors(updated);
-                                  }}
-                                  className={`w-full px-2 py-1 rounded text-[10px] outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                                    theme === 'dark' ? 'bg-[#0a0d16] border-[#182030] text-slate-200 disabled:opacity-50' : 'bg-white border-slate-200 text-slate-800 disabled:opacity-50'
-                                  }`}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Current, Min, Max values */}
-                            <div className="grid grid-cols-4 gap-2">
-                              <div className="space-y-0.5">
-                                <label className="text-[8px] font-bold font-mono uppercase opacity-60">Current</label>
-                                <input
-                                  type="number"
-                                  step="any"
-                                  value={sensor.current}
-                                  onChange={(e) => {
-                                    const updated = [...customSensors];
-                                    updated[idx].current = parseFloat(e.target.value) || 0;
-                                    setCustomSensors(updated);
-                                  }}
-                                  className={`w-full px-2 py-1 rounded text-[10px] outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                                    theme === 'dark' ? 'bg-[#0a0d16] border-[#182030] text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                                  }`}
-                                />
-                              </div>
-                              <div className="space-y-0.5">
-                                <label className="text-[8px] font-bold font-mono uppercase opacity-60">Min Threshold</label>
-                                <input
-                                  type="number"
-                                  step="any"
-                                  value={sensor.min}
-                                  onChange={(e) => {
-                                    const updated = [...customSensors];
-                                    updated[idx].min = parseFloat(e.target.value) || 0;
-                                    setCustomSensors(updated);
-                                  }}
-                                  className={`w-full px-2 py-1 rounded text-[10px] outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                                    theme === 'dark' ? 'bg-[#0a0d16] border-[#182030] text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                                  }`}
-                                />
-                              </div>
-                              <div className="space-y-0.5">
-                                <label className="text-[8px] font-bold font-mono uppercase opacity-60">Max Threshold</label>
-                                <input
-                                  type="number"
-                                  step="any"
-                                  value={sensor.max}
-                                  onChange={(e) => {
-                                    const updated = [...customSensors];
-                                    updated[idx].max = parseFloat(e.target.value) || 0;
-                                    setCustomSensors(updated);
-                                  }}
-                                  className={`w-full px-2 py-1 rounded text-[10px] outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                                    theme === 'dark' ? 'bg-[#0a0d16] border-[#182030] text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                                  }`}
-                                />
-                              </div>
-                              <div className="space-y-0.5">
-                                <label className="text-[8px] font-bold font-mono uppercase opacity-60">Unit</label>
-                                <input
-                                  type="text"
-                                  disabled={!!sensor.isPreset}
-                                  value={sensor.unit || ""}
-                                  onChange={(e) => {
-                                    const updated = [...customSensors];
-                                    updated[idx].unit = e.target.value;
-                                    setCustomSensors(updated);
-                                  }}
-                                  className={`w-full px-2 py-1 rounded text-[10px] outline-none border focus:ring-1 focus:ring-cyan-500 transition-all ${
-                                    theme === 'dark' ? 'bg-[#0a0d16] border-[#182030] text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                                  }`}
-                                />
-                              </div>
-                            </div>
-
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <CustomWorkspaceBuilder
+                      theme={theme}
+                      customMachines={customMachines}
+                      setCustomMachines={setCustomMachines}
+                      handleCreateProject={() => {}}
+                      seeding={seeding}
+                      hideSubmitButton={true}
+                    />
                   </div>
                 )}
 
