@@ -72,7 +72,7 @@ export default function Sidebar({
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${
           theme === 'dark' 
-            ? 'bg-[#0c0f17]/98 border-[#182030] text-white' 
+            ? 'bg-[#0c0f17] border-[#182030] text-white' 
             : 'bg-white border-slate-200 text-slate-800'
         }`}
       >
@@ -216,9 +216,9 @@ export default function Sidebar({
                     if (!simulating) setMobileSimDropdownOpen(!mobileSimDropdownOpen);
                   }}
                   disabled={simulating}
-                  className={`w-full px-4 py-3 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-2 ${
+                  className={`w-full px-4 py-3 font-mono text-xs font-semibold rounded border transition-all duration-305 flex items-center justify-center space-x-2 ${
                     simulating
-                      ? "bg-slate-900 text-slate-505 border-slate-800 cursor-not-allowed"
+                      ? "bg-slate-900 text-slate-555 border-slate-800 cursor-not-allowed"
                       : (theme === 'dark'
                           ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white"
                           : "bg-red-50 text-red-600 border-red-200/80 hover:bg-red-600 hover:text-white shadow-sm")
@@ -301,42 +301,19 @@ export default function Sidebar({
         </div>
 
         {/* Footer */}
-        <div className={`p-4 border-t ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-100'}`}>
-          <div className={`flex items-center justify-between px-3 py-2.5 rounded border ${
-            theme === 'dark' ? 'bg-slate-900 border-[#182030] text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-          }`}>
-            <div className="flex items-center space-x-2">
-              {userImage ? (
-                <img src={userImage} alt="User" className="w-5 h-5 rounded-full object-cover" />
-              ) : (
-                <User className="w-4 h-4 text-cyan-400" />
-              )}
-              <span className="truncate max-w-[120px] font-mono text-xs">{userName || userEmail || "Guest"}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={toggleTheme}
-                className={`p-1.5 rounded-full transition-colors ${
-                  theme === 'dark' ? 'text-yellow-400 hover:bg-slate-800' : 'text-indigo-600 hover:bg-slate-200'
-                }`}
-                title="Toggle Light/Dark Theme"
-              >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-              {isLoggedIn && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    signOut();
-                  }}
-                  className="text-red-400 hover:text-red-500 p-1.5"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
+        <div className={`p-4 border-t flex items-center justify-between ${theme === 'dark' ? 'border-[#182030]' : 'border-slate-100'}`}>
+          <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">System Active</span>
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-full border transition-all duration-300 ${
+              theme === 'dark'
+                ? 'bg-slate-900 border-[#182030] text-yellow-400 hover:bg-slate-800'
+                : 'bg-slate-50 border-slate-200 text-indigo-605 hover:bg-slate-200'
+            }`}
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
       </div>
     </>
