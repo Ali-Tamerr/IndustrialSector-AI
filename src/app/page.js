@@ -15,6 +15,7 @@ import {
   Clipboard,
   ExternalLink,
   CheckCircle,
+  XCircle,
   FileText,
   Bell,
   LayoutGrid,
@@ -63,6 +64,23 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error("Failed to approve report:", err);
+    }
+  };
+
+  const handleRejectReport = async (reportId) => {
+    try {
+      const res = await fetch("/api/reports", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId, approved: false })
+      });
+
+      if (res.ok) {
+        // Remove or filter out rejected reports from the local view
+        setReports(prev => prev.filter(r => r.id !== reportId));
+      }
+    } catch (err) {
+      console.error("Failed to reject report:", err);
     }
   };
 
@@ -1032,13 +1050,22 @@ export default function AdminPage() {
                             </td>
                             {activeTab === "notifications" && (
                               <td className="py-4 px-6 text-right whitespace-nowrap">
-                                <button
-                                  onClick={() => handleApproveReport(report.id)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] font-semibold tracking-wider uppercase transition-colors active:scale-95 shadow-sm border-0"
-                                >
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                  <span>Approve</span>
-                                </button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleApproveReport(report.id)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] font-semibold tracking-wider uppercase transition-colors active:scale-95 shadow-sm border-0"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    <span>Approve</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectReport(report.id)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white font-mono text-[10px] font-semibold tracking-wider uppercase transition-colors active:scale-95 shadow-sm border-0"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    <span>Reject</span>
+                                  </button>
+                                </div>
                               </td>
                             )}
                           </tr>

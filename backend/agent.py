@@ -337,7 +337,7 @@ class AnomalyDetectionAgent:
     """
     def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
-        self.agent_name = "AnomalyDetectionAgent (Evaluator)"
+        self.agent_name = "Machine Checker Agent"
 
     def scan_fleet_telemetry(self, conn) -> List[Dict[str, Any]]:
         """Scans PostgreSQL telemetry for all machines and detects anomalies."""
@@ -493,7 +493,7 @@ class DiagnosticAgent:
     """
     def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
-        self.agent_name = "DiagnosticAgent (RAG Analyst)"
+        self.agent_name = "Gemini (or any LLM)"
 
     def diagnose_anomaly(self, conn, chroma_client, anomaly_context: Dict[str, Any]) -> Dict[str, Any]:
         """Performs RAG to retrieve operational manual and performs AI fault diagnosis."""
@@ -666,7 +666,7 @@ class SourcingOptimizationAgent:
     """
     def __init__(self, use_llm: bool = (HAS_GEMINI_SDK and GEMINI_API_KEY is not None)):
         self.use_llm = use_llm
-        self.agent_name = "SourcingOptimizationAgent"
+        self.agent_name = "Sourcing roadmap agent"
 
     def optimize_sourcing(self, part_name: str, suppliers: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Uses LLM (or fallback logic) to evaluate and choose the best supplier."""
@@ -790,7 +790,7 @@ class PlanningToolAgent:
     def __init__(self, conn, chroma_client):
         self.conn = conn
         self.chroma_client = chroma_client
-        self.agent_name = "PlanningToolAgent (Action)"
+        self.agent_name = "E-Mailing Agent"
 
     # ==========================================================================
     # AGENT PYTHON TOOLS
