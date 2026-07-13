@@ -445,6 +445,48 @@ export default function TelemetryLiveMonitor({
                       
                       <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
                         {(() => {
+                          const activeOrder = data?.maintenance_orders?.find(o => o.machine_id === machine.id);
+                          const diagnosedComponent = latest?.diagnosed_component || activeOrder?.diagnosed_component;
+                          const anomalySignature = latest?.anomaly_signature || activeOrder?.anomaly_signature;
+
+                          if (diagnosedComponent) {
+                            return (
+                              <div className={`p-3 rounded-lg border text-xs font-mono leading-normal transition-all duration-300 ${
+                                theme === 'dark' 
+                                  ? 'bg-[#121622] border-cyan-500/20 text-slate-300' 
+                                  : 'bg-cyan-50/50 border-cyan-200 text-slate-700 shadow-sm'
+                              }`}>
+                                <div className={`font-bold uppercase tracking-wider flex items-center space-x-1.5 mb-2 ${
+                                  machine.status === "Critical" ? "text-red-400" : "text-amber-500"
+                                }`}>
+                                  <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                                  <span>Gemini PdM Diagnostic Result</span>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div>
+                                    <span className="text-[9px] text-slate-500 uppercase block">Diagnosed Component</span>
+                                    <span className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{diagnosedComponent}</span>
+                                  </div>
+                                  {anomalySignature && (
+                                    <div>
+                                      <span className="text-[9px] text-slate-500 uppercase block">Anomaly Signature</span>
+                                      <span className={`text-slate-400 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-650'}`}>{anomalySignature}</span>
+                                    </div>
+                                  )}
+                                  {machine.critical_thresholds?.required_part_id && (
+                                    <div>
+                                      <span className="text-[9px] text-slate-500 uppercase block">Required Replacement Part</span>
+                                      <span className="text-cyan-400 font-semibold">{machine.critical_thresholds.required_part_id}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {(() => {
                           const sensorList = [];
                           if (machine.sensors && machine.sensors.length > 0) {
                             machine.sensors.forEach(s => {

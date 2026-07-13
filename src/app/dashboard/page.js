@@ -1076,6 +1076,8 @@ export default function Home() {
       }
       
       const latestReading = telemetryRecords[telemetryRecords.length - 1];
+      latestReading.diagnosed_component = detected_fault;
+      latestReading.anomaly_signature = "VIB_TEMP_COMP_FAULT";
       const anomaly_explanation = `Metric 'vibration' crossed critical limit: ${latestReading.vibration.toFixed(2)} mm/s > ${(thresholds.vibration || 10.0).toFixed(2)} mm/s. Metric 'temperature' crossed critical limit: ${latestReading.temperature.toFixed(1)}°C > ${(thresholds.temperature || 80.0).toFixed(1)}°C. High thermal ramp rate detected.`;
       
       const newOrderId = (currentData.maintenance_orders || []).reduce((max, o) => o.id > max ? o.id : max, 0) + 1;
