@@ -100,6 +100,9 @@ CREATE TABLE maintenance_orders (
     assigned_technician VARCHAR(100),
     diagnosed_component VARCHAR(100),       -- localized component breakdown
     anomaly_signature VARCHAR(100),         -- anomaly signature
+    actual_failed_component VARCHAR(100),   -- technician verified actual failure
+    actual_part_used VARCHAR(50),           -- technician verified spare part used
+    prediction_correct BOOLEAN,             -- calculated diagnosis accuracy flag
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_maintenance_status CHECK (status IN ('Pending', 'Approved', 'Dispatched', 'Pending_Sourcing', 'Dispatched_Sourcing_Active'))
