@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { 
   X, 
   Cpu, 
@@ -54,6 +55,7 @@ export default function Sidebar({
   isLoggedIn,
   signOut
 }) {
+  const router = useRouter();
   const { showConfirm } = useToast();
 
   return (
@@ -159,7 +161,7 @@ export default function Sidebar({
                   onClose();
                   showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                     updateTabActiveProject(null);
-                    window.location.href = "/c-home";
+                    router.push("/c-home");
                   });
                 }}
                 className={`w-full px-3 py-3 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${

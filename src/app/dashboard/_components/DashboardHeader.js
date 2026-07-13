@@ -1,3 +1,4 @@
+import { useRouter } from "next/navigation";
 import { 
   Cpu, 
   HelpCircle, 
@@ -40,6 +41,7 @@ export default function DashboardHeader({
   mobileSimDropdownOpen,
   setMobileSimDropdownOpen
 }) {
+  const router = useRouter();
   const { showConfirm } = useToast();
   return (
     <header className={`border-b ${theme === 'dark' ? 'border-[#182030] bg-[#0c0f17]/95 text-white' : 'border-slate-200 bg-white/90 shadow-[0_2px_15px_rgba(0,0,0,0.02)] text-slate-800'} px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md transition-all duration-300`}>
@@ -119,7 +121,7 @@ export default function DashboardHeader({
             onClick={() => {
               showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                 updateTabActiveProject(null);
-                window.location.href = "/c-home";
+                router.push("/c-home");
               });
             }}
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
@@ -294,7 +296,7 @@ export default function DashboardHeader({
                 onClick={() => {
                   showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                     updateTabActiveProject(null);
-                    window.location.href = "/c-home";
+                    router.push("/c-home");
                   });
                 }}
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
