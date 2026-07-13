@@ -71,3 +71,9 @@ schema.sql
 backend/schema.sql
 
 page_history.patch
+backend/gemini_training_data.jsonl
+backend/convert_ai4i_to_jsonl.py
+backend/ai4i2020.csv
+backend/ai4i2020_gemini.jsonl
+backend/evaluate_accuracy.py
+backend/export_training_data.py
