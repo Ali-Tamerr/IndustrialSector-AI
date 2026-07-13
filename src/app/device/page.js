@@ -15,25 +15,48 @@ export default function DeviceClientPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [logs, setLogs] = useState([]);
+  const [thoughts, setThoughts] = useState([]);
+  const [localLogs, setLocalLogs] = useState([]);
   const [workflowMachines, setWorkflowMachines] = useState([]);
   const [loadingMachines, setLoadingMachines] = useState(true);
 
   const addLog = (text) => {
-    setLogs(prev => [{ time: new Date().toLocaleTimeString(), text }, ...prev].slice(0, 8));
+    setLocalLogs(prev => [{ id: Date.now() + Math.random(), agent: "IoT Client", type: text.startsWith("ERROR") ? "warning" : text.startsWith("SUCCESS") ? "planning" : "info", text }, ...prev].slice(0, 12));
   };
 
+  // Load thoughts from localStorage (persisted by dashboard/c-home) + subscribe for live sync
   useEffect(() => {
-    setLogs([
-      { time: new Date().toLocaleTimeString(), text: "IoT telemetry client initialized." },
-      { time: new Date().toLocaleTimeString(), text: "Ready to transmit to local gateway." }
+    const activeId = localStorage.getItem("activeProjectId");
+
+    // Load persisted agent thoughts
+    if (activeId) {
+      try {
+        const raw = localStorage.getItem(`workspace_thoughts_${activeId}`);
+        if (raw) {
+          setThoughts(JSON.parse(raw));
+        }
+      } catch (e) { console.warn("Failed to load thoughts:", e); }
+    }
+
+    // Cross-tab live sync: when dashboard writes new thoughts, update here instantly
+    const handleStorage = (e) => {
+      if (e.key && e.key.startsWith("workspace_thoughts_") && e.newValue) {
+        try {
+          setThoughts(JSON.parse(e.newValue));
+        } catch (err) { /* ignore parse errors */ }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    setLocalLogs([
+      { id: 1, agent: "IoT Client", type: "info", text: "IoT telemetry client initialized." },
+      { id: 2, agent: "IoT Client", type: "info", text: "Ready to transmit to local gateway." }
     ]);
 
     // Fetch machines with their historical averages
     const fetchAverages = async () => {
       try {
         if (typeof window !== "undefined") {
-          const activeId = localStorage.getItem("activeProjectId");
           if (activeId) {
             const localDataRaw = localStorage.getItem(`workspace_data_${activeId}`);
             if (localDataRaw) {
@@ -88,6 +111,8 @@ export default function DeviceClientPage() {
     };
     
     fetchAverages();
+
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const handleBroadcastFleet = async () => {

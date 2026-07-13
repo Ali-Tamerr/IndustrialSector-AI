@@ -262,6 +262,14 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isSetupCompleted, activeProjectId, updateTabActiveProject]);
 
+  // Persist thoughts to localStorage for cross-page sync (device console)
+  useEffect(() => {
+    if (!activeProjectId || thoughts.length <= 2) return;
+    try {
+      localStorage.setItem(`workspace_thoughts_${activeProjectId}`, JSON.stringify(thoughts));
+    } catch (e) { /* quota exceeded - ignore */ }
+  }, [thoughts, activeProjectId]);
+
   // Load project initialization state & projects list
   useEffect(() => {
     let tabId = sessionStorage.getItem("tabId");

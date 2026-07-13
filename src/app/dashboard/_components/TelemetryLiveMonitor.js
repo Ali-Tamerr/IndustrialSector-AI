@@ -458,30 +458,14 @@ export default function TelemetryLiveMonitor({
                               {/* Glowing Accent */}
                               <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500 animate-pulse"></div>
                               
-                              <div className="flex items-center space-x-2 mb-2 font-bold uppercase tracking-wider text-[10px] text-red-500">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                </span>
-                                <span>Critical Gemini Prediction Result</span>
-                              </div>
+                              
 
                               <div className="space-y-2">
                                 <div>
                                   <span className={`text-[9px] uppercase tracking-wider block ${theme === 'dark' ? 'text-red-400/80' : 'text-red-600/80'}`}>Predicted Component Failure</span>
                                   <span className={`font-bold text-sm ${theme === 'dark' ? 'text-white' : 'text-red-950'}`}>{diagnosedComponent || "Isolating mechanical/electrical fault..."}</span>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-red-500/10 text-[10px]">
-                                  <div>
-                                    <span className={`text-[8px] uppercase block ${theme === 'dark' ? 'text-red-400/60' : 'text-red-600/60'}`}>Required Part</span>
-                                    <span className={`font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{requiredPartId} · {partName}</span>
-                                  </div>
-                                  <div>
-                                    <span className={`text-[8px] uppercase block ${theme === 'dark' ? 'text-red-400/60' : 'text-red-600/60'}`}>Action Level</span>
-                                    <span className="font-bold text-red-500 dark:text-red-400">EMERGENCY DISPATCH</span>
-                                  </div>
-                                </div>
+                          
                               </div>
                             </div>
                           );

@@ -963,6 +963,14 @@ export default function Home() {
     }
   }, [thoughts]);
 
+  // Persist thoughts to localStorage for cross-page sync (device console)
+  useEffect(() => {
+    if (!activeProjectId || thoughts.length <= 2) return;
+    try {
+      localStorage.setItem(`workspace_thoughts_${activeProjectId}`, JSON.stringify(thoughts));
+    } catch (e) { /* quota exceeded - ignore */ }
+  }, [thoughts, activeProjectId]);
+
   // Trigger Anomaly simulation
   const handleSimulation = async (machineIdToSimulate = null) => {
     setSimulating(true);
