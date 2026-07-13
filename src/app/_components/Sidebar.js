@@ -158,8 +158,6 @@ export default function Sidebar({
                 onClick={() => {
                   onClose();
                   showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
-                    localStorage.removeItem("activeProjectId");
-                    localStorage.removeItem("isSetupCompleted");
                     updateTabActiveProject(null);
                     window.location.href = "/c-home";
                   });

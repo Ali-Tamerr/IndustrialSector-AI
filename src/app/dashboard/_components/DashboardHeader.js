@@ -118,8 +118,6 @@ export default function DashboardHeader({
           <button
             onClick={() => {
               showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
-                localStorage.removeItem("activeProjectId");
-                localStorage.removeItem("isSetupCompleted");
                 updateTabActiveProject(null);
                 window.location.href = "/c-home";
               });
@@ -295,8 +293,6 @@ export default function DashboardHeader({
               <button
                 onClick={() => {
                   showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
-                    localStorage.removeItem("activeProjectId");
-                    localStorage.removeItem("isSetupCompleted");
                     updateTabActiveProject(null);
                     window.location.href = "/c-home";
                   });

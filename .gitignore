@@ -77,3 +77,4 @@ backend/ai4i2020.csv
 backend/ai4i2020_gemini.jsonl
 backend/evaluate_accuracy.py
 backend/export_training_data.py
+backend/train_gemini_model.py

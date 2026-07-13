@@ -271,6 +271,10 @@ export default function Home() {
     }
 
     updateTabActiveProject(null);
+    const savedActiveId = localStorage.getItem("activeProjectId");
+    if (savedActiveId) {
+      setActiveProjectId(savedActiveId);
+    }
 
     const syncActiveTabs = () => {
       try {
