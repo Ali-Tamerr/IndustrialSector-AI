@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   PETROCHEMICAL_TEMPLATE,
@@ -99,6 +100,7 @@ function Sparkline({ data, color = "#2563eb", width = 120, height = 36 }) {
 
 
 export default function Home() {
+  const router = useRouter();
   const { showToast, showConfirm } = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -363,9 +365,24 @@ export default function Home() {
     }
 
 
+    // Handle bfcache restoration: re-read localStorage on back/forward navigation
+    const handlePageShow = (e) => {
+      if (e.persisted) {
+        const savedProjects = localStorage.getItem("projects");
+        if (savedProjects) {
+          try { setProjects(JSON.parse(savedProjects)); } catch (e) {}
+        }
+        const savedActiveId = localStorage.getItem("activeProjectId");
+        if (savedActiveId) setActiveProjectId(savedActiveId);
+        syncActiveTabs();
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+
     return () => {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("pageshow", handlePageShow);
     };
   }, [updateTabActiveProject]);
 
@@ -480,7 +497,7 @@ export default function Home() {
       localStorage.setItem("isSetupCompleted", "true");
       updateTabActiveProject(finalProjectId);
       localStorage.setItem("lastSeededProjectId", finalProjectId);
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
       
       // Trigger tour onboarding only on first creation
       if (isNewProject) {
@@ -564,7 +581,7 @@ export default function Home() {
     if (!localData) {
       await handleSetup(proj.type, proj.templateId, proj.customMachines, false, proj.id);
     } else {
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
     }
   };
 
@@ -1535,15 +1552,6 @@ Industrial Sector AI Automation Network`;
     if (!data || !data.machines) return false;
     return data.machines.some(m => m.status === "Critical" || m.status === "Degraded");
   }, [data]);
-
-  if (isSetupCompleted) {
-    return (
-      <div className={`flex h-screen flex-col items-center justify-center ${theme === 'dark' ? 'bg-[#030508] text-cyan-400' : 'bg-[#f8fafc] text-cyan-600'} font-mono`}>
-        <Activity className={`h-10 w-10 animate-spin mb-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`} />
-        <div className="animate-pulse tracking-widest text-xs font-bold">REDIRECTING TO CONTROL TOWER...</div>
-      </div>
-    );
-  }
 
   // Preset list for presentation
   const presets = [

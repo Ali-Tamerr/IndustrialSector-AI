@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Activity } from "lucide-react";
 
 import Navbar from "@/app/_components/Navbar";
@@ -27,6 +28,7 @@ const API_BASE = (typeof window !== "undefined" && (window.location.hostname ===
 
 
 export default function Home() {
+  const router = useRouter();
   const { showToast, showConfirm } = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -335,7 +337,7 @@ export default function Home() {
     const completed = localStorage.getItem("isSetupCompleted");
     const savedActiveId = localStorage.getItem("activeProjectId");
     if (completed !== "true" || !savedActiveId) {
-      window.location.replace("/");
+      router.replace("/c-home");
       return;
     } else {
       setIsSetupCompleted(true);
@@ -426,11 +428,28 @@ export default function Home() {
       }
     }
 
+    // Handle bfcache restoration: re-check localStorage on back/forward navigation
+    const handlePageShow = (e) => {
+      if (e.persisted) {
+        const completed = localStorage.getItem("isSetupCompleted");
+        const savedActiveId = localStorage.getItem("activeProjectId");
+        if (completed === "true" && savedActiveId) {
+          setIsSetupCompleted(true);
+          setActiveProjectId(savedActiveId);
+          updateTabActiveProject(savedActiveId);
+        } else {
+          router.replace("/c-home");
+        }
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+
     return () => {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [updateTabActiveProject]);
+  }, [updateTabActiveProject, router]);
 
   const generateDefaultName = (type, templateId) => {
     const customPrefixes = [

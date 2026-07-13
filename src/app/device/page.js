@@ -186,7 +186,7 @@ export default function DeviceClientPage() {
         {/* Left column: Instructions and Live Console */}
         <div className="lg:col-span-1 space-y-6">
           <InstructionsPanel />
-          <ConsoleOut logs={logs} />
+          <ConsoleOut logs={localLogs} />
         </div>
 
         {/* Right column: Fleet Averages & Broadcasting */}
