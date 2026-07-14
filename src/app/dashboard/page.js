@@ -337,7 +337,7 @@ export default function Home() {
     const completed = localStorage.getItem("isSetupCompleted");
     const savedActiveId = localStorage.getItem("activeProjectId");
     if (completed !== "true" || !savedActiveId) {
-      router.replace("/c-home");
+      router.replace("/");
       return;
     } else {
       setIsSetupCompleted(true);
@@ -438,7 +438,7 @@ export default function Home() {
           setActiveProjectId(savedActiveId);
           updateTabActiveProject(savedActiveId);
         } else {
-          router.replace("/c-home");
+          router.replace("/");
         }
       }
     };

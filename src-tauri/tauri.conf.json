@@ -5,7 +5,7 @@
   "identifier": "com.industrialsector.controltower",
   "build": {
     "frontendDist": "../frontend-dist",
-    "devUrl": "http://localhost:3160/c-home",
+    "devUrl": "http://localhost:3160/",
     "beforeDevCommand": "npm run dev:resources",
     "beforeBuildCommand": "npm run build:resources"
   },

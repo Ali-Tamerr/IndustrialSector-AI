@@ -130,8 +130,8 @@ export default function Sidebar({
                 <span>Dashboard Tour</span>
               </button>
 
-              {/* <Link
-                href="/"
+              <Link
+                href="/admin"
                 onClick={onClose}
                 className={`w-full px-3 py-3 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${
                   theme === 'dark'
@@ -141,7 +141,7 @@ export default function Sidebar({
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span>Admin Portal</span>
-              </Link> */}
+              </Link>
 
               <Link
                 href="/device"
@@ -161,7 +161,7 @@ export default function Sidebar({
                   onClose();
                   showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                     updateTabActiveProject(null);
-                    router.push("/c-home");
+                    router.push("/");
                   });
                 }}
                 className={`w-full px-3 py-3 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${

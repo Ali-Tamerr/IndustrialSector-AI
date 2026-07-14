@@ -24,7 +24,7 @@ export default function DeviceClientPage() {
     setLocalLogs(prev => [{ id: Date.now() + Math.random(), agent: "IoT Client", type: text.startsWith("ERROR") ? "warning" : text.startsWith("SUCCESS") ? "planning" : "info", text }, ...prev].slice(0, 12));
   };
 
-  // Load thoughts from localStorage (persisted by dashboard/c-home) + subscribe for live sync
+  // Load thoughts from localStorage (persisted by dashboard/root portal) + subscribe for live sync
   useEffect(() => {
     const activeId = localStorage.getItem("activeProjectId");
 
@@ -186,7 +186,7 @@ export default function DeviceClientPage() {
         {/* Left column: Instructions and Live Console */}
         <div className="lg:col-span-1 space-y-6">
           <InstructionsPanel />
-          <ConsoleOut logs={localLogs} />
+          <ConsoleOut thoughts={thoughts} localLogs={localLogs} />
         </div>
 
         {/* Right column: Fleet Averages & Broadcasting */}

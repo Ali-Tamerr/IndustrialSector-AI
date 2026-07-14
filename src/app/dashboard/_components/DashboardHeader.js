@@ -121,7 +121,7 @@ export default function DashboardHeader({
             onClick={() => {
               showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                 updateTabActiveProject(null);
-                router.push("/c-home");
+                router.push("/");
               });
             }}
             className={`px-3 py-2 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center space-x-1.5 ${
@@ -296,7 +296,7 @@ export default function DashboardHeader({
                 onClick={() => {
                   showConfirm("Return to Projects Portal? Current database setup will remain active until you launch another fleet config.", () => {
                     updateTabActiveProject(null);
-                    router.push("/c-home");
+                    router.push("/");
                   });
                 }}
                 className={`w-full px-3 py-2.5 font-mono text-xs font-semibold rounded border transition-all duration-300 flex items-center justify-center space-x-1.5 ${

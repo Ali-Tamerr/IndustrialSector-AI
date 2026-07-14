@@ -70,7 +70,7 @@ const entryHtml = `<!doctype html>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Industrial Control Tower</title>
-    <meta http-equiv="refresh" content="0;url=http://127.0.0.1:3160/c-home" />
+    <meta http-equiv="refresh" content="0;url=http://127.0.0.1:3160/" />
     <style>
       :root {
         color-scheme: dark;
@@ -120,10 +120,10 @@ const entryHtml = `<!doctype html>
     <div class="shell">
       <div class="ring" aria-hidden="true"></div>
       <div class="title">Industrial Control Tower</div>
-      <div class="sub">Starting local server and opening /c-home...</div>
+      <div class="sub">Starting local server...</div>
     </div>
     <script>
-      window.location.replace('http://127.0.0.1:3160/c-home');
+      window.location.replace('http://127.0.0.1:3160/');
     </script>
   </body>
 </html>
