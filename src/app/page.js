@@ -1955,14 +1955,10 @@ Industrial Sector AI Automation Network`;
                         }`}>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleLaunchProject(proj); }}
-                            className={`font-bold flex items-center gap-1 transition-all ${
-                              isProjActive
-                                ? 'text-emerald-400'
-                                : 'text-cyan-400 group-hover:text-cyan-300'
-                            }`}
+                            className="font-bold flex items-center gap-1 transition-all text-cyan-400 group-hover:text-cyan-300"
                           >
                             <Play className="w-3.5 h-3.5" />
-                            <span>{isProjActive ? "ACTIVE" : "LAUNCH"}</span>
+                            <span>LAUNCH</span>
                           </button>
 
                           <div className="flex items-center gap-2">
