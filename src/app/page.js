@@ -43,7 +43,8 @@ import {
   Share2,
   X,
   Pencil,
-  FileText
+  FileText,
+  MoreHorizontal
 } from "lucide-react";
 
 const API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
@@ -118,6 +119,8 @@ export default function Home() {
   const [simulatorDropdownOpen, setSimulatorDropdownOpen] = useState(false);
   const [componentsPopupMachineId, setComponentsPopupMachineId] = useState(null);
   const [graphsPopupMachineId, setGraphsPopupMachineId] = useState(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef(null);
   const prevStages = useRef({});
   const thoughtsContainerRef = useRef(null);
   const pollIntervalRef = useRef(null);
@@ -142,6 +145,19 @@ export default function Home() {
     } else {
       document.documentElement.classList.remove("dark");
     }
+  }, []);
+
+  // Close the more menu dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setShowMoreMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -1727,6 +1743,32 @@ Industrial Sector AI Automation Network`;
                 <Plus className="w-4 h-4" />
                 <span>NEW WORKSPACE</span>
               </button>
+
+              <div ref={moreMenuRef} className="relative">
+                <button
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  className={`py-2.5 px-3 rounded-xl transition-all duration-300 flex items-center justify-center border hover:scale-[1.01] ${
+                    theme === 'dark'
+                      ? 'bg-slate-900/60 border-slate-800 text-slate-350 hover:bg-slate-800 hover:text-white'
+                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
+                  }`}
+                  title="More Options"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                
+                {showMoreMenu && (
+                  <div className="absolute right-0 mt-2 w-36 bg-white border border-slate-200/85 rounded-xl shadow-lg z-50 py-1.5 animate-fadeIn">
+                    <Link
+                      href="/admin"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="block px-4 py-2 text-center text-xs font-mono font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 hover:text-cyan-600 transition-colors"
+                    >
+                      Login page
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
