@@ -1758,13 +1758,21 @@ Industrial Sector AI Automation Network`;
                 </button>
                 
                 {showMoreMenu && (
-                  <div className="absolute right-0 mt-2 w-36 bg-white border border-slate-200/85 rounded-xl shadow-lg z-50 py-1.5 animate-fadeIn">
+                  <div className={`absolute right-0 mt-2 w-40 border rounded-2xl shadow-xl z-50 p-1.5 animate-fadeIn ${
+                    theme === 'dark'
+                      ? 'bg-[#0c0f17] border-[#182030]'
+                      : 'bg-white border-slate-200/90'
+                  }`}>
                     <Link
                       href="/admin"
                       onClick={() => setShowMoreMenu(false)}
-                      className="block px-4 py-2 text-center text-xs font-mono font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 hover:text-cyan-600 transition-colors"
+                      className={`block text-center py-2.5 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                        theme === 'dark'
+                          ? 'text-slate-350 hover:bg-[#182030] hover:text-white'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100'
+                      }`}
                     >
-                      Login page
+                      LOGIN PAGE
                     </Link>
                   </div>
                 )}
