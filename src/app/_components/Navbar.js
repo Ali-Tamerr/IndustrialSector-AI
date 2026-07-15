@@ -141,7 +141,19 @@ export default function Navbar({
 
         {/* Right Actions Section */}
         <div className="flex items-center space-x-3.5">
-          
+          {pageType === "dashboard" && (
+            <Link
+              href="/device"
+              className={`px-3.5 py-2 font-mono text-xs font-semibold rounded-xl border transition-all duration-300 flex items-center space-x-1.5 ${
+                theme === 'dark'
+                  ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-600 hover:text-white'
+                  : 'bg-emerald-50 text-indigo-700 border-emerald-202/85 hover:bg-emerald-600 hover:text-white shadow-sm'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Send to Admin</span>
+            </Link>
+          )}
           {/* {pageType === "dashboard" && (
             <div className="flex flex-col text-right font-mono text-[10px] mr-2">
               <span className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>FLEET PERFORMANCE</span>
