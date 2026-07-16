@@ -19,7 +19,8 @@ export async function POST(request) {
     const mockPassword = "password123";
     const mockAdminId = "ADM-8A9F";
 
-    if (!cleanDatabaseUrl) {
+    const customDbUrl = request.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+    if (!customDbUrl) {
       // Local fallback mode when DATABASE_URL is not set
       if (email === mockEmail && password === mockPassword) {
         return NextResponse.json({
@@ -36,7 +37,7 @@ export async function POST(request) {
 
     let client;
     try {
-      client = await pool.connect();
+      client = await pool.connect(customDbUrl);
       await ensureTablesInitialized(client);
 
       const res = await client.query(

@@ -5,8 +5,11 @@ import { promisify } from "util";
 
 const execPromise = promisify(exec);
 
-export async function POST() {
+export async function POST(req) {
   try {
+    const customDbUrl = req.headers.get("x-custom-db-url");
+    const customGeminiKey = req.headers.get("x-custom-gemini-key");
+
     // Target the backend directory where Python files are located
     const runDir = path.join(process.cwd(), "backend");
     
@@ -16,7 +19,13 @@ export async function POST() {
     
     console.log(`[API] Executing command: ${cmd} in directory: ${runDir}`);
     
-    const { stdout, stderr } = await execPromise(cmd, { cwd: runDir });
+    const env = {
+      ...process.env,
+    };
+    if (customDbUrl) env.DATABASE_URL = customDbUrl;
+    if (customGeminiKey) env.GEMINI_API_KEY = customGeminiKey;
+
+    const { stdout, stderr } = await execPromise(cmd, { cwd: runDir, env });
     
     if (stderr && stderr.includes("Traceback")) {
       console.error("[API] Simulation python script printed error trace:", stderr);

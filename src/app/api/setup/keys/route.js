@@ -1,69 +1,45 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import os from "os";
 import { Client } from "pg";
-import { updateDatabaseUrl } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
-const envFolder = path.join(os.homedir(), ".industrial_control_tower");
-const envPath = path.join(envFolder, ".env");
-
-// Helper to parse env content
-function parseEnv(content) {
-  const env = {};
-  content.split("\n").forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) return;
-    const [key, ...valueParts] = trimmed.split("=");
-    if (key && valueParts.length > 0) {
-      const value = valueParts.join("=").trim().replace(/(^['"]|['"]$)/g, "");
-      env[key.trim()] = value;
-    }
+// Helper to verify a database connection
+async function testDbConnection(databaseUrl) {
+  if (!databaseUrl) {
+    return { dbConnected: false, dbError: "No connection string provided." };
+  }
+  const cleanUrl = databaseUrl.split("?")[0];
+  const testClient = new Client({
+    connectionString: cleanUrl,
+    ssl: cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 4000,
   });
-  return env;
+  try {
+    await testClient.connect();
+    await testClient.query("SELECT 1;");
+    return { dbConnected: true, dbError: null };
+  } catch (err) {
+    return { dbConnected: false, dbError: err.message };
+  } finally {
+    await testClient.end().catch(() => {});
+  }
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
-    let databaseUrl = process.env.DATABASE_URL || "";
-    let geminiApiKey = process.env.GEMINI_API_KEY || "";
+    const customDbUrl = req.headers.get("x-custom-db-url");
+    const customGeminiKey = req.headers.get("x-custom-gemini-key");
 
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, "utf8");
-      const env = parseEnv(content);
-      if (env.DATABASE_URL) databaseUrl = env.DATABASE_URL;
-      if (env.GEMINI_API_KEY) geminiApiKey = env.GEMINI_API_KEY;
-    }
+    const databaseUrl = customDbUrl || process.env.DATABASE_URL || "";
+    const geminiApiKey = customGeminiKey || process.env.GEMINI_API_KEY || "";
 
-    // Verify DB connection
-    let dbConnected = false;
-    let dbError = null;
-    if (databaseUrl) {
-      const cleanUrl = databaseUrl.split("?")[0];
-      const testClient = new Client({
-        connectionString: cleanUrl,
-        ssl: cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
-        connectionTimeoutMillis: 4000,
-      });
-      try {
-        await testClient.connect();
-        await testClient.query("SELECT 1;");
-        dbConnected = true;
-      } catch (err) {
-        dbError = err.message;
-      } finally {
-        await testClient.end().catch(() => {});
-      }
-    }
+    const { dbConnected, dbError } = await testDbConnection(databaseUrl);
 
     return NextResponse.json({
-      DATABASE_URL: databaseUrl,
-      GEMINI_API_KEY: geminiApiKey,
       dbConnected,
       dbError,
       geminiConfigured: !!geminiApiKey,
+      dbConfigured: !!databaseUrl,
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -74,43 +50,8 @@ export async function POST(req) {
   try {
     const { DATABASE_URL, GEMINI_API_KEY } = await req.json();
 
-    if (!fs.existsSync(envFolder)) {
-      fs.mkdirSync(envFolder, { recursive: true });
-    }
-
-    // Write to home folder .env
-    const envContent = [
-      `DATABASE_URL=${DATABASE_URL || ""}`,
-      `GEMINI_API_KEY=${GEMINI_API_KEY || ""}`
-    ].join("\n");
-
-    fs.writeFileSync(envPath, envContent, "utf8");
-
-    // Update in-memory process env and Next.js DB pool
-    process.env.DATABASE_URL = DATABASE_URL;
-    process.env.GEMINI_API_KEY = GEMINI_API_KEY;
-    updateDatabaseUrl(DATABASE_URL);
-
-    // Verify connection to the new database URL
-    let dbConnected = false;
-    let dbError = null;
-    if (DATABASE_URL) {
-      const cleanUrl = DATABASE_URL.split("?")[0];
-      const testClient = new Client({
-        connectionString: cleanUrl,
-        ssl: cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
-        connectionTimeoutMillis: 4000,
-      });
-      try {
-        await testClient.connect();
-        await testClient.query("SELECT 1;");
-        dbConnected = true;
-      } catch (err) {
-        dbError = err.message;
-      } finally {
-        await testClient.end().catch(() => {});
-      }
-    }
+    // Verify connection to the provided database URL
+    const { dbConnected, dbError } = await testDbConnection(DATABASE_URL);
 
     return NextResponse.json({
       success: true,

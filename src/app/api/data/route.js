@@ -3,13 +3,14 @@ import { pool, cleanDatabaseUrl } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
-export async function HEAD() {
-  if (!cleanDatabaseUrl) {
+export async function HEAD(req) {
+  const customDbUrl = req.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+  if (!customDbUrl) {
     return new Response(null, { status: 500 });
   }
   let client;
   try {
-    client = await pool.connect();
+    client = await pool.connect(customDbUrl);
     await client.query("SELECT 1;");
     return new Response(null, { status: 200 });
   } catch (err) {
@@ -21,14 +22,15 @@ export async function HEAD() {
 }
 
 export async function GET(req) {
-  if (!cleanDatabaseUrl) {
+  const customDbUrl = req.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+  if (!customDbUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
     );
   }
 
-  const client = await pool.connect();
+  const client = await pool.connect(customDbUrl);
   try {
     const { searchParams } = new URL(req.url);
     let workspaceId = searchParams.get("workspace_id");

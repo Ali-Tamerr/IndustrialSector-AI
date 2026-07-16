@@ -31,51 +31,42 @@ const towerEnvPath = path.join(os.homedir(), ".industrial_control_tower", ".env"
 loadEnvFile(towerEnvPath);
 
 // Establish database url variables
-let databaseUrl = process.env.DATABASE_URL;
-export let cleanDatabaseUrl = databaseUrl ? databaseUrl.split("?")[0] : databaseUrl;
+export let cleanDatabaseUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.split("?")[0] : null;
 
-let activePool = null;
-let currentConnectionString = null;
+const pools = {};
 
-function getActivePool() {
-  const latestUrl = process.env.DATABASE_URL;
+export function getOrCreatePool(customUrl) {
+  const latestUrl = customUrl || process.env.DATABASE_URL;
   const cleanUrl = latestUrl ? latestUrl.split("?")[0] : null;
 
-  // If no DATABASE_URL is configured, return null — callers must handle this
   if (!cleanUrl) {
     return null;
   }
 
-  if (!activePool || cleanUrl !== currentConnectionString) {
-    if (activePool) {
-      activePool.end().catch(err => console.error("Error closing old pool:", err));
-    }
-    currentConnectionString = cleanUrl;
-    activePool = new Pool({
+  if (!pools[cleanUrl]) {
+    pools[cleanUrl] = new Pool({
       connectionString: cleanUrl,
       ssl: cleanUrl.includes("aivencloud.com") ? { rejectUnauthorized: false } : false,
     });
   }
-  return activePool;
+  return pools[cleanUrl];
 }
 
 // Wrapper object that implements the standard Pool interface used in the app
 const pool = {
-  connect: () => {
-    const p = getActivePool();
+  connect: (customUrl) => {
+    const p = getOrCreatePool(customUrl);
     if (!p) throw new Error("Database not configured — set DATABASE_URL in Settings.");
     return p.connect();
   },
-  query: (text, params) => {
-    const p = getActivePool();
+  query: (text, params, customUrl) => {
+    const p = getOrCreatePool(customUrl);
     if (!p) throw new Error("Database not configured — set DATABASE_URL in Settings.");
     return p.query(text, params);
   },
   end: () => {
-    if (activePool) {
-      return activePool.end();
-    }
-    return Promise.resolve();
+    const promises = Object.values(pools).map(p => p.end());
+    return Promise.all(promises);
   }
 };
 

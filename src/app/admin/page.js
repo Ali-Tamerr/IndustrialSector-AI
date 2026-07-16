@@ -30,6 +30,17 @@ export default function AdminPage() {
   const [adminId, setAdminId] = useState("ADM-8A9F");
   const [fleetData, setFleetData] = useState(null);
 
+  const getCustomHeaders = (extraHeaders = {}) => {
+    const headers = { ...extraHeaders };
+    if (typeof window !== "undefined") {
+      const dbUrl = localStorage.getItem("local_database_url");
+      const geminiKey = localStorage.getItem("local_gemini_api_key");
+      if (dbUrl) headers["x-custom-db-url"] = dbUrl;
+      if (geminiKey) headers["x-custom-gemini-key"] = geminiKey;
+    }
+    return headers;
+  };
+
   const { data: session, status } = useSession();
 
   // Sync Google session with local state variables
@@ -53,7 +64,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/reports", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getCustomHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ reportId, approved: true })
       });
 
@@ -71,7 +82,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/reports", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getCustomHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ reportId, approved: false })
       });
 
@@ -133,7 +144,9 @@ export default function AdminPage() {
 
   const fetchReports = async () => {
     try {
-      const res = await fetch(`/api/reports?adminId=${adminId}`);
+      const res = await fetch(`/api/reports?adminId=${adminId}`, {
+        headers: getCustomHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         setReports(data.reports || []);
@@ -154,7 +167,9 @@ export default function AdminPage() {
 
   const fetchFleetData = async () => {
     try {
-      const res = await fetch("/api/data");
+      const res = await fetch("/api/data", {
+        headers: getCustomHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         setFleetData(data);
@@ -239,7 +254,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/reports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getCustomHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           adminId,
           machineId: testMachineId,

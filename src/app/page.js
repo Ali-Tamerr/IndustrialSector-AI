@@ -405,10 +405,19 @@ export default function Home() {
   const fetchKeys = async () => {
     try {
       setDbStatus(prev => ({ ...prev, checking: true }));
-      const res = await fetch("/api/setup/keys");
+      
+      const savedDbUrl = localStorage.getItem("local_database_url") || "";
+      const savedGeminiKey = localStorage.getItem("local_gemini_api_key") || "";
+      setDbUrlInput(savedDbUrl);
+      setGeminiApiKeyInput(savedGeminiKey);
+
+      const headers = {};
+      if (savedDbUrl) headers["x-custom-db-url"] = savedDbUrl;
+      if (savedGeminiKey) headers["x-custom-gemini-key"] = savedGeminiKey;
+
+      const res = await fetch("/api/setup/keys", { headers });
       const data = await res.json();
       if (res.ok) {
-        // Intentionally do NOT pre-fill inputs — users must type new values to overwrite
         setDbStatus({
           connected: data.dbConnected,
           error: data.dbError,
@@ -452,10 +461,15 @@ export default function Home() {
         setGeminiStatus({
           configured: data.geminiConfigured
         });
+        
+        // Save to browser client-side storage instead of server files
+        localStorage.setItem("local_database_url", dbUrlInput || "");
+        localStorage.setItem("local_gemini_api_key", geminiApiKeyInput || "");
+
         if (data.dbConnected) {
-          showToast("Configuration saved! Database connection successful.", "success");
+          showToast("Configuration saved locally! Database connection successful.", "success");
         } else {
-          showToast("Configuration saved, but database connection failed. Please check your credentials.", "warning");
+          showToast("Configuration saved locally, but database connection failed. Please check your credentials.", "warning");
         }
         setShowSettingsModal(false);
       } else {

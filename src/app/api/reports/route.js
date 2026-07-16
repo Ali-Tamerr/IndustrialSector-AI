@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic';
 
 
 export async function GET(request) {
-  if (!cleanDatabaseUrl) {
+  const customDbUrl = request.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+  if (!customDbUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
@@ -19,7 +20,7 @@ export async function GET(request) {
   let client;
   try {
     try {
-      client = await pool.connect();
+      client = await pool.connect(customDbUrl);
       await ensureTablesInitialized(client);
     } catch (dbConnectErr) {
       console.warn("Database connection failed for GET /api/reports, using offline mock data:", dbConnectErr.message);
@@ -76,7 +77,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  if (!cleanDatabaseUrl) {
+  const customDbUrl = request.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+  if (!customDbUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
@@ -96,7 +98,7 @@ export async function POST(request) {
     }
 
     try {
-      client = await pool.connect();
+      client = await pool.connect(customDbUrl);
       await ensureTablesInitialized(client);
 
       // Validate adminId exists
@@ -154,7 +156,8 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  if (!cleanDatabaseUrl) {
+  const customDbUrl = request.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+  if (!customDbUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
@@ -174,7 +177,7 @@ export async function PUT(request) {
     }
 
     try {
-      client = await pool.connect();
+      client = await pool.connect(customDbUrl);
       await ensureTablesInitialized(client);
 
       // Update the report's approval status

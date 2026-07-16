@@ -4,7 +4,8 @@ import { pool, cleanDatabaseUrl } from "@/lib/db";
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
-  if (!cleanDatabaseUrl) {
+  const customDbUrl = req.headers.get("x-custom-db-url") || cleanDatabaseUrl;
+  if (!customDbUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is missing." },
       { status: 500 }
@@ -13,7 +14,7 @@ export async function POST(req) {
 
   let client;
   try {
-    client = await pool.connect();
+    client = await pool.connect(customDbUrl);
     const body = await req.json();
     const { machines, inventory, nodes, edges } = body;
 

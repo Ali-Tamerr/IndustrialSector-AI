@@ -3,11 +3,12 @@ import { pool, cleanDatabaseUrl } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
-async function checkDatabase() {
-  if (!cleanDatabaseUrl) {
+async function checkDatabase(customDbUrl) {
+  const finalUrl = customDbUrl || cleanDatabaseUrl;
+  if (!finalUrl) {
     throw new Error("DATABASE_URL environment variable is missing.");
   }
-  const client = await pool.connect();
+  const client = await pool.connect(finalUrl);
   try {
     await client.query("SELECT 1;");
   } finally {
@@ -15,9 +16,10 @@ async function checkDatabase() {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
-    await checkDatabase();
+    const customDbUrl = req.headers.get("x-custom-db-url");
+    await checkDatabase(customDbUrl);
     return NextResponse.json({
       status: "healthy",
       database: "connected",
@@ -32,9 +34,10 @@ export async function GET() {
   }
 }
 
-export async function HEAD() {
+export async function HEAD(req) {
   try {
-    await checkDatabase();
+    const customDbUrl = req.headers.get("x-custom-db-url");
+    await checkDatabase(customDbUrl);
     return new Response(null, { status: 200 });
   } catch (err) {
     console.error("Health check failed during HEAD request:", err);

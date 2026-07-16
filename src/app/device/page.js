@@ -94,8 +94,21 @@ export default function DeviceClientPage() {
         console.warn("Failed to load averages from local storage, falling back to API:", localErr);
       }
 
+      const getCustomHeaders = (extraHeaders = {}) => {
+        const headers = { ...extraHeaders };
+        if (typeof window !== "undefined") {
+          const dbUrl = localStorage.getItem("local_database_url");
+          const geminiKey = localStorage.getItem("local_gemini_api_key");
+          if (dbUrl) headers["x-custom-db-url"] = dbUrl;
+          if (geminiKey) headers["x-custom-gemini-key"] = geminiKey;
+        }
+        return headers;
+      };
+
       try {
-        const res = await fetch("/api/reports?action=averages");
+        const res = await fetch("/api/reports?action=averages", {
+          headers: getCustomHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
           setWorkflowMachines(data.machines || []);
@@ -126,6 +139,17 @@ export default function DeviceClientPage() {
     }
     setSubmitting(true);
     addLog(`BROADCAST: Starting forced transmission for ${workflowMachines.length} machines...`);
+
+    const getCustomHeaders = (extraHeaders = {}) => {
+      const headers = { ...extraHeaders };
+      if (typeof window !== "undefined") {
+        const dbUrl = localStorage.getItem("local_database_url");
+        const geminiKey = localStorage.getItem("local_gemini_api_key");
+        if (dbUrl) headers["x-custom-db-url"] = dbUrl;
+        if (geminiKey) headers["x-custom-gemini-key"] = geminiKey;
+      }
+      return headers;
+    };
     
     let successCount = 0;
     for (const machine of workflowMachines) {
@@ -133,7 +157,7 @@ export default function DeviceClientPage() {
       try {
         const res = await fetch("/api/reports", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getCustomHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             adminId,
             machineId: machine.id,
